@@ -70,8 +70,7 @@ class Queue:
         self.api = api
         self.routes = routes
 
-    @persist
-    def get_next_trains(number=2):
+    def get_next_trains(self, number=2):
         page = html.parse(self.api)
         result = []
         for row in page.xpath("//div[@id='timetable']/table/tbody/tr"):
@@ -82,4 +81,4 @@ class Queue:
                 continue
             else:
                 result.append(Entry(route, direction, scheduled, departs))
-        return result
+        return result[:2]
