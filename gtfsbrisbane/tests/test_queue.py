@@ -20,7 +20,7 @@ import unittest
 import functools
 
 
-class TestEntry(unittest.TestCase):
+class TestQueue(unittest.TestCase):
 
     def setUp(self):
         self.schedule = os.path.join(
@@ -34,3 +34,4 @@ class TestEntry(unittest.TestCase):
         self.assertEqual(routes[0],
                          functools.reduce(lambda x, y: x.route in routes and x.route, result)
                         )
+
