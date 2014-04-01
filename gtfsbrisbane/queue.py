@@ -1,9 +1,11 @@
 from lxml import html
 from xdg.BaseDirectory import xdg_data_home
 import datetime
-import datetime
+import functools
+import itertools
 import os
 import shelve
+import types
 import urllib
 
 
@@ -13,7 +15,7 @@ class Entry:
     def __init__(self, route, direction, scheduled, departs):
         self.route = route
         self._direction = direction
-        self.scheduled = self._convert_scheduled_time(scheduled)
+        self._scheduled = scheduled
         self._departs = departs
 
     @property
@@ -26,42 +28,70 @@ class Entry:
         departs_in = self.scheduled - datetime.datetime.today()
         return "{0} mins".format(int(departs_in.seconds / 60))
 
-    def _convert_scheduled_time(self, scheduled):
+    @property
+    def scheduled(self):
         """ Parses scheduled departure time and converts it to a
             datetime object.
 
             e.g. 3.45pm -> 1/12/2014 15:45
         """
-        datestamp = datetime.datetime.today().strftime('%w%m%Y')
-        datetimestamp = "{0} {1}".format(datestamp, scheduled.upper())
-        return datetime.datetime.strptime(datetimestamp, '%w%m%Y %I.%M%p')
+        datestamp = datetime.datetime.today().strftime('%x')
+        datetimestamp = "{0} {1}".format(datestamp, self._scheduled.upper())
+        return datetime.datetime.strptime(datetimestamp, '%x %I.%M%p')
 
 
 class persist:
+    """
+    Small decorator which shelves the schedule entries once retrieved.
+    Each script invocation deletes deprecated entries until we run out
+    of them. Then it's time to fetch a new schedule.
+    """
+
+    storage_directory = 'translinkschedule'
 
     def __init__(self, f):
-        self.f = f
+        functools.wraps(f)(self)
 
-    def __call__(self):
+    def __call__(self, *args, **kwargs):
         result = []
-        shelve_dir = os.path.join(xdg_data_home, 'translinkschedule')
-        if not os.path.exists(shelve_dir):
-            os.makedirs(shelve_dir)
-        shelve_path = os.path.join(shelve_dir, 'schedule')
-
-        db = shelve.open(shelve_path)
-        hits = []
+        db = shelve.open(self.shelve_path)
+        entries = []
         try:
-            hits = db['hits']
+            entries = db['hits']
         except KeyError:
             pass
-        if not hits:
-            hits = self.f()
+        if not entries or kwargs.get('fetch', False):
+            entries = self.__wrapped__(*args, **kwargs)
 
-        # take the first 2 and shelve the rest
-        result = hits[:2]
-        db['hits'] = hits[2:]
-        return result
+        db['hits'] = self.prune_queue(entries)
+        db.close()
+        return entries
+
+    def __get__(self, instance, cls):
+        if instance is None:
+            return self
+        else:
+            return types.MethodType(self, instance)
+
+    def prune_queue(self, entries):
+        """Throws away old entries which are past our current datetime."""
+        now = datetime.datetime.today()
+        return [x for x in entries if x.scheduled > now]
+
+    @property
+    def base_dir(self):
+        return xdg_data_home
+
+    @property
+    def shelve_dir(self):
+        shelve_dir = os.path.join(self.base_dir, self.storage_directory)
+        if not os.path.exists(shelve_dir):
+            os.makedirs(shelve_dir)
+        return shelve_dir
+
+    @property
+    def shelve_path(self):
+        return os.path.join(self.shelve_dir, 'schedule')
 
 
 class Queue:
@@ -70,7 +100,13 @@ class Queue:
         self.api = api
         self.routes = routes
 
-    def get_next_trains(self, number=2):
+    @persist
+    def get_next_trains(self, fetch=False):
+        """ Returns the next scheduled trains.
+
+        If `fetch` is true, the train schedule is loaded from the API
+        instead of the persistent shelve.
+        """
         page = html.parse(self.api)
         result = []
         for row in page.xpath("//div[@id='timetable']/table/tbody/tr"):
@@ -81,4 +117,4 @@ class Queue:
                 continue
             else:
                 result.append(Entry(route, direction, scheduled, departs))
-        return result[:2]
+        return result

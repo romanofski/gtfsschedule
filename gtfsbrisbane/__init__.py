@@ -27,6 +27,13 @@ def configure_commandline():
         version="{name} {version}".format(
             name=__name__, version=__version__)
     )
+    parser.add_argument(
+        "-r",
+        "--reset",
+        dest='reset',
+        help=("Load schedule from the online source."),
+        action="store_true")
+
     return parser.parse_args()
 
 
@@ -35,7 +42,7 @@ def showtrains():
     routes = arguments.routes.split()
 
     queue = gtfsbrisbane.queue.Queue(APIURL, routes)
-    trains = queue.get_next_trains()
+    trains = queue.get_next_trains(fetch=arguments.reset)
     if not trains:
         print("No train data available.")
     else:

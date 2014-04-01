@@ -14,15 +14,37 @@
 # License along with this library.  If not, see
 # <http://www.gnu.org/licenses/>.
 from gtfsbrisbane.queue import Queue
+from gtfsbrisbane.queue import Entry
+from gtfsbrisbane.queue import persist
+from unittest.mock import patch
+from unittest.mock import Mock
 import datetime
-import os.path
-import unittest
 import functools
+import os.path
+import shutil
+import tempfile
+import unittest
 
 
-class TestQueue(unittest.TestCase):
+class TestBase(unittest.TestCase):
 
     def setUp(self):
+        self.tempdir = tempfile.mkdtemp()
+        self.addCleanup(self.cleanTempDir, self.tempdir)
+
+        patcher = patch.object(persist, 'base_dir')
+        self.base_dir_mock = patcher.start()
+        self.base_dir_mock.__get__ = Mock(return_value=self.tempdir)
+        self.addCleanup(patcher.stop)
+
+    def cleanTempDir(self, tempdir):
+        shutil.rmtree(tempdir)
+
+
+class TestQueue(TestBase):
+
+    def setUp(self):
+        super(TestQueue, self).setUp()
         self.schedule = os.path.join(
             os.path.dirname(__file__), 'testdata', 'romast.html')
 
@@ -35,3 +57,38 @@ class TestQueue(unittest.TestCase):
                          functools.reduce(lambda x, y: x.route in routes and x.route, result)
                         )
 
+
+class TestPersistence(TestBase):
+
+
+    def test_decorator_creates_shelve_dir(self):
+        self.assertFalse(os.listdir(self.tempdir))
+
+        decorator = persist('dummy')
+        decorator.shelve_dir
+        self.assertEqual([decorator.storage_directory], os.listdir(self.tempdir))
+
+    @patch('gtfsbrisbane.queue.datetime')
+    def test_decorator_retrieves_new_shelved_hits(self, mock_datetime):
+        mock_datetime.datetime.today.return_value = datetime.datetime(2014, 4, 2, 16, 20, 0, 0)
+        mock_datetime.datetime.strptime.side_effect = datetime.datetime.strptime
+
+        def dummy_retrieve(numbers=2):
+            return [Entry('ASDF', 'to Hell', '4.27pm', '')
+                    for i in range(1,4)]
+
+        decorator = persist(dummy_retrieve)
+        entries = decorator()
+        self.assertTrue(entries)
+        self.assertIsInstance(entries[0], Entry)
+
+    @patch('gtfsbrisbane.queue.datetime')
+    def test_decorator_prunes_old_entries(self, mock_datetime):
+        mock_datetime.datetime.today.return_value = datetime.datetime(2014, 4, 2, 16, 20, 0, 0)
+        mock_datetime.datetime.strptime.side_effect = datetime.datetime.strptime
+
+        data = [Entry('OLD', 'to Hell', '4.15pm', ''), Entry('VALID', 'to Hell', '4.27pm', '')]
+        decorator = persist('ignored')
+        entries = decorator.prune_queue(data)
+        self.assertEqual(1, len(entries))
+        self.assertEqual('VALID', entries[0].route)
