@@ -3,3 +3,4 @@ unreleased
 
 * shows departing trains with a small memoize feature. The shelve is
   situated in XDG_DATA_HOME
+* allow to specify a station given the station/stop id from translink

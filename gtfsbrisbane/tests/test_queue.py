@@ -19,7 +19,6 @@ from gtfsbrisbane.queue import persist
 from unittest.mock import patch
 from unittest.mock import Mock
 import datetime
-import functools
 import os.path
 import shutil
 import tempfile
@@ -52,10 +51,8 @@ class TestQueue(TestBase):
         routes = ['BRSP']
         queue = Queue(self.schedule, routes)
         result = queue.get_next_trains()
-        self.assertEqual(2, len(result))
-        self.assertEqual(routes[0],
-                         functools.reduce(lambda x, y: x.route in routes and x.route, result)
-                        )
+        self.assertEqual(5, len(result))
+        self.assertEqual(set(routes), set([x.route for x in result]))
 
 
 class TestPersistence(TestBase):

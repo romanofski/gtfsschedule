@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.3
 __name__ = 'gtfsbrisbane'
-__version__ = '0.1'
+__version__ = '0.5'
 __author__ = 'Róman Joost'
 __author_email__ = 'roman@bromeco.de'
 __description__ = 'Shows next departing trains'
@@ -22,6 +22,13 @@ def configure_commandline():
         type=str
     )
     parser.add_argument(
+        "--stop",
+        help=("A stop id to use for schedule querying."
+              " Defaults to Roma St, stop number: 600029"),
+        type=str,
+        default=600029
+    )
+    parser.add_argument(
         "--version",
         action="version",
         version="{name} {version}".format(
@@ -41,7 +48,8 @@ def showtrains():
     arguments = configure_commandline()
     routes = arguments.routes.split()
 
-    queue = gtfsbrisbane.queue.Queue(APIURL, routes)
+    queue = gtfsbrisbane.queue.Queue(
+        APIURL.format(stopid=arguments.stop), routes)
     trains = queue.get_next_trains(fetch=arguments.reset)
     if not trains:
         print("No train data available.")

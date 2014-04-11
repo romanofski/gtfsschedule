@@ -3,6 +3,32 @@ GTFSBrisbane
 
 Shows next departing trains from a given station id.
 
+### Usage
+
+Like to know the next departing trains from your favorite stop, which is
+Roma St station?
+
+    bin/gtfsbrisbane "BRIP CAIP BRSP NAIP CASP BRRW"
+    Caboolture via Brisbane City to Ipswich - 11 mins / Brisbane City to Springfield - 26 mins
+
+The script parses the HTML page for your favorite stop, and stash all
+remaining, scheduled trains into a shelve in your home directory.
+Repeatedly invoking the script will not fetch the website again, until all
+scheduled trains are taken out of the shelve and/or are in the past.
+
+Nominate a different stop if you're not departing from Roma St:
+
+    bin/gtfsbrisbane -r --stop 600088 "NAIP"
+
+#### Retrieving stops, stations and train codes
+
+Query the [translink stops and stations website](http://jp.translink.com.au/travel-information/network-information/stops-and-stations).
+
+### Development Notes
+
+This software is under tested and almost grown organically. So don't
+expect gold standard coding style.
+
 ### Dependencies
 
 * Python 3.4
