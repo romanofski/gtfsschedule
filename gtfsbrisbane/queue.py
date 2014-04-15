@@ -12,6 +12,8 @@ import urllib
 class Entry:
     """A departure entry in the schedule."""
 
+    padding = 0
+
     def __init__(self, route, direction, scheduled, departs):
         self.route = route
         self._direction = direction
@@ -37,7 +39,13 @@ class Entry:
         """
         datestamp = datetime.datetime.today().strftime('%x')
         datetimestamp = "{0} {1}".format(datestamp, self._scheduled.upper())
-        return datetime.datetime.strptime(datetimestamp, '%x %I.%M%p')
+        return (datetime.datetime.strptime(datetimestamp, '%x %I.%M%p') -
+                datetime.timedelta(minutes=self.padding))
+
+    def is_valid(self):
+        """Returns True if scheduled datetime is still in the future."""
+        now = datetime.datetime.today()
+        return self.scheduled > now
 
 
 class persist:
@@ -61,8 +69,11 @@ class persist:
         except KeyError:
             pass
         if not entries or kwargs.get('fetch', False):
+            if 'hits' in db:
+                del db['hits']
             entries = self.__wrapped__(*args, **kwargs)
 
+        self.update_padding(entries, kwargs.get('padding', 0))
         db['hits'] = self.prune_queue(entries)
         db.close()
         return entries
@@ -75,8 +86,12 @@ class persist:
 
     def prune_queue(self, entries):
         """Throws away old entries which are past our current datetime."""
-        now = datetime.datetime.today()
-        return [x for x in entries if x.scheduled > now]
+        return [x for x in entries if x.is_valid()]
+
+    def update_padding(self, schedule, padding):
+        for x in schedule:
+            x.padding = padding
+        return schedule
 
     @property
     def base_dir(self):
@@ -101,7 +116,7 @@ class Queue:
         self.routes = routes
 
     @persist
-    def get_next_trains(self, fetch=False):
+    def get_next_trains(self, fetch=False, padding=0):
         """ Returns the next scheduled trains.
 
         If `fetch` is true, the train schedule is loaded from the API
@@ -116,5 +131,7 @@ class Queue:
             if route not in self.routes:
                 continue
             else:
-                result.append(Entry(route, direction, scheduled, departs))
+                result.append(
+                    Entry(route, direction, scheduled, departs)
+                )
         return result

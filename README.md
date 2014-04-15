@@ -20,6 +20,15 @@ Nominate a different stop if you're not departing from Roma St:
 
     bin/gtfsbrisbane -r --stop 600088 "NAIP"
 
+Reload schedule or purge the current entries:
+
+    bin/gtfsbrisbane -r "BRIP CAIP BRSP NAIP CASP BRRW"
+
+You need 7 minutes to get to the station? Include it in the schedule so
+you'll never miss your trian:
+
+    bin/gtfsbrisbane "BRIP CAIP BRSP NAIP CASP BRRW" --padding=7
+
 #### Retrieving stops, stations and train codes
 
 Query the [translink stops and stations website](http://jp.translink.com.au/travel-information/network-information/stops-and-stations).

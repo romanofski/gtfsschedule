@@ -36,6 +36,13 @@ class TestBase(unittest.TestCase):
         self.base_dir_mock.__get__ = Mock(return_value=self.tempdir)
         self.addCleanup(patcher.stop)
 
+        patcher = patch('gtfsbrisbane.queue.datetime')
+        self.mock_datetime = patcher.start()
+        self.mock_datetime.datetime.today.return_value = datetime.datetime(2014, 4, 2, 16, 40, 0, 0)
+        self.mock_datetime.datetime.strptime.side_effect = datetime.datetime.strptime
+        self.mock_datetime.timedelta.side_effect = datetime.timedelta
+        self.addCleanup(patcher.stop)
+
     def cleanTempDir(self, tempdir):
         shutil.rmtree(tempdir)
 
@@ -54,9 +61,19 @@ class TestQueue(TestBase):
         self.assertEqual(5, len(result))
         self.assertEqual(set(routes), set([x.route for x in result]))
 
+    def test_padding_affects_train_schedule(self):
+        routes = ['BRSP']
+        queue = Queue(self.schedule, routes)
+        #
+        # The testdata entries are scheduled with the first train
+        # leaving 16:51. The setup time is 16:40, so with a 12minute
+        # padding, we can skip at least the first entry.
+        #
+        result = queue.get_next_trains(padding=12)
+        self.assertEqual(4, len([x for x in result if x.is_valid()]))
+
 
 class TestPersistence(TestBase):
-
 
     def test_decorator_creates_shelve_dir(self):
         self.assertFalse(os.listdir(self.tempdir))
@@ -65,11 +82,7 @@ class TestPersistence(TestBase):
         decorator.shelve_dir
         self.assertEqual([decorator.storage_directory], os.listdir(self.tempdir))
 
-    @patch('gtfsbrisbane.queue.datetime')
-    def test_decorator_retrieves_new_shelved_hits(self, mock_datetime):
-        mock_datetime.datetime.today.return_value = datetime.datetime(2014, 4, 2, 16, 20, 0, 0)
-        mock_datetime.datetime.strptime.side_effect = datetime.datetime.strptime
-
+    def test_decorator_retrieves_new_shelved_hits(self):
         def dummy_retrieve(numbers=2):
             return [Entry('ASDF', 'to Hell', '4.27pm', '')
                     for i in range(1,4)]
@@ -79,12 +92,9 @@ class TestPersistence(TestBase):
         self.assertTrue(entries)
         self.assertIsInstance(entries[0], Entry)
 
-    @patch('gtfsbrisbane.queue.datetime')
-    def test_decorator_prunes_old_entries(self, mock_datetime):
-        mock_datetime.datetime.today.return_value = datetime.datetime(2014, 4, 2, 16, 20, 0, 0)
-        mock_datetime.datetime.strptime.side_effect = datetime.datetime.strptime
-
-        data = [Entry('OLD', 'to Hell', '4.15pm', ''), Entry('VALID', 'to Hell', '4.27pm', '')]
+    def test_decorator_prunes_old_entries(self):
+        data = [Entry('OLD', 'to Hell', '4.30pm', ''),
+                Entry('VALID', 'to Hell', '4.53pm', '')]
         decorator = persist('ignored')
         entries = decorator.prune_queue(data)
         self.assertEqual(1, len(entries))
