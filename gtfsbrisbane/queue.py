@@ -1,51 +1,12 @@
+from gtfsbrisbane.data_provider import HtmlDataProvider
+from gtfsbrisbane.entry import Entry
 from lxml import html
 from xdg.BaseDirectory import xdg_data_home
-import datetime
 import functools
-import itertools
 import os
 import shelve
 import types
 import urllib
-
-
-class Entry:
-    """A departure entry in the schedule."""
-
-    padding = 0
-
-    def __init__(self, route, direction, scheduled, departs):
-        self.route = route
-        self._direction = direction
-        self._scheduled = scheduled
-        self._departs = departs
-
-    @property
-    def direction(self):
-        clean = self._direction.split()[:-1]
-        return ' '.join(clean)
-
-    @property
-    def departs(self):
-        departs_in = self.scheduled - datetime.datetime.today()
-        return "{0} mins".format(int(departs_in.seconds / 60))
-
-    @property
-    def scheduled(self):
-        """ Parses scheduled departure time and converts it to a
-            datetime object.
-
-            e.g. 3.45pm -> 1/12/2014 15:45
-        """
-        datestamp = datetime.datetime.today().strftime('%x')
-        datetimestamp = "{0} {1}".format(datestamp, self._scheduled.upper())
-        return (datetime.datetime.strptime(datetimestamp, '%x %I.%M%p') -
-                datetime.timedelta(minutes=self.padding))
-
-    def is_valid(self):
-        """Returns True if scheduled datetime is still in the future."""
-        now = datetime.datetime.today()
-        return self.scheduled > now
 
 
 class persist:
@@ -112,7 +73,7 @@ class persist:
 class Queue:
 
     def __init__(self, api, routes):
-        self.api = api
+        self.data_provider = HtmlDataProvider(api)
         self.routes = routes
 
     @persist
@@ -122,16 +83,4 @@ class Queue:
         If `fetch` is true, the train schedule is loaded from the API
         instead of the persistent shelve.
         """
-        page = html.parse(self.api)
-        result = []
-        for row in page.xpath("//div[@id='timetable']/table/tbody/tr"):
-            route, direction, scheduled, departs, _ = (
-                [x.text_content().strip() for x in row.xpath('td')]
-            )
-            if route not in self.routes:
-                continue
-            else:
-                result.append(
-                    Entry(route, direction, scheduled, departs)
-                )
-        return result
+        return self.data_provider.get_schedule(self.routes)

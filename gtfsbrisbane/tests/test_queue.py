@@ -14,7 +14,7 @@
 # License along with this library.  If not, see
 # <http://www.gnu.org/licenses/>.
 from gtfsbrisbane.queue import Queue
-from gtfsbrisbane.queue import Entry
+from gtfsbrisbane.entry import Entry
 from gtfsbrisbane.queue import persist
 from unittest.mock import patch
 from unittest.mock import Mock
@@ -36,7 +36,7 @@ class TestBase(unittest.TestCase):
         self.base_dir_mock.__get__ = Mock(return_value=self.tempdir)
         self.addCleanup(patcher.stop)
 
-        patcher = patch('gtfsbrisbane.queue.datetime')
+        patcher = patch('gtfsbrisbane.entry.datetime')
         self.mock_datetime = patcher.start()
         self.mock_datetime.datetime.today.return_value = datetime.datetime(2014, 4, 2, 16, 40, 0, 0)
         self.mock_datetime.datetime.strptime.side_effect = datetime.datetime.strptime
