@@ -1,7 +1,7 @@
 GTFSBrisbane
 ============
 
-Shows next departing trains from a given station id.
+Shows next departing trains with minimum of network traffic.
 
 ### Usage
 
