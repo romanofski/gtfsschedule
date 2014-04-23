@@ -61,15 +61,15 @@ class TestQueue(TestBase):
         self.assertEqual(5, len(result))
         self.assertEqual(set(routes), set([x.route for x in result]))
 
-    def test_padding_affects_train_schedule(self):
+    def test_delay_affects_train_schedule(self):
         routes = ['BRSP']
         queue = Queue(self.schedule, routes)
         #
         # The testdata entries are scheduled with the first train
         # leaving 16:51. The setup time is 16:40, so with a 12minute
-        # padding, we can skip at least the first entry.
+        # delay, we can skip at least the first entry.
         #
-        result = queue.get_next_trains(padding=12)
+        result = queue.get_next_trains(delay=12)
         self.assertEqual(4, len([x for x in result if x.is_valid()]))
 
 

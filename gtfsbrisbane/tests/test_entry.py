@@ -29,6 +29,6 @@ class TestEntry(unittest.TestCase):
         self.assertEqual(15, self.entry.scheduled.hour)
         self.assertEqual(40, self.entry.scheduled.minute)
 
-    def test_padding_postpones_scheduled_time_by_padding_amount(self):
-        self.entry.padding = 7
+    def test_delay_postpones_scheduled_time_by_padding_amount(self):
+        self.entry.delay = 7
         self.assertEqual(33, self.entry.scheduled.minute)

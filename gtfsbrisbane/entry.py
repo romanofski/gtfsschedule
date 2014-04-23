@@ -4,7 +4,7 @@ import datetime
 class Entry:
     """A departure entry in the schedule."""
 
-    padding = 0
+    delay = 0
 
     def __init__(self, route, direction, scheduled, departs):
         self.route = route
@@ -32,7 +32,7 @@ class Entry:
         datestamp = datetime.datetime.today().strftime('%x')
         datetimestamp = "{0} {1}".format(datestamp, self._scheduled.upper())
         return (datetime.datetime.strptime(datetimestamp, '%x %I.%M%p') -
-                datetime.timedelta(minutes=self.padding))
+                datetime.timedelta(minutes=self.delay))
 
     def is_valid(self):
         """Returns True if scheduled datetime is still in the future."""

@@ -22,9 +22,9 @@ def configure_commandline():
         type=str
     )
     parser.add_argument(
-        "--padding",
-        help=("Pad the timing so you arrive on time at the station."
-              " e.g. --padding=5 to see trains leaving +5min ahead."),
+        "--delay",
+        help=("Delay the timing so you arrive on time at the station."
+              " e.g. --delay=5 to see trains leaving +5min ahead."),
         type=int,
         default=0
     )
@@ -57,7 +57,8 @@ def showtrains():
 
     queue = gtfsbrisbane.queue.Queue(
         APIURL.format(stopid=arguments.stop), routes)
-    trains = queue.get_next_trains(fetch=arguments.reset, padding=arguments.padding)
+    trains = queue.get_next_trains(fetch=arguments.reset,
+                                   delay=arguments.delay)
     if not trains:
         print("No train data available.")
     else:

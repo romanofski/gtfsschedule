@@ -34,7 +34,7 @@ class persist:
                 del db['hits']
             entries = self.__wrapped__(*args, **kwargs)
 
-        self.update_padding(entries, kwargs.get('padding', 0))
+        self.update_padding(entries, kwargs.get('delay', 0))
         db['hits'] = self.prune_queue(entries)
         db.close()
         return entries
@@ -49,9 +49,9 @@ class persist:
         """Throws away old entries which are past our current datetime."""
         return [x for x in entries if x.is_valid()]
 
-    def update_padding(self, schedule, padding):
+    def update_padding(self, schedule, delay):
         for x in schedule:
-            x.padding = padding
+            x.delay = delay
         return schedule
 
     @property
@@ -77,7 +77,7 @@ class Queue:
         self.routes = routes
 
     @persist
-    def get_next_trains(self, fetch=False, padding=0):
+    def get_next_trains(self, fetch=False, delay=0):
         """ Returns the next scheduled trains.
 
         If `fetch` is true, the train schedule is loaded from the API

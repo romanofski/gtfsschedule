@@ -27,7 +27,7 @@ Reload schedule or purge the current entries:
 You need 7 minutes to get to the station? Include it in the schedule so
 you'll never miss your trian:
 
-    bin/gtfsbrisbane "BRIP CAIP BRSP NAIP CASP BRRW" --padding=7
+    bin/gtfsbrisbane "BRIP CAIP BRSP NAIP CASP BRRW" --delay=7
 
 #### Retrieving stops, stations and train codes
 
