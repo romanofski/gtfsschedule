@@ -35,15 +35,28 @@ Query the [translink stops and stations website](http://jp.translink.com.au/trav
 
 ### Development Notes
 
-This software is under tested and almost grown organically. So don't
+This software is under-tested and almost grown organically. So don't
 expect gold standard coding style.
 
-### Dependencies
+#### Dependencies
 
 * Python 3.4
 
-### Motivation
+#### Motivation
 
 I'd like to see next departing trains without pegging the translink API
 every X seconds/minutes or so. This little script shows the departure
 times, but keeping cached versions of the schedule.
+
+#### Notes on persistency
+
+The script persists every schedule entry until each entry is obsolete
+(scheduled time is in the past). The script uses a [Python
+shelve](https://docs.python.org/3/library/shelve.html) to persist the
+schedule. It is usually located under:
+
+    $XDG_DATA_HOME/translinkschedule
+
+which on most unix systems is:
+
+    $HOME/.local/share/translinkschedule
