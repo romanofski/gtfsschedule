@@ -38,7 +38,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'gtfsbrisbane = gtfsbrisbane:showtrains',
+            'gtfsbrisbane = gtfsbrisbane.command:showtrains',
         ]
     }
 )
