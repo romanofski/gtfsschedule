@@ -14,7 +14,6 @@
 # License along with this library.  If not, see
 # <http://www.gnu.org/licenses/>.
 from gtfsbrisbane.entry import Entry
-from unittest.mock import patch
 import datetime
 import unittest
 
@@ -22,7 +21,7 @@ import unittest
 class TestEntry(unittest.TestCase):
 
     def setUp(self):
-        self.entry = Entry('ISBN', 'ignore', '3.40pm', '12mins')
+        self.entry = Entry('ISBN', 'ignore', '3.40pm')
 
     def test_converts_scheduled_time_to_real_datetime(self):
         self.assertIsInstance(self.entry.scheduled, datetime.datetime)

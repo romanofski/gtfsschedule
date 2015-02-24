@@ -84,7 +84,7 @@ class TestPersistence(TestBase):
 
     def test_decorator_retrieves_new_shelved_hits(self):
         def dummy_retrieve(numbers=2):
-            return [Entry('ASDF', 'to Hell', '4.27pm', '')
+            return [Entry('ASDF', 'to Hell', '4.27pm')
                     for i in range(1,4)]
 
         decorator = persist(dummy_retrieve)
@@ -93,8 +93,8 @@ class TestPersistence(TestBase):
         self.assertIsInstance(entries[0], Entry)
 
     def test_decorator_prunes_old_entries(self):
-        data = [Entry('OLD', 'to Hell', '4.30pm', ''),
-                Entry('VALID', 'to Hell', '4.53pm', '')]
+        data = [Entry('OLD', 'to Hell', '4.30pm'),
+                Entry('VALID', 'to Hell', '4.53pm')]
         decorator = persist('ignored')
         entries = decorator.prune_queue(data)
         self.assertEqual(1, len(entries))

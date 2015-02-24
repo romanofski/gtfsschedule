@@ -20,10 +20,13 @@ class DataProvider:
         """
         result = []
         for row in self.contents.xpath(self.xpath):
-            route, direction, scheduled, departs, _ = (
+            route, direction, scheduled = (
                 [x.text_content().strip() for x in row.xpath('td')]
             )
-            entry = Entry(route, direction, scheduled, departs)
+            # We only need the time and not the rest of the information
+            # in the scheduled table column
+            scheduled = scheduled.split()[0]
+            entry = Entry(route, direction, scheduled)
             # Return the whole schedule
             if filter_by is None:
                 result.append(entry)

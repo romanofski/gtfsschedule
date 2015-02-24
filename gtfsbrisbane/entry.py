@@ -6,11 +6,10 @@ class Entry:
 
     delay = 0
 
-    def __init__(self, route, direction, scheduled, departs):
+    def __init__(self, route, direction, scheduled):
         self.route = route
         self._direction = direction
         self._scheduled = scheduled
-        self._departs = departs
 
     @property
     def direction(self):
