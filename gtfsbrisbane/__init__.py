@@ -1,4 +1,5 @@
 #!/usr/bin/env python3.3
+# encoding: utf-8
 __name__ = 'gtfsbrisbane'
 __version__ = '0.5'
 __author__ = 'Róman Joost'
