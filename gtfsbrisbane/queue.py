@@ -67,7 +67,7 @@ class persist:
 
     @property
     def shelve_path(self):
-        return os.path.join(self.shelve_dir, 'schedule')
+        return os.path.join(self.shelve_dir, 'schedule.data')
 
 
 class Queue:
