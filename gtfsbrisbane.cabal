@@ -1,0 +1,49 @@
+name:                gtfsbrisbane
+version:             0.1.0.0
+synopsis:            Show realtime schedule
+description:         Please see README.md
+homepage:            http://github.com/romanofski/gtfsbrisbane#readme
+license:             GPL-3
+license-file:        LICENSE
+author:              Róman Joost
+maintainer:          roman@bromeco.de
+copyright:           2015 Róman Joost
+category:            Web
+build-type:          Simple
+-- extra-source-files:
+cabal-version:       >=1.10
+
+library
+  hs-source-dirs:      src
+  exposed-modules:     Lib
+  build-depends:       base >= 4.7 && < 5
+                     , HTTP
+                     , network-uri
+                     , protocol-buffers
+                     , protocol-buffers-descriptor
+                     , bytestring
+  default-language:    Haskell2010
+  other-modules:       Com.Google.Transit.Realtime.TripUpdate.StopTimeUpdate
+                     , Com.Google.Transit.Realtime.TripUpdate.StopTimeUpdate.ScheduleRelationship
+                     , Com.Google.Transit.Realtime.TripUpdate.StopTimeEvent
+
+executable gtfsbrisbane-exe
+  hs-source-dirs:      app
+  main-is:             Main.hs
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+  build-depends:       base
+                     , gtfsbrisbane
+  default-language:    Haskell2010
+
+test-suite gtfsbrisbane-test
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  main-is:             Spec.hs
+  build-depends:       base
+                     , gtfsbrisbane
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+  default-language:    Haskell2010
+
+source-repository head
+  type:     git
+  location: https://github.com/romanofski/gtfsbrisbane
