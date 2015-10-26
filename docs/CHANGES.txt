@@ -1,8 +1,0 @@
-unreleased
-----------
-
-* shows departing trains with a small memoize feature. The shelve is
-  situated in XDG_DATA_HOME
-* allow to specify a station given the station/stop id from translink
-* allow to specify a --padding, in order to allow leaving the building
-  to reach the train in time.

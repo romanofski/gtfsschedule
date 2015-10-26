@@ -1,27 +1,28 @@
 module Lib
     ( showMessage
+    , getSchedule
     ) where
 
 import qualified Control.Exception as CE
 import Network.HTTP
 import Network.URI (parseURI)
-import Text.ProtocolBuffers (messageGet)
 import qualified Data.ByteString.Lazy as Lazy
-import Com.Google.Transit.Realtime.TripUpdate.StopTimeUpdate
-import Com.Google.Transit.Realtime.TripUpdate.StopTimeUpdate.ScheduleRelationship
 
 -- | TODO: Currently hardcoded SEQ translink GTFS feed
 --
 translinkFeedURI :: String
 translinkFeedURI = "http://gtfsrt.api.translink.com.au/Feed/SEQ"
 
-downloadFeed :: IO StopTimeUpdate
+downloadFeed :: IO Lazy.ByteString
 downloadFeed = do
     let request = getLazyRequest
     resp <- simpleHTTP request >>= getResponseBody
-    case messageGet (resp) of
-      Left msg -> error ("Failed to parse stream\n" ++ msg)
-      Right (fmsg, _) -> return fmsg
+    resp
+    -- empty :(
+    -- Lazy.writeFile "/tmp/gtfs-feed" resp
+    -- case messageGet (resp) of
+      -- Left msg -> error ("Failed to parse stream\n" ++ msg)
+      -- Right (fmsg, _) -> return fmsg
 
 getLazyRequest :: Request Lazy.ByteString
 getLazyRequest = case parseURI translinkFeedURI of
@@ -33,3 +34,11 @@ showMessage :: IO ()
 showMessage = do
   f <- downloadFeed
   putStrLn $ show f
+
+-- | Data type indicating a leaving vehicle
+--
+-- TODO: need route and route, direction
+--
+data Departure = Departure String UTCTime
+               deriving Show
+

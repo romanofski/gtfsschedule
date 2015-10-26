@@ -16,12 +16,16 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Lib
+                     , Message
   build-depends:       base >= 4.7 && < 5
                      , HTTP
                      , network-uri
                      , protocol-buffers
                      , protocol-buffers-descriptor
                      , bytestring
+                     , time
+                     , utf8-string
+                     , gtfs
   default-language:    Haskell2010
   other-modules:       Com.Google.Transit.Realtime.TripUpdate.StopTimeUpdate
                      , Com.Google.Transit.Realtime.TripUpdate.StopTimeUpdate.ScheduleRelationship
@@ -41,6 +45,9 @@ test-suite gtfsbrisbane-test
   main-is:             Spec.hs
   build-depends:       base
                      , gtfsbrisbane
+                     , tasty-hunit
+                     , tasty
+                     , bytestring
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   default-language:    Haskell2010
 
