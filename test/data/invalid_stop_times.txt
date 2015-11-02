@@ -1,0 +1,3 @@
+trip_id,arrival_time,departure_time,stop_id,stop_sequence,pickup_type,drop_off_type
+5738757-BBL2015-399-Weekday-03,,,313177,3,0,0
+3-QR2015,08:03:00,08:03:00,600029,20,0,0

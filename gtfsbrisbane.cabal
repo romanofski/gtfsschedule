@@ -17,6 +17,7 @@ library
   hs-source-dirs:      src
   exposed-modules:     Lib
                      , Message
+                     , Schedule
   build-depends:       base >= 4.7 && < 5
                      , HTTP
                      , network-uri
@@ -25,7 +26,8 @@ library
                      , bytestring
                      , time
                      , utf8-string
-                     , gtfs
+                     , cassava
+                     , vector
   default-language:    Haskell2010
   other-modules:       Com.Google.Transit.Realtime.TripUpdate.StopTimeUpdate
                      , Com.Google.Transit.Realtime.TripUpdate.StopTimeUpdate.ScheduleRelationship
@@ -37,6 +39,8 @@ executable gtfsbrisbane-exe
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
                      , gtfsbrisbane
+                     , bytestring
+                     , cassava
   default-language:    Haskell2010
 
 test-suite gtfsbrisbane-test
@@ -48,6 +52,7 @@ test-suite gtfsbrisbane-test
                      , tasty-hunit
                      , tasty
                      , bytestring
+                     , time
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   default-language:    Haskell2010
 
