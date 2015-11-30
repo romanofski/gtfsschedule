@@ -1,25 +1,27 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | the GTFS schedule
 module Schedule
-    (getSchedule
-    , printSchedule
-    , isStation
+    (printSchedule
     , parseCSV
     , filterRecords
     , StopTime(..)
+    , nowAsTimeOfDay
+    , isIrrelevantRecord
+    , isInvalidStop
+    , isInvalidWeekday
+    , isInvalidDepartureTime
     ) where
 
 import Data.Csv (FromNamedRecord(..)
-                , FromField(..)
-                , runParser
-                , (.:))
+                , FromField(..))
 import Data.Csv.Streaming
-import Data.Vector (Vector)
-import Data.Time.LocalTime (TimeOfDay)
-import Data.Time.Format (parseTimeM, defaultTimeLocale)
+import Data.Time.LocalTime (TimeOfDay, TimeZone, utcToLocalTimeOfDay, timeToTimeOfDay)
+import Data.Time.Format (parseTimeM, defaultTimeLocale, formatTime)
+import Data.Time (getCurrentTime, getCurrentTimeZone)
+import Data.Time.Clock (UTCTime(..))
 import Control.Applicative (empty)
 import GHC.Generics
-import qualified Data.Vector as V
+import Data.List (sort, isInfixOf)
 import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString.Lazy as B
 import qualified Data.Foldable as F
@@ -34,6 +36,9 @@ data StopTime = StopTime { trip_id :: !String
                          , drop_off_type :: !Int
                          }
               deriving (Eq, Generic, Show)
+
+instance Ord StopTime where
+  compare x y = compare (departure_time x) (departure_time y)
 
 instance FromNamedRecord StopTime
 
@@ -54,37 +59,72 @@ parseCSV contents =
     Right (_, r) -> return $ Right r
 
 filterRecords ::
-  Records StopTime
+  (StopTime -> Bool)
+  -> Records StopTime
   -> [StopTime]
-filterRecords = F.foldr filterStation []
+filterRecords p = F.foldr (\x a -> if p x then x : a else a) []
 
--- | TODO: use isStation
-filterStation ::
-  StopTime
-  -> [StopTime]
-  -> [StopTime]
-filterStation x@(StopTime {stop_id = sID}) a = if sID == "600029" then x : a else a
+nowAsTimeOfDay ::
+  UTCTime
+  -> TimeZone
+  -> TimeOfDay
+nowAsTimeOfDay t tz = snd $ utcToLocalTimeOfDay tz (toTimeOfDay t)
+    where toTimeOfDay (UTCTime _ utcDayTime) = timeToTimeOfDay utcDayTime
 
--- | returns True if given station id is part of the stop time record
+-- | predicate to filter out unneeded records
 --
-isStation ::
+isIrrelevantRecord ::
+  String
+  -> String
+  -> UTCTime
+  -> TimeZone
+  -> StopTime
+  -> Bool
+isIrrelevantRecord stopID weekday now tz x = isInvalidStop stopID x
+                                  && isInvalidDepartureTime now tz x
+                                  && isInvalidWeekday weekday x
+
+isInvalidStop ::
   String
   -> StopTime
   -> Bool
-isStation x StopTime { stop_id = sID } = sID == x
+isInvalidStop stopID x = stop_id x == stopID
 
--- | returns all available stop information
---
-getSchedule ::
+isInvalidWeekday ::
   String
-  -> Vector StopTime
-  -> Vector StopTime
-getSchedule stopID = V.filter p
-  where p StopTime { stop_id = sID } = sID == stopID
+  -> StopTime
+  -> Bool
+isInvalidWeekday weekday x = weekday `isInfixOf` trip_id x
+
+isInvalidDepartureTime ::
+  UTCTime
+  -> TimeZone
+  -> StopTime
+  -> Bool
+isInvalidDepartureTime now tz x = departure_time x >= nowAsTimeOfDay now tz
+
+-- | shows meaningful information for leaving trains
+--
+printStopTimesAsSchedule ::
+  [StopTime]
+  -> String
+printStopTimesAsSchedule (StopTime { departure_time = depTime, trip_id = tripId } : xs) =
+  tripId ++ " " ++ show depTime ++ " " ++ printStopTimesAsSchedule xs
+printStopTimesAsSchedule [] = []
 
 -- | prints list of StopTimes as schedule
 --
 printSchedule ::
-  Vector StopTime
-  -> IO (Vector ())
-printSchedule = V.mapM print
+  String
+  -> B.ByteString
+  -> IO ()
+printSchedule sId c = do
+  parsed <- parseCSV c
+  case parsed of
+    Left err -> print err
+    Right r -> do
+      t <- getCurrentTime
+      tz <- getCurrentTimeZone
+      let weekday = formatTime defaultTimeLocale "%A" t
+      let xs = sort $ filterRecords (isIrrelevantRecord sId weekday t tz) r
+      print $ printStopTimesAsSchedule $ take 10 xs
