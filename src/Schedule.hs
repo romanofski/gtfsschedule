@@ -2,6 +2,7 @@
 -- | the GTFS schedule
 module Schedule
     (printSchedule
+    , filterSchedule
     , parseCSV
     , filterRecords
     , StopTime(..)
@@ -12,8 +13,12 @@ module Schedule
     , isInvalidDepartureTime
     ) where
 
-import Data.Csv (FromNamedRecord(..)
-                , FromField(..))
+import Data.Csv ( FromNamedRecord(..)
+                , FromField(..)
+                , ToField(..)
+                , ToNamedRecord(..)
+                , DefaultOrdered
+                , encodeDefaultOrderedByName)
 import Data.Csv.Streaming
 import Data.Time.LocalTime (TimeOfDay, TimeZone, utcToLocalTimeOfDay, timeToTimeOfDay)
 import Data.Time.Format (parseTimeM, defaultTimeLocale, formatTime)
@@ -41,12 +46,16 @@ instance Ord StopTime where
   compare x y = compare (departure_time x) (departure_time y)
 
 instance FromNamedRecord StopTime
+instance ToNamedRecord StopTime
+instance DefaultOrdered StopTime
 
 instance FromField TimeOfDay where
   parseField s = case parseTimeM True defaultTimeLocale "%T" (C.unpack s) of
     Just t -> pure t
     Nothing -> empty
 
+instance ToField TimeOfDay where
+  toField t = C.pack $ formatTime defaultTimeLocale "%T" t
 
 -- | parses CSV file and returns either a parser error or a list of stop times
 --
@@ -127,4 +136,18 @@ printSchedule sId c = do
       tz <- getCurrentTimeZone
       let weekday = formatTime defaultTimeLocale "%A" t
       let xs = sort $ filterRecords (isIrrelevantRecord sId weekday t tz) r
-      print $ printStopTimesAsSchedule $ take 10 xs
+      print $ printStopTimesAsSchedule $ take 2 xs
+
+-- | parse and write only stop id dependend records to CSV
+--
+filterSchedule ::
+  String
+  -> B.ByteString
+  -> IO ()
+filterSchedule sId c = do
+  parsed <- parseCSV c
+  case parsed of
+    Left err -> print err
+    Right r -> do
+      let xs = sort $ filterRecords (isInvalidStop sId) r
+      B.putStr $ encodeDefaultOrderedByName xs
