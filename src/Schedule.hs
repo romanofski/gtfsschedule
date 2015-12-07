@@ -92,13 +92,12 @@ nowAsTimeOfDay t tz = snd $ utcToLocalTimeOfDay tz (toTimeOfDay t)
 isIrrelevantRecord ::
   String
   -> String
-  -> UTCTime
-  -> TimeZone
+  -> TimeOfDay
   -> StopTime
   -> Bool
-isIrrelevantRecord stopID weekday now tz x = isInvalidStop stopID x
-                                  && isInvalidDepartureTime now tz x
-                                  && isInvalidWeekday weekday x
+isIrrelevantRecord stopID weekday now x = isInvalidStop stopID x
+                                          && isInvalidDepartureTime now x
+                                          && isInvalidWeekday weekday x
 
 isInvalidStop ::
   String
@@ -113,11 +112,10 @@ isInvalidWeekday ::
 isInvalidWeekday weekday x = weekday `isInfixOf` trip_id x
 
 isInvalidDepartureTime ::
-  UTCTime
-  -> TimeZone
+  TimeOfDay
   -> StopTime
   -> Bool
-isInvalidDepartureTime now tz x = departure_time x >= nowAsTimeOfDay now tz
+isInvalidDepartureTime now x = departure_time x >= now
 
 -- | shows meaningful information for leaving trains
 --
@@ -149,9 +147,10 @@ printSchedule sId c = do
     Right r -> do
       t <- getCurrentTime
       tz <- getCurrentTimeZone
+      let nowToD = nowAsTimeOfDay t tz
       let weekday = formatTime defaultTimeLocale "%A" t
-      let xs = sort $ filterRecords (isIrrelevantRecord sId weekday t tz) r
-      print $ printStopTimesAsSchedule (nowAsTimeOfDay t tz) $ take 2 xs
+      let xs = sort $ filterRecords (isIrrelevantRecord sId weekday nowToD) r
+      print $ printStopTimesAsSchedule nowToD $ take 2 xs
 
 -- | parse and write only stop id dependend records to CSV
 --
