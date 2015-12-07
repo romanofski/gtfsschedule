@@ -13,6 +13,7 @@ import Schedule ( parseCSV
                 , isInvalidStop
                 , isInvalidWeekday
                 , isInvalidDepartureTime
+                , minutesToDeparture
                 )
 
 tests ::
@@ -25,6 +26,7 @@ unitTests = testGroup "schedule tests"
             [ testParsesCSVWithInvalidData
             , testParsesCSV
             , testIgnoresRecords
+            , testMinutesToDepartureWorks
             ]
 
 testParsesCSVWithInvalidData ::
@@ -76,6 +78,14 @@ testIgnoresRecords =
   , testCase "invalidDepartureTime" $ assertBool "true" $ isInvalidDepartureTime (UTCTime (ModifiedJulianDay 0) 0) (TimeZone 0 False "test") $ head dataFixtures
   ]
 
+testMinutesToDepartureWorks ::
+  TestTree
+testMinutesToDepartureWorks =
+  testGroup "minutesToDeparture"
+  [ testCase "future" $ assertEqual "expects number" 4 (minutesToDeparture (TimeOfDay 8 00 00) (TimeOfDay 8 04 00))
+  , testCase "future with seconds" $ assertEqual "expects number" 5 (minutesToDeparture (TimeOfDay 8 00 00) (TimeOfDay 8 04 59))
+  , testCase "to late" $ assertEqual "expects number" (-2) (minutesToDeparture (TimeOfDay 8 05 00) (TimeOfDay 8 03 00))
+  ]
 
 dataFixtures :: [StopTime]
 dataFixtures = [ StopTime { trip_id = "5529773-QR2015-MTP_Fri-Friday-01-1918"

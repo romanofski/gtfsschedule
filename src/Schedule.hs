@@ -11,6 +11,7 @@ module Schedule
     , isInvalidStop
     , isInvalidWeekday
     , isInvalidDepartureTime
+    , minutesToDeparture
     ) where
 
 import Data.Csv ( FromNamedRecord(..)
@@ -20,10 +21,15 @@ import Data.Csv ( FromNamedRecord(..)
                 , DefaultOrdered
                 , encodeDefaultOrderedByName)
 import Data.Csv.Streaming
-import Data.Time.LocalTime (TimeOfDay, TimeZone, utcToLocalTimeOfDay, timeToTimeOfDay)
+import Data.Time.LocalTime ( TimeOfDay
+                           , TimeZone
+                           , utcToLocalTimeOfDay
+                           , timeToTimeOfDay
+                           , timeOfDayToTime)
 import Data.Time.Format (parseTimeM, defaultTimeLocale, formatTime)
 import Data.Time (getCurrentTime, getCurrentTimeZone)
-import Data.Time.Clock (UTCTime(..))
+import Data.Time.Clock ( UTCTime(..)
+                       , DiffTime)
 import Control.Applicative (empty)
 import GHC.Generics
 import Data.List (sort, isInfixOf)
@@ -81,6 +87,7 @@ nowAsTimeOfDay t tz = snd $ utcToLocalTimeOfDay tz (toTimeOfDay t)
     where toTimeOfDay (UTCTime _ utcDayTime) = timeToTimeOfDay utcDayTime
 
 -- | predicate to filter out unneeded records
+-- TODO: yikes how to do this better?
 --
 isIrrelevantRecord ::
   String
@@ -115,11 +122,19 @@ isInvalidDepartureTime now tz x = departure_time x >= nowAsTimeOfDay now tz
 -- | shows meaningful information for leaving trains
 --
 printStopTimesAsSchedule ::
-  [StopTime]
+  TimeOfDay
+  -> [StopTime]
   -> String
-printStopTimesAsSchedule (StopTime { departure_time = depTime, trip_id = tripId } : xs) =
-  tripId ++ " " ++ show depTime ++ " " ++ printStopTimesAsSchedule xs
-printStopTimesAsSchedule [] = []
+printStopTimesAsSchedule now (StopTime { departure_time = depTime } : xs) =
+  show (minutesToDeparture now depTime) ++ " " ++ printStopTimesAsSchedule now xs
+printStopTimesAsSchedule _ [] = []
+
+
+minutesToDeparture ::
+  TimeOfDay
+  -> TimeOfDay
+  -> Integer
+minutesToDeparture now dep_time = round $ toRational (timeOfDayToTime dep_time - timeOfDayToTime now) / 60
 
 -- | prints list of StopTimes as schedule
 --
@@ -136,7 +151,7 @@ printSchedule sId c = do
       tz <- getCurrentTimeZone
       let weekday = formatTime defaultTimeLocale "%A" t
       let xs = sort $ filterRecords (isIrrelevantRecord sId weekday t tz) r
-      print $ printStopTimesAsSchedule $ take 2 xs
+      print $ printStopTimesAsSchedule (nowAsTimeOfDay t tz) $ take 2 xs
 
 -- | parse and write only stop id dependend records to CSV
 --
