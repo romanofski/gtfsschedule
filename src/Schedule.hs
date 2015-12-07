@@ -124,9 +124,8 @@ printStopTimesAsSchedule ::
   -> [StopTime]
   -> String
 printStopTimesAsSchedule now (StopTime { departure_time = depTime } : xs) =
-  show (minutesToDeparture now depTime) ++ " " ++ printStopTimesAsSchedule now xs
+  show (minutesToDeparture now depTime) ++ " (" ++ show depTime ++ ") " ++ printStopTimesAsSchedule now xs
 printStopTimesAsSchedule _ [] = []
-
 
 minutesToDeparture ::
   TimeOfDay
