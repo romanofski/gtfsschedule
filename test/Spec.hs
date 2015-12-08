@@ -3,9 +3,8 @@ module Main where
 import Test.Tasty (defaultMain, TestTree, testGroup)
 import Test.Tasty.HUnit (assertEqual, testCase, assertBool)
 import qualified Data.ByteString.Lazy as B
-import Data.Time.LocalTime (TimeOfDay(..), TimeZone(..))
-import Data.Time.Clock (UTCTime(..))
-import Data.Time.Calendar (Day(..))
+import Data.Time.LocalTime (TimeOfDay(..))
+import Data.Time.Clock (secondsToDiffTime)
 
 import Schedule ( parseCSV
                 , filterRecords
@@ -74,8 +73,12 @@ testIgnoresRecords =
   , testCase "invalidStop" $ assertBool "true" $ isInvalidStop "600029" $ head dataFixtures
   , testCase "invalidWeekday" $ assertBool "false" $ not (isInvalidWeekday "Tuesday" $ head dataFixtures)
   , testCase "invalidWeekday" $ assertBool "true" $ isInvalidWeekday "Friday" $ head dataFixtures
-  , testCase "invalidDepartureTime" $ assertBool "false" $ isInvalidDepartureTime (UTCTime (ModifiedJulianDay 0) 3000) (TimeZone 0 False "test") $ head dataFixtures
-  , testCase "invalidDepartureTime" $ assertBool "true" $ isInvalidDepartureTime (UTCTime (ModifiedJulianDay 0) 0) (TimeZone 0 False "test") $ head dataFixtures
+  , testCase "invalidDepartureTime" $ assertBool "false" $ not $
+    isInvalidDepartureTime (secondsToDiffTime 0) (TimeOfDay 8 05 00) $ head dataFixtures
+  , testCase "invalidDepartureTime" $ assertBool "true" $
+    isInvalidDepartureTime (secondsToDiffTime 0) (TimeOfDay 8 02 00) $ head dataFixtures
+  , testCase "invalidDepartureTime with delay" $ assertBool "false" $ not $
+    isInvalidDepartureTime (secondsToDiffTime 5 * 60) (TimeOfDay 8 03 00) $ head dataFixtures
   ]
 
 testMinutesToDepartureWorks ::

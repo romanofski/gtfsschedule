@@ -6,10 +6,12 @@ import Options.Applicative.Builder ( switch
                                    , (<>)
                                    , metavar
                                    , strOption
+                                   , option
                                    , fullDesc
                                    , progDesc
                                    , header
-                                   , info)
+                                   , info
+                                   , auto)
 import Options.Applicative.Types (Parser)
 import Options.Applicative.Extra ( execParser
                                  , helper)
@@ -21,6 +23,7 @@ import qualified Data.ByteString.Lazy as B
 data Options = Options { filterStations :: Bool
                        , stationID :: String
                        , stationFilePath :: FilePath
+                       , delayInMinutes :: Integer
                        }
 
 optionParser ::
@@ -35,14 +38,18 @@ optionParser = Options
                  <> help "Station ID to show the schedule for")
                <*> strOption
                ( long "stopTimesTxt"
-                 <> metavar "stopTimes"
+                 <> metavar "FILEPATH"
                  <> help "filepath to stop_times.txt csv data to read from")
+               <*> option auto
+               ( long "walktime"
+                 <> help "Time to reach the stop. Will be added to the current time to allow arriving at the stop on time.")
+
 
 runSchedule :: Options -> IO ()
-runSchedule (Options False sID fp) = do
+runSchedule (Options False sID fp delay) = do
   contents <- B.readFile fp
-  printSchedule sID contents
-runSchedule (Options True sID fp) = do
+  printSchedule sID delay contents
+runSchedule (Options True sID fp _) = do
   contents <- B.readFile fp
   filterSchedule sID contents
 

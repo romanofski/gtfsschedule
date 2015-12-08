@@ -29,7 +29,8 @@ import Data.Time.LocalTime ( TimeOfDay
 import Data.Time.Format (parseTimeM, defaultTimeLocale, formatTime)
 import Data.Time (getCurrentTime, getCurrentTimeZone)
 import Data.Time.Clock ( UTCTime(..)
-                       , DiffTime)
+                       , DiffTime
+                       , secondsToDiffTime)
 import Control.Applicative (empty)
 import GHC.Generics
 import Data.List (sort, isInfixOf)
@@ -93,10 +94,11 @@ isIrrelevantRecord ::
   String
   -> String
   -> TimeOfDay
+  -> DiffTime
   -> StopTime
   -> Bool
-isIrrelevantRecord stopID weekday now x = isInvalidStop stopID x
-                                          && isInvalidDepartureTime now x
+isIrrelevantRecord stopID weekday now delay x = isInvalidStop stopID x
+                                          && isInvalidDepartureTime delay now x
                                           && isInvalidWeekday weekday x
 
 isInvalidStop ::
@@ -112,44 +114,58 @@ isInvalidWeekday ::
 isInvalidWeekday weekday x = weekday `isInfixOf` trip_id x
 
 isInvalidDepartureTime ::
-  TimeOfDay
+  DiffTime
+  -> TimeOfDay
   -> StopTime
   -> Bool
-isInvalidDepartureTime now x = departure_time x >= now
+isInvalidDepartureTime delay now x = depInSeconds >= delayInSeconds now delay
+  where depInSeconds = timeOfDayToTime $ departure_time x
+
+delayInSeconds ::
+  TimeOfDay
+  -> DiffTime
+  -> DiffTime
+delayInSeconds now delay = timeOfDayToTime now + delay
 
 -- | shows meaningful information for leaving trains
 --
 printStopTimesAsSchedule ::
   TimeOfDay
+  -> DiffTime
   -> [StopTime]
   -> String
-printStopTimesAsSchedule now (StopTime { departure_time = depTime } : xs) =
-  show (minutesToDeparture now depTime) ++ " (" ++ show depTime ++ ") " ++ printStopTimesAsSchedule now xs
-printStopTimesAsSchedule _ [] = []
+printStopTimesAsSchedule now delay (StopTime { departure_time = depTime } : xs) =
+  show (minutesToDeparture now depTime delay) ++ " min (" ++ show depTime ++ ") "
+  ++ printStopTimesAsSchedule now delay xs
+printStopTimesAsSchedule _ _ [] = []
 
 minutesToDeparture ::
   TimeOfDay
   -> TimeOfDay
+  -> DiffTime
   -> Integer
-minutesToDeparture now dep_time = round $ toRational (timeOfDayToTime dep_time - timeOfDayToTime now) / 60
+minutesToDeparture now dep_time delay = round $
+                                        toRational (timeOfDayToTime dep_time - delayInSeconds now delay) / 60
 
 -- | prints list of StopTimes as schedule
 --
 printSchedule ::
   String
+  -> Integer
   -> B.ByteString
   -> IO ()
-printSchedule sId c = do
+printSchedule sId delay c = do
   parsed <- parseCSV c
   case parsed of
     Left err -> print err
     Right r -> do
       t <- getCurrentTime
       tz <- getCurrentTimeZone
+      let delaySeconds = secondsToDiffTime (delay * 60)
       let nowToD = nowAsTimeOfDay t tz
       let weekday = formatTime defaultTimeLocale "%A" t
-      let xs = sort $ filterRecords (isIrrelevantRecord sId weekday nowToD) r
-      print $ printStopTimesAsSchedule nowToD $ take 2 xs
+      let xs = sort $ filterRecords (isIrrelevantRecord sId weekday nowToD delaySeconds) r
+      print $ printStopTimesAsSchedule nowToD delaySeconds $ take 2 xs
 
 -- | parse and write only stop id dependend records to CSV
 --
