@@ -1,62 +1,32 @@
 GTFSBrisbane
 ============
 
-Shows next departing trains with minimum of network traffic.
+Shows next departing trains. The command is intended to be invoked frequently
+showing continously next departing vehicles for one particular stop.
+
+### Preparing the data
+
+Download the GTFS dataset from translink. It's a zip file whith a gazzilion CSV
+txt files in it.
+
+At this point in time you only need stop_times.txt.
+
+Since the text file is huge and would incur a huge performance hit when used
+repetitively, I've added a filter parameter to generate a new CSV file with only
+information for a particular stop:
+
+    gtfsbrisbane-exe --filterStation --stationID <yourstation> --stopTimesTxt stop_times.txt > mystation.csv
 
 ### Usage
 
-Like to know the next departing trains from your favorite stop, which is
-Roma St station?
+Invoke the command to show next departing vehicles from your favorite stop, e.g:
 
-    bin/gtfsbrisbane "BRIP CAIP BRSP NAIP CASP BRRW"
-    Caboolture via Brisbane City to Ipswich - 11 mins / Brisbane City to Springfield - 26 mins
+    # Transport leaves in 11 minutes
+    gtfsbrisbane-exe --stationID 600248 --walktime 0 --stopTimesTxt mystation.csv
+    11 min (13:17:00) 26 min (13:32:00)
 
-The script parses the HTML page for your favorite stop, and stash all
-remaining, scheduled trains into a shelve in your home directory.
-Repeatedly invoking the script will not fetch the website again, until all
-scheduled trains are taken out of the shelve and/or are in the past.
+    # Leave your spot in 5 minutes in order to make it on time while walking to
+    # the stop in 7 minutes
+    gtfsbrisbane-exe --stationID 600248 --walktime 7 --stopTimesTxt mystation.csv
+    5 min (13:17:00) 20 min (13:32:00)
 
-Nominate a different stop if you're not departing from Roma St:
-
-    bin/gtfsbrisbane -r --stop 600088 "NAIP"
-
-Reload schedule or purge the current entries:
-
-    bin/gtfsbrisbane -r "BRIP CAIP BRSP NAIP CASP BRRW"
-
-You need 7 minutes to get to the station? Include it in the schedule so
-you'll never miss your trian:
-
-    bin/gtfsbrisbane "BRIP CAIP BRSP NAIP CASP BRRW" --delay=7
-
-#### Retrieving stops, stations and train codes
-
-Query the [translink stops and stations website](http://jp.translink.com.au/travel-information/network-information/stops-and-stations).
-
-### Development Notes
-
-This software is under-tested and almost grown organically. So don't
-expect gold standard coding style.
-
-#### Dependencies
-
-* Python 3.4
-
-#### Motivation
-
-I'd like to see next departing trains without pegging the translink API
-every X seconds/minutes or so. This little script shows the departure
-times, but keeping cached versions of the schedule.
-
-#### Notes on persistency
-
-The script persists every schedule entry until each entry is obsolete
-(scheduled time is in the past). The script uses a [Python
-shelve](https://docs.python.org/3/library/shelve.html) to persist the
-schedule. It is usually located under:
-
-    $XDG_DATA_HOME/translinkschedule
-
-which on most unix systems is:
-
-    $HOME/.local/share/translinkschedule

@@ -165,7 +165,7 @@ printSchedule sId delay c = do
       let nowToD = nowAsTimeOfDay t tz
       let weekday = formatTime defaultTimeLocale "%A" t
       let xs = sort $ filterRecords (isIrrelevantRecord sId weekday nowToD delaySeconds) r
-      print $ printStopTimesAsSchedule nowToD delaySeconds $ take 2 xs
+      putStr $ printStopTimesAsSchedule nowToD delaySeconds $ take 2 xs
 
 -- | parse and write only stop id dependend records to CSV
 --
