@@ -11,11 +11,10 @@ txt files in it.
 
 At this point in time you only need stop_times.txt.
 
-Since the text file is huge and would incur a huge performance hit when used
-repetitively, I've added a filter parameter to generate a new CSV file with only
-information for a particular stop:
+Since the text file is huge and would incur a big performance hit when used
+repetitively, extract the station into a separate CSV file:
 
-    gtfsbrisbane-exe --filterStation --stationID <yourstation> --stopTimesTxt stop_times.txt > mystation.csv
+    grep ",<yourstationid>," > mystation.csv
 
 ### Usage
 

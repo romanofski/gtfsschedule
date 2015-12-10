@@ -15,13 +15,11 @@ import Options.Applicative.Builder ( switch
 import Options.Applicative.Types (Parser)
 import Options.Applicative.Extra ( execParser
                                  , helper)
-import Schedule ( printSchedule
-                , filterSchedule)
+import Schedule ( printSchedule )
 import qualified Data.ByteString.Lazy as B
 
 
-data Options = Options { filterStations :: Bool
-                       , stationID :: String
+data Options = Options {stationID :: String
                        , stationFilePath :: FilePath
                        , delayInMinutes :: Integer
                        }
@@ -29,10 +27,7 @@ data Options = Options { filterStations :: Bool
 optionParser ::
   Parser Options
 optionParser = Options
-               <$> switch
-               ( long "filterStation"
-                 <> help "Wether filter on station id and write them as CSV encoded to STDOUT")
-               <*> strOption
+               <$> strOption
                ( long "stationID"
                  <> metavar "sID"
                  <> help "Station ID to show the schedule for")
@@ -46,12 +41,9 @@ optionParser = Options
 
 
 runSchedule :: Options -> IO ()
-runSchedule (Options False sID fp delay) = do
+runSchedule (Options sID fp delay) = do
   contents <- B.readFile fp
   printSchedule sID delay contents
-runSchedule (Options True sID fp _) = do
-  contents <- B.readFile fp
-  filterSchedule sID contents
 
 main :: IO ()
 main = execParser opts >>= runSchedule

@@ -2,7 +2,6 @@
 -- | the GTFS schedule
 module Schedule
     (printSchedule
-    , filterSchedule
     , parseCSV
     , filterRecords
     , StopTime(..)
@@ -166,17 +165,3 @@ printSchedule sId delay c = do
       let weekday = formatTime defaultTimeLocale "%A" t
       let xs = sort $ filterRecords (isIrrelevantRecord sId weekday nowToD delaySeconds) r
       putStr $ printStopTimesAsSchedule nowToD delaySeconds $ take 2 xs
-
--- | parse and write only stop id dependend records to CSV
---
-filterSchedule ::
-  String
-  -> B.ByteString
-  -> IO ()
-filterSchedule sId c = do
-  parsed <- parseCSV c
-  case parsed of
-    Left err -> print err
-    Right r -> do
-      let xs = sort $ filterRecords (isInvalidStop sId) r
-      B.putStr $ encodeDefaultOrderedByName xs
