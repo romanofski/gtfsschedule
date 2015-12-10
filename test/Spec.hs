@@ -85,9 +85,12 @@ testMinutesToDepartureWorks ::
   TestTree
 testMinutesToDepartureWorks =
   testGroup "minutesToDeparture"
-  [ testCase "future" $ assertEqual "expects number" 4 (minutesToDeparture (TimeOfDay 8 00 00) (TimeOfDay 8 04 00))
-  , testCase "future with seconds" $ assertEqual "expects number" 5 (minutesToDeparture (TimeOfDay 8 00 00) (TimeOfDay 8 04 59))
-  , testCase "to late" $ assertEqual "expects number" (-2) (minutesToDeparture (TimeOfDay 8 05 00) (TimeOfDay 8 03 00))
+  [ testCase "future" $ assertEqual "expects number" 4 (
+      minutesToDeparture (TimeOfDay 8 00 00) (TimeOfDay 8 04 00) 0)
+  , testCase "future with seconds" $ assertEqual "expects number" 5 (
+      minutesToDeparture (TimeOfDay 8 00 00) (TimeOfDay 8 04 59) 0)
+  , testCase "to late" $ assertEqual "expects number" (-2) (
+      minutesToDeparture (TimeOfDay 8 05 00) (TimeOfDay 8 03 00) 0)
   ]
 
 dataFixtures :: [StopTime]
