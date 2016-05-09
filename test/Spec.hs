@@ -2,9 +2,13 @@ module Main where
 
 import Test.Tasty (defaultMain, TestTree, testGroup)
 import Test.Tasty.HUnit (assertEqual, testCase, assertBool)
-import qualified Data.ByteString.Lazy as B
 import Data.Time.LocalTime (TimeOfDay(..))
 import Data.Time.Clock (secondsToDiffTime)
+import Data.Time.Calendar (fromGregorian)
+import Database.Persist.Sqlite (runMigrationSilent)
+import Database.Persist (insert, entityVal)
+import qualified Data.ByteString.Lazy as B
+import qualified Data.Text as T
 
 import Schedule ( parseCSV
                 , filterRecords
@@ -14,6 +18,7 @@ import Schedule ( parseCSV
                 , isInvalidDepartureTime
                 , minutesToDeparture
                 )
+import qualified Database as DB
 
 tests ::
   TestTree
@@ -26,7 +31,51 @@ unitTests = testGroup "schedule tests"
             , testParsesCSV
             , testIgnoresRecords
             , testMinutesToDepartureWorks
+            , testGetsNextDepartures
             ]
+
+testGetsNextDepartures ::
+  TestTree
+testGetsNextDepartures = testCase "check next departures" $ do
+  stops <- DB.runDBWithLogging (T.pack ":memory:") getStops
+  let l = DB.stopTimeStop . entityVal <$> stops
+  assertEqual "expected one stop time" ["600029"] l
+  where getStops = do
+          _ <- runMigrationSilent DB.migrateAll
+          let serviceId = "QF0815"
+          tID <- insert DB.Trip { DB.tripRouteId = "."
+                                , DB.tripServiceId = serviceId
+                                , DB.tripHeadsign = Nothing
+                                , DB.tripDirectionId = Nothing
+                                , DB.tripShortName = Nothing
+                                , DB.tripBlockId = Nothing
+                                , DB.tripShapeId = Nothing
+                                , DB.tripWheelchairAccessible = Nothing
+                                , DB.tripBikesAllowed = Nothing
+                                }
+          _ <- insert DB.Calendar { DB.calendarServiceId = serviceId
+                                  , DB.calendarMonday = False
+                                  , DB.calendarTuesday = False
+                                  , DB.calendarWednesday = True
+                                  , DB.calendarThursday = False
+                                  , DB.calendarFriday = False
+                                  , DB.calendarSaturday = False
+                                  , DB.calendarSunday = False
+                                  , DB.calendarStartDate = fromGregorian 2011 1 1
+                                  , DB.calendarEndDate = fromGregorian 2020 1 1
+                                  }
+          _ <- insert DB.StopTime { DB.stopTimeTrip = tID
+                                  , DB.stopTimeArrivalTime = TimeOfDay 8 02 00
+                                  , DB.stopTimeDepartureTime = TimeOfDay 8 05 00
+                                  , DB.stopTimeStop = "600029"
+                                  , DB.stopTimeStopSequence = "1"
+                                  , DB.stopTimeStopHeadsign = Nothing
+                                  , DB.stopTimePickupType = Nothing
+                                  , DB.stopTimeDropOffType = Nothing
+                                  , DB.stopTimeShapeDistTravel = Nothing
+                                  , DB.stopTimeTimepoint = Nothing
+                                  }
+          DB.getNextDepartures "600029" (TimeOfDay 8 05 00) (fromGregorian 2015 1 7)
 
 testParsesCSVWithInvalidData ::
   TestTree
