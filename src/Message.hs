@@ -4,9 +4,12 @@ module Message where
 
 import Com.Google.Transit.Realtime.TripUpdate.StopTimeUpdate
 import Com.Google.Transit.Realtime.TripUpdate.StopTimeEvent (StopTimeEvent(..))
+import Com.Google.Transit.Realtime.TripDescriptor (trip_id)
 import qualified Com.Google.Transit.Realtime.FeedMessage as FM
 import qualified Com.Google.Transit.Realtime.TripUpdate as TU
 import qualified Com.Google.Transit.Realtime.FeedEntity as FE
+
+import qualified Database.Persist.Sqlite as Sqlite
 
 import Text.ProtocolBuffers (messageGet, utf8)
 import Text.ProtocolBuffers.Basic (Utf8)
@@ -20,6 +23,9 @@ import Data.Time.Clock (UTCTime)
 import Control.Monad ( mfilter
                      , join)
 
+import Database ( Trip
+                , tripTripId
+                )
 
 -- TODO unsafe!
 --
@@ -37,12 +43,19 @@ getFeedEntities fm = (`P'.getVal` FE.trip_update) <$> entity
   where entity = P'.getVal fm FM.entity
 
 filterTripUpdate ::
-  String
+  [Sqlite.Entity Trip]
   -> P'.Seq TU.TripUpdate
-  -> P'.Seq StopTimeUpdate
-filterTripUpdate stopID xs = mfilter (\x -> getDepartureRoute x == stopID) (join stoptimeupdates)
-  where stoptimeupdates = (`P'.getVal` TU.stop_time_update) <$> xs
+  -> P'.Seq TU.TripUpdate
+filterTripUpdate xs = mfilter (\x -> getTripID x `elem` relevantTripIDs)
+  where relevantTripIDs = tripTripId . Sqlite.entityVal <$> xs
 
+getTripID ::
+  TU.TripUpdate
+  -> String
+getTripID x = utf8ToString tripId
+  where
+    descriptor = P'.getVal x TU.trip
+    tripId = P'.getVal descriptor trip_id
 
 -- | Returns a nice departure route
 -- TODO

@@ -16,9 +16,16 @@ import Options.Applicative (optional)
 import Options.Applicative.Types (Parser)
 import Options.Applicative.Extra ( execParser
                                  , helper)
-import Schedule ( printSchedule )
 import Data.Maybe (fromMaybe)
+import Network.HTTP.Conduit (simpleHttp)
 
+import Schedule ( printSchedule
+                , getSchedule
+                )
+import Message ( parseFeedUpdate
+               , getFeedEntities
+               , filterTripUpdate
+               )
 
 type Station = String
 type SQLiteDBPath = FilePath
@@ -44,7 +51,14 @@ optionParser = Options
 
 
 runSchedule :: Options -> IO ()
-runSchedule (Options fp sID delay) = printSchedule fp sID $ fromMaybe 0 delay
+runSchedule (Options fp sID delay) = do
+  stops <- getSchedule fp sID $ fromMaybe 0 delay
+  body <- simpleHttp "http://gtfsrt.api.translink.com.au/Feed/SEQ"
+  let fm = parseFeedUpdate body
+  let entities = getFeedEntities fm
+  let trips = snd <$> stops
+  let tupdates = filterTripUpdate trips entities
+  print $ show tupdates
 
 main :: IO ()
 main = execParser opts >>= runSchedule
