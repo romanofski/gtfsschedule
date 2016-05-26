@@ -18,13 +18,16 @@ import Options.Applicative.Extra ( execParser
                                  , helper)
 import Data.Maybe (fromMaybe)
 import Network.HTTP.Conduit (simpleHttp)
+import qualified Data.Sequence as Seq
+
+import Text.ProtocolBuffers (messageGet)
 
 import Schedule ( printSchedule
                 , getSchedule
                 )
-import Message ( parseFeedUpdate
-               , getFeedEntities
+import Message ( getFeedEntities
                , filterTripUpdate
+               , filterStopUpdates
                )
 
 type Station = String
@@ -49,16 +52,27 @@ optionParser = Options
                ( long "walktime"
                  <> help "Time to reach the stop. Will be added to the current time to allow arriving at the stop on time."))
 
+delayFromMaybe ::
+  Maybe Integer
+  -> Integer
+delayFromMaybe = fromMaybe 0
 
 runSchedule :: Options -> IO ()
 runSchedule (Options fp sID delay) = do
-  stops <- getSchedule fp sID $ fromMaybe 0 delay
-  body <- simpleHttp "http://gtfsrt.api.translink.com.au/Feed/SEQ"
-  let fm = parseFeedUpdate body
-  let entities = getFeedEntities fm
-  let trips = snd <$> stops
-  let tupdates = filterTripUpdate trips entities
-  print $ show tupdates
+  stops <- getSchedule fp sID $ delayFromMaybe delay
+  bytes <- simpleHttp "http://gtfsrt.api.translink.com.au/Feed/SEQ"
+  case messageGet bytes of
+    Left err -> do
+      print err
+      printSchedule stops $ delayFromMaybe delay
+    Right (fm, _) -> do
+      let entities = getFeedEntities fm
+      let trips = snd <$> stops
+      let stoptimes = fst <$> stops
+      let tupdates = filterStopUpdates stoptimes $ filterTripUpdate trips entities
+      if Seq.null tupdates
+        then printSchedule stops $ delayFromMaybe delay
+        else print $ show tupdates
 
 main :: IO ()
 main = execParser opts >>= runSchedule

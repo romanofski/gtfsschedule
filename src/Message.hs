@@ -2,39 +2,32 @@
 -- | A real time update from the GTFS feed
 module Message where
 
-import Com.Google.Transit.Realtime.TripUpdate.StopTimeUpdate
 import Com.Google.Transit.Realtime.TripUpdate.StopTimeEvent (StopTimeEvent(..))
 import Com.Google.Transit.Realtime.TripDescriptor (trip_id)
+import qualified Com.Google.Transit.Realtime.TripUpdate.StopTimeUpdate as STU
 import qualified Com.Google.Transit.Realtime.FeedMessage as FM
 import qualified Com.Google.Transit.Realtime.TripUpdate as TU
 import qualified Com.Google.Transit.Realtime.FeedEntity as FE
 
 import qualified Database.Persist.Sqlite as Sqlite
 
-import Text.ProtocolBuffers (messageGet, utf8)
+import Text.ProtocolBuffers (utf8)
 import Text.ProtocolBuffers.Basic (Utf8)
 import qualified Text.ProtocolBuffers.Header as P'
-import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.UTF8 as U (toString)
 import Data.Time.LocalTime (LocalTime)
 import Data.Time.Format (formatTime, defaultTimeLocale)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import Data.Time.Clock (UTCTime)
-import Control.Monad ( mfilter
-                     , join)
+import Data.Foldable (toList)
+import Control.Monad (mfilter)
+import qualified Data.Set as Set
 
 import Database ( Trip
                 , tripTripId
+                , StopTime
+                , stopTimeStop
                 )
-
--- TODO unsafe!
---
-parseFeedUpdate ::
-  L.ByteString
-  -> FM.FeedMessage
-parseFeedUpdate feed = case messageGet feed of
-  Left _ -> error "Shit happened"
-  Right (fm, _) -> fm
 
 getFeedEntities ::
   FM.FeedMessage
@@ -47,7 +40,8 @@ filterTripUpdate ::
   -> P'.Seq TU.TripUpdate
   -> P'.Seq TU.TripUpdate
 filterTripUpdate xs = mfilter (\x -> getTripID x `elem` relevantTripIDs)
-  where relevantTripIDs = tripTripId . Sqlite.entityVal <$> xs
+  where
+    relevantTripIDs = tripTripId . Sqlite.entityVal <$> xs
 
 getTripID ::
   TU.TripUpdate
@@ -57,13 +51,22 @@ getTripID x = utf8ToString tripId
     descriptor = P'.getVal x TU.trip
     tripId = P'.getVal descriptor trip_id
 
--- | Returns a nice departure route
--- TODO
-getDepartureRoute ::
-  StopTimeUpdate
-  -> String
-getDepartureRoute msg = utf8ToString route
-  where route = P'.getVal msg stop_id
+filterStopUpdates ::
+  [Sqlite.Entity StopTime]
+  -> P'.Seq TU.TripUpdate
+  -> P'.Seq TU.TripUpdate
+filterStopUpdates xs = mfilter (Set.isSubsetOf relevantStopIDs . getStopTimeUpdateStopIDs)
+  where
+    -- TODO meh perhaps this can be done better instead of going from Seq -> List -> Set?
+    relevantStopIDs = Set.fromList $ stopTimeStop . Sqlite.entityVal <$> xs
+
+getStopTimeUpdateStopIDs ::
+  TU.TripUpdate
+  -> Set.Set String
+getStopTimeUpdateStopIDs x = Set.fromList $ utf8ToString <$> utf8StopIds
+  where
+    stopTimeUpdates = P'.getVal x TU.stop_time_update
+    utf8StopIds = toList $ (`P'.getVal` STU.stop_id) <$> stopTimeUpdates
 
 getDepartureTime ::
   StopTimeEvent

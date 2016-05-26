@@ -19,17 +19,15 @@ import qualified Database.Persist.Sqlite as Sqlite
 -- | prints list of StopTimes as schedule
 --
 printSchedule ::
-  String
-  -> String
+  [(Sqlite.Entity DB.StopTime, Sqlite.Entity DB.Trip)]
   -> Integer
   -> IO ()
-printSchedule sqliteDBFilepath sID delay = do
+printSchedule stops delay = do
   t <- liftIO getCurrentTime
   tz <- liftIO getCurrentTimeZone
   let delaySeconds = secondsToDiffTime (delay * 60)
   let (LocalTime _ lTimeOfDay) = utcToLocalTime tz t
-  stops <- getSchedule sqliteDBFilepath sID delay
-  liftIO $ putStr $ DB.printStopTimesAsSchedule lTimeOfDay delaySeconds stops
+  putStr $ DB.printStopTimesAsSchedule lTimeOfDay delaySeconds stops
 
 getSchedule ::
   String
