@@ -10,10 +10,8 @@ import Control.Monad.Trans.Resource (ResourceT)
 import Control.Monad.Logger (NoLoggingT(..))
 import qualified Data.Text as T
 
-import qualified Data.ByteString.Lazy as L
 import qualified Database.Persist.Sqlite as Sqlite
 
-import Message
 import qualified Database as DB
 
 tests ::
@@ -27,30 +25,6 @@ unitTests = testGroup "schedule tests"
             , testNextDeparturesAreSorted
             , testNoDeparturesForFuturetime
             ]
-
-testFiltersTripUpdates ::
-  TestTree
-testFiltersTripUpdates = testCase "correctly filters trip updates" $ do
-  let update = filterTripUpdate trips feedentities
-  assertEqual "expected one stop time" [] update
-    where trips = [
-            DB.Trip { DB.tripRouteId = "."
-                    , DB.tripTripId = "6645108-BT2015-OCT_UNS-Weekday-02"
-                    , DB.tripServiceId = "QF006"
-                    , DB.tripHeadsign = Nothing
-                    , DB.tripDirectionId = Nothing
-                    , DB.tripShortName = Nothing
-                    , DB.tripBlockId = Nothing
-                    , DB.tripShapeId = Nothing
-                    , DB.tripWheelchairAccessible = Nothing
-                    , DB.tripBikesAllowed = Nothing
-                    }
-            ]
-          feedentities = do
-            contents <- L.readFile "data/feed.bin"
-            let feed = parseFeedUpdate contents
-            let entities = getFeedEntities feed
-            return entities
 
 testGetsNextDepartures ::
   TestTree
