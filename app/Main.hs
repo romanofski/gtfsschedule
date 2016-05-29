@@ -25,9 +25,11 @@ import Text.ProtocolBuffers (messageGet)
 import Schedule ( printSchedule
                 , getSchedule
                 )
+import Database (entityToSeq)
 import Message ( getFeedEntities
                , filterTripUpdate
                , filterStopUpdates
+               , createScheduleItems
                )
 
 type Station = String
@@ -59,20 +61,20 @@ delayFromMaybe = fromMaybe 0
 
 runSchedule :: Options -> IO ()
 runSchedule (Options fp sID delay) = do
-  stops <- getSchedule fp sID $ delayFromMaybe delay
+  schedule <- getSchedule fp sID $ delayFromMaybe delay
   bytes <- simpleHttp "http://gtfsrt.api.translink.com.au/Feed/SEQ"
   case messageGet bytes of
     Left err -> do
       print err
-      printSchedule stops $ delayFromMaybe delay
+      printSchedule schedule
     Right (fm, _) -> do
       let entities = getFeedEntities fm
       let trips = snd <$> stops
       let stoptimes = fst <$> stops
       let tupdates = filterStopUpdates stoptimes $ filterTripUpdate trips entities
       if Seq.null tupdates
-        then printSchedule stops $ delayFromMaybe delay
-        else print $ show tupdates
+        then printSchedule schedule
+        else printSchedule $ createScheduleItems (entityToSeq stops) tupdates
 
 main :: IO ()
 main = execParser opts >>= runSchedule

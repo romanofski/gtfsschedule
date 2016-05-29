@@ -26,6 +26,7 @@ import Control.Monad.Logger (LoggingT(..), runStderrLoggingT)
 import Database.Persist.TH
 import Database.Esqueleto
 import Data.List (stripPrefix)
+import qualified Data.Sequence as Sequence
 import qualified Database.Persist.Sqlite as Sqlite
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
@@ -86,9 +87,23 @@ printStopTimesAsSchedule ::
 printStopTimesAsSchedule now delay (x : xs) =
   serviceName ++ " " ++ show (minutesToDeparture now depTime delay) ++ " min (" ++ show depTime ++ ") "
   ++ printStopTimesAsSchedule now delay xs
-  where depTime = stopTimeDepartureTime $ entityVal $ fst x
+  where depTime = getDepartureTime $ fst x
         serviceName = fromMaybe "NoName" $ tripHeadsign (entityVal $ snd x)
 printStopTimesAsSchedule _ _ [] = []
+
+-- | converts a list of entities to a sequence
+--
+entityToSeq ::
+  [(Entity StopTime, Entity Trip)]
+  -> Sequence.Seq (StopTime, Trip)
+entityToSeq xs = Sequence.fromList $ toVal <$> xs
+  where
+    toVal (x, y) = (entityVal x, entityVal y)
+
+getDepartureTime ::
+  Entity StopTime
+  -> TimeOfDay
+getDepartureTime x = stopTimeDepartureTime $ entityVal x
 
 minutesToDeparture ::
   TimeOfDay
