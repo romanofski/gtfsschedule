@@ -16,11 +16,12 @@ import qualified Data.Text as T
 import qualified Database.Persist.Sqlite as Sqlite
 
 
+-- | A scheduled service
 data ScheduleItem = ScheduleItem { tripId :: String
                                  , stopId :: String
                                  , serviceName :: String
                                  , scheduledDepartureTime :: TimeOfDay
-                                 , scheduleDelay :: Integer
+                                 , departureDelay :: Integer
                                  , departureTime :: TimeOfDay
                                  }
 
@@ -36,7 +37,7 @@ makeSchedule stops = (\(x, y) -> makeItem (Sqlite.entityVal x, Sqlite.entityVal 
                                     , stopId = DB.stopTimeStop st
                                     , serviceName = fromMaybe (DB.tripTripId t) $ DB.tripHeadsign t
                                     , scheduledDepartureTime = DB.stopTimeDepartureTime st
-                                    , scheduleDelay = 0
+                                    , departureDelay = 0
                                     , departureTime = DB.stopTimeDepartureTime st
                                     }
 
@@ -84,11 +85,13 @@ printScheduleItem ::
   -> ScheduleItem
   -> String
 printScheduleItem t tz item =
-  delayIndicator ++ serviceName item ++ " " ++ show (minutesToDeparture item lTimeOfDay) ++ " min (" ++ show (departureTime item) ++ ") "
+  delayIndicator ++ serviceName item ++ " " ++ show (minutesToDeparture item lTimeOfDay) ++ " min (" ++ show (departureTime item) ++ schedDepTime ++ ") "
     where
-        delay = show $ scheduleDelay item
-        delayIndicator = if scheduleDelay item > 0 then "!" ++ delay ++ "s" else ""
-        lTimeOfDay = localTimeOfDay $ utcToLocalTime tz t
+      delayIndicator = if departureDelay item > 0 then "!" else ""
+      lTimeOfDay = localTimeOfDay $ utcToLocalTime tz t
+      schedDepTime = if departureDelay item > 0
+                     then " - " ++ show (departureDelay item) ++ "s"
+                     else ""
 
 minutesToDeparture ::
   ScheduleItem
@@ -96,7 +99,7 @@ minutesToDeparture ::
   -> Integer
 minutesToDeparture x now = round $ toRational (timeOfDayToTime depTime - secondsToDeparture now delay) / 60
   where
-    delay = delayAsDiffTime $ scheduleDelay x
+    delay = delayAsDiffTime $ departureDelay x
     depTime = departureTime x
 
 secondsToDeparture ::

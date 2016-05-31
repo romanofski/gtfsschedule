@@ -2,14 +2,14 @@
 -- | A real time update from the GTFS feed
 module Message where
 
+import Schedule (ScheduleItem(..), secondsToDeparture, printSchedule)
+
 import Com.Google.Transit.Realtime.TripUpdate.StopTimeEvent (StopTimeEvent(..), delay)
 import Com.Google.Transit.Realtime.TripDescriptor (trip_id)
 import qualified Com.Google.Transit.Realtime.TripUpdate.StopTimeUpdate as STU
 import qualified Com.Google.Transit.Realtime.FeedMessage as FM
 import qualified Com.Google.Transit.Realtime.TripUpdate as TU
 import qualified Com.Google.Transit.Realtime.FeedEntity as FE
-
-import qualified Database.Persist.Sqlite as Sqlite
 
 import Text.ProtocolBuffers (utf8)
 import Text.ProtocolBuffers.Basic (Utf8)
@@ -22,8 +22,6 @@ import Control.Monad (mfilter)
 import Data.Maybe (catMaybes)
 import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
-
-import Schedule (ScheduleItem(..), secondsToDeparture, printSchedule)
 
 
 printUpdatedSchedule ::
@@ -88,12 +86,12 @@ createScheduleItem item (Just stu) = Just
                , stopId = stopId item
                , serviceName = serviceName item
                , scheduledDepartureTime = scheduledDepartureTime item
-               , scheduleDelay = depDelay
+               , departureDelay = getDepartureDelay stu
                , departureTime = depTime
                }
   where
-    depDelay = getDepartureDelay stu
-    depTime = timeToTimeOfDay $ secondsToDeparture (scheduledDepartureTime item)(secondsToDiffTime depDelay)
+    depTime = timeToTimeOfDay $ secondsToDeparture (
+      scheduledDepartureTime item)(secondsToDiffTime $ getDepartureDelay stu)
 
 createScheduleItems ::
   [ScheduleItem]
