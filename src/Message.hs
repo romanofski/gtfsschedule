@@ -86,6 +86,7 @@ createScheduleItem _ Nothing = Nothing
 createScheduleItem item (Just stu) = Just
   ScheduleItem { tripId = tripId item
                , stopId = stopId item
+               , serviceName = serviceName item
                , scheduledDepartureTime = scheduledDepartureTime item
                , scheduleDelay = depDelay
                , departureTime = depTime

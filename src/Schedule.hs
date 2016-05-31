@@ -10,6 +10,7 @@ import Data.Time.LocalTime ( utcToLocalTime
 import Data.Time (getCurrentTime, getCurrentTimeZone)
 import Data.Time.Clock (secondsToDiffTime, DiffTime, UTCTime)
 import Control.Monad.IO.Class (liftIO)
+import Data.Maybe (fromMaybe)
 import qualified Database as DB
 import qualified Data.Text as T
 import qualified Database.Persist.Sqlite as Sqlite
@@ -17,6 +18,7 @@ import qualified Database.Persist.Sqlite as Sqlite
 
 data ScheduleItem = ScheduleItem { tripId :: String
                                  , stopId :: String
+                                 , serviceName :: String
                                  , scheduledDepartureTime :: TimeOfDay
                                  , scheduleDelay :: Integer
                                  , departureTime :: TimeOfDay
@@ -32,6 +34,7 @@ makeSchedule stops = (\(x, y) -> makeItem (Sqlite.entityVal x, Sqlite.entityVal 
   where
     makeItem (st, t) = ScheduleItem { tripId = DB.tripTripId t
                                     , stopId = DB.stopTimeStop st
+                                    , serviceName = fromMaybe (DB.tripTripId t) $ DB.tripHeadsign t
                                     , scheduledDepartureTime = DB.stopTimeDepartureTime st
                                     , scheduleDelay = 0
                                     , departureTime = DB.stopTimeDepartureTime st
@@ -73,8 +76,7 @@ printSchedule ::
 printSchedule xs = do
   t <- getCurrentTime
   tz <- getCurrentTimeZone
-  let items = printScheduleItem t tz <$> xs
-  print $ concat items
+  putStr $ concat $ printScheduleItem t tz <$> xs
 
 printScheduleItem ::
   UTCTime
@@ -84,8 +86,8 @@ printScheduleItem ::
 printScheduleItem t tz item =
   delayIndicator ++ serviceName item ++ " " ++ show (minutesToDeparture item lTimeOfDay) ++ " min (" ++ show (departureTime item) ++ ") "
     where
-        delayIndicator = if scheduleDelay item > 0 then "!" else ""
-        serviceName x = "TODO"
+        delay = show $ scheduleDelay item
+        delayIndicator = if scheduleDelay item > 0 then "!" ++ delay ++ "s" else ""
         lTimeOfDay = localTimeOfDay $ utcToLocalTime tz t
 
 minutesToDeparture ::
