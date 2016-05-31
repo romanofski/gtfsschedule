@@ -19,17 +19,25 @@ import Data.Time.LocalTime (timeToTimeOfDay)
 import Data.Time.Clock (secondsToDiffTime)
 import Data.Foldable (toList, find)
 import Control.Monad (mfilter)
+import Data.Maybe (catMaybes)
+import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
 
-import Database ( Trip
-                , tripTripId
-                , StopTime
-                , stopTimeStop
-                , stopTimeDepartureTime
-                , delayInSeconds
-                )
-import Schedule (ScheduleItem(..))
+import Schedule (ScheduleItem(..), secondsToDeparture, printSchedule)
 
+
+printUpdatedSchedule ::
+  FM.FeedMessage
+  -> [ScheduleItem]
+  -> IO ()
+printUpdatedSchedule fm schedule =
+  if Seq.null tupdates
+  then printSchedule schedule
+       -- Yikes!! TODO
+  else printSchedule $ catMaybes $ toList $ createScheduleItems schedule tupdates
+  where
+      entities = getFeedEntities fm
+      tupdates = filterStopUpdates schedule $ filterTripUpdate schedule entities
 
 getFeedEntities ::
   FM.FeedMessage
@@ -38,12 +46,12 @@ getFeedEntities fm = (`P'.getVal` FE.trip_update) <$> entity
   where entity = P'.getVal fm FM.entity
 
 filterTripUpdate ::
-  [Sqlite.Entity Trip]
+  [ScheduleItem]
   -> P'.Seq TU.TripUpdate
   -> P'.Seq TU.TripUpdate
 filterTripUpdate xs = mfilter (\x -> getTripID x `elem` relevantTripIDs)
   where
-    relevantTripIDs = tripTripId . Sqlite.entityVal <$> xs
+    relevantTripIDs = tripId <$> xs
 
 getTripID ::
   TU.TripUpdate
@@ -54,13 +62,13 @@ getTripID x = utf8ToString tripID
     tripID = P'.getVal descriptor trip_id
 
 filterStopUpdates ::
-  [Sqlite.Entity StopTime]
+  [ScheduleItem]
   -> P'.Seq TU.TripUpdate
   -> P'.Seq TU.TripUpdate
 filterStopUpdates xs = mfilter (Set.isSubsetOf relevantStopIDs . getStopTimeUpdateStopIDs)
   where
     -- TODO meh perhaps this can be done better instead of going from Seq -> List -> Set?
-    relevantStopIDs = Set.fromList $ stopTimeStop . Sqlite.entityVal <$> xs
+    relevantStopIDs = Set.fromList $ stopId <$> xs
 
 getStopTimeUpdateStopIDs ::
   TU.TripUpdate
@@ -71,32 +79,30 @@ getStopTimeUpdateStopIDs x = Set.fromList $ utf8ToString <$> utf8StopIds
     utf8StopIds = toList $ (`P'.getVal` STU.stop_id) <$> stopTimeUpdates
 
 createScheduleItem ::
-  (StopTime, Trip)
-  -> Maybe TU.TripUpdate
+  ScheduleItem
   -> Maybe STU.StopTimeUpdate
   -> Maybe ScheduleItem
-createScheduleItem _ Nothing _ = Nothing
-createScheduleItem _ _ Nothing = Nothing
-createScheduleItem (stoptime, _) (Just tu) (Just stu) = Just
-  ScheduleItem { tripId = getTripID tu
-               , stopId = stopTimeStop stoptime
-               , scheduledDepartureTime = schedDepartureTime
+createScheduleItem _ Nothing = Nothing
+createScheduleItem item (Just stu) = Just
+  ScheduleItem { tripId = tripId item
+               , stopId = stopId item
+               , scheduledDepartureTime = scheduledDepartureTime item
                , scheduleDelay = depDelay
-               , departureTime = timeToTimeOfDay $ delayInSeconds schedDepartureTime (secondsToDiffTime depDelay)
-                                            }
+               , departureTime = depTime
+               }
   where
-    schedDepartureTime = stopTimeDepartureTime stoptime
     depDelay = getDepartureDelay stu
+    depTime = timeToTimeOfDay $ secondsToDeparture (scheduledDepartureTime item)(secondsToDiffTime depDelay)
 
 createScheduleItems ::
-  P'.Seq (StopTime, Trip)
+  [ScheduleItem]
   -> P'.Seq TU.TripUpdate
   -> P'.Seq (Maybe ScheduleItem)
-createScheduleItems static tupdates = ( \x -> createScheduleItem x (maybeTU x) (maybeSTU x $ maybeTU x) ) <$> static
+createScheduleItems items tupdates = ( \x -> createScheduleItem x (maybeSTU x $ maybeTU x) ) <$> Seq.fromList items
   where
-    maybeTU (_, t) = findTripUpdate (tripTripId t) tupdates
+    maybeTU s = findTripUpdate (tripId s) tupdates
     maybeSTU _ Nothing = error "This shouldn't happen"
-    maybeSTU (st, _) (Just z) = findStopTimeUpdate (stopTimeStop st) (getStopTimeUpdates z)
+    maybeSTU s (Just z) = findStopTimeUpdate (stopId s) (getStopTimeUpdates z)
 
 getStopTimeUpdates ::
   TU.TripUpdate

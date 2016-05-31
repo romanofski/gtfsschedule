@@ -13,12 +13,10 @@ module Database where
 import Data.Time.LocalTime ( TimeOfDay(..)
                            , timeOfDayToTime
                            , timeToTimeOfDay)
-import Data.Time.Clock ( secondsToDiffTime
-                       , DiffTime)
+import Data.Time.Clock (secondsToDiffTime)
 import Data.Time.Calendar ( Day(..))
 import Data.Time.Format ( formatTime
                         , defaultTimeLocale)
-import Data.Maybe (fromMaybe)
 import Control.Monad.Trans.Reader (ReaderT)
 import Control.Monad.Trans.Resource (ResourceT, runResourceT)
 import Control.Monad.Logger (NoLoggingT(..), runNoLoggingT)
@@ -76,48 +74,6 @@ Stop
     locationType Int Maybe
     parentStation String Maybe
 |]
-
--- | shows meaningful information for leaving trains
---
-printStopTimesAsSchedule ::
-  TimeOfDay
-  -> DiffTime
-  -> [(Entity StopTime, Entity Trip)]
-  -> String
-printStopTimesAsSchedule now delay (x : xs) =
-  serviceName ++ " " ++ show (minutesToDeparture now depTime delay) ++ " min (" ++ show depTime ++ ") "
-  ++ printStopTimesAsSchedule now delay xs
-  where depTime = getDepartureTime $ fst x
-        serviceName = fromMaybe "NoName" $ tripHeadsign (entityVal $ snd x)
-printStopTimesAsSchedule _ _ [] = []
-
--- | converts a list of entities to a sequence
---
-entityToSeq ::
-  [(Entity StopTime, Entity Trip)]
-  -> Sequence.Seq (StopTime, Trip)
-entityToSeq xs = Sequence.fromList $ toVal <$> xs
-  where
-    toVal (x, y) = (entityVal x, entityVal y)
-
-getDepartureTime ::
-  Entity StopTime
-  -> TimeOfDay
-getDepartureTime x = stopTimeDepartureTime $ entityVal x
-
-minutesToDeparture ::
-  TimeOfDay
-  -> TimeOfDay
-  -> DiffTime
-  -> Integer
-minutesToDeparture now dep_time delay = round $
-                                        toRational (timeOfDayToTime dep_time - delayInSeconds now delay) / 60
-
-delayInSeconds ::
-  TimeOfDay
-  -> DiffTime
-  -> DiffTime
-delayInSeconds now delay = timeOfDayToTime now + delay
 
 weekdayToSQLExp ::
   String

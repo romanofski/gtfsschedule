@@ -1,5 +1,8 @@
 module Main where
 
+import Schedule (printSchedule, getSchedule)
+import Message (printUpdatedSchedule)
+
 import Options.Applicative.Builder (long
                                    , help
                                    , (<>)
@@ -18,19 +21,9 @@ import Options.Applicative.Extra ( execParser
                                  , helper)
 import Data.Maybe (fromMaybe)
 import Network.HTTP.Conduit (simpleHttp)
-import qualified Data.Sequence as Seq
 
 import Text.ProtocolBuffers (messageGet)
 
-import Schedule ( printSchedule
-                , getSchedule
-                )
-import Database (entityToSeq)
-import Message ( getFeedEntities
-               , filterTripUpdate
-               , filterStopUpdates
-               , createScheduleItems
-               )
 
 type Station = String
 type SQLiteDBPath = FilePath
@@ -67,14 +60,7 @@ runSchedule (Options fp sID delay) = do
     Left err -> do
       print err
       printSchedule schedule
-    Right (fm, _) -> do
-      let entities = getFeedEntities fm
-      let trips = snd <$> stops
-      let stoptimes = fst <$> stops
-      let tupdates = filterStopUpdates stoptimes $ filterTripUpdate trips entities
-      if Seq.null tupdates
-        then printSchedule schedule
-        else printSchedule $ createScheduleItems (entityToSeq stops) tupdates
+    Right (fm, _) -> printUpdatedSchedule fm schedule
 
 main :: IO ()
 main = execParser opts >>= runSchedule

@@ -1,9 +1,5 @@
 -- | the GTFS schedule
-module Schedule
-    ( printSchedule
-    , getSchedule
-    , ScheduleItem(..)
-    ) where
+module Schedule where
 
 import Data.Time.LocalTime ( utcToLocalTime
                            , LocalTime(..)
@@ -78,7 +74,7 @@ printSchedule xs = do
   t <- getCurrentTime
   tz <- getCurrentTimeZone
   let items = printScheduleItem t tz <$> xs
-  print items
+  print $ concat items
 
 printScheduleItem ::
   UTCTime
