@@ -10,9 +10,10 @@ import Data.Time.LocalTime ( utcToLocalTime
 import Data.Time (getCurrentTime, getCurrentTimeZone)
 import Data.Time.Clock (secondsToDiffTime, DiffTime, UTCTime)
 import Control.Monad.IO.Class (liftIO)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, catMaybes)
 import qualified Database as DB
 import qualified Data.Text as T
+import Database.Esqueleto (unValue)
 import qualified Database.Persist.Sqlite as Sqlite
 
 
@@ -47,13 +48,23 @@ getSchedule ::
   -> String
   -> Integer
   -> IO [ScheduleItem]
-getSchedule sqliteDBFilepath sID delay = DB.runDBWithoutLogging (T.pack sqliteDBFilepath) $ do
+getSchedule sqliteDBFilepath sCode delay = DB.runDBWithoutLogging (T.pack sqliteDBFilepath) $ do
   t <- liftIO getCurrentTime
   tz <- liftIO getCurrentTimeZone
   let lday = localDay $ utcToLocalTime tz t
   let earliestTime = calculateEarliestDepartureTime t tz (delayAsDiffTime delay)
-  stops <- DB.getNextDepartures sID earliestTime lday
+  sID <- DB.getStopID sCode
+  liftIO $ print $ show . unValue <$> sID
+  stops <- DB.getNextDepartures (firstStopID sID) earliestTime lday
   return $ makeSchedule stops
+    where
+      firstStopID xs = fromMaybe sCode (safeHead $ unValue <$> xs)
+
+safeHead ::
+  [a]
+  -> Maybe a
+safeHead [] = Nothing
+safeHead (x:_) = Just x
 
 calculateEarliestDepartureTime ::
   UTCTime

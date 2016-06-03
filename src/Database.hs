@@ -88,6 +88,13 @@ weekdayToSQLExp weekday
   | Just _ <- stripPrefix "Sunday" weekday = CalendarSunday
   | otherwise = error "That should never happen"
 
+getStopID ::
+  String
+  -> ReaderT Sqlite.SqlBackend (NoLoggingT (ResourceT IO)) [Value String]
+getStopID stopC = select $ from $ \s -> do
+  where_ (s ^. StopCode ==. val (Just stopC))
+  return (s ^. StopStopId)
+
 getNextDepartures ::
   String
   -> TimeOfDay
