@@ -87,6 +87,7 @@ test-suite unit-tests
                      , transformers
                      , resourcet
                      , monad-logger
+                     , protocol-buffers
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N -Wall
   default-language:    Haskell2010
 

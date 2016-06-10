@@ -24,7 +24,7 @@ data ScheduleItem = ScheduleItem { tripId :: String
                                  , scheduledDepartureTime :: TimeOfDay
                                  , departureDelay :: Integer
                                  , departureTime :: TimeOfDay
-                                 }
+                                 } deriving (Show, Eq)
 
 data Schedule a = Schedule [a]
 

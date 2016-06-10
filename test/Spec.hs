@@ -8,10 +8,17 @@ import Database.Persist (insert, entityVal)
 import Control.Monad.Trans.Reader (ReaderT)
 import Control.Monad.Trans.Resource (ResourceT)
 import Control.Monad.Logger (NoLoggingT(..))
+import Data.Foldable (toList)
+import Data.Maybe (catMaybes)
 import qualified Data.Text as T
+import Text.ProtocolBuffers (messageGet)
 
+import qualified Com.Google.Transit.Realtime.FeedMessage as FM
 import qualified Database.Persist.Sqlite as Sqlite
+import qualified Data.ByteString.Lazy as L
 
+import Message (departureTimeWithDelay, getFeedEntities, filterTripUpdate, filterStopUpdates, createScheduleItems, getDepartureDelay, getStopTimeUpdates)
+import Schedule (ScheduleItem(..))
 import qualified Database as DB
 
 tests ::
@@ -24,7 +31,44 @@ unitTests = testGroup "schedule tests"
             [ testGetsNextDepartures
             , testNextDeparturesAreSorted
             , testNoDeparturesForFuturetime
+            , testDepartureWithDelay
+            , testSucessfullyUpdatesSchedule
             ]
+
+testSucessfullyUpdatesSchedule ::
+  TestTree
+testSucessfullyUpdatesSchedule = testCase "updates schedule from feed" $ do
+  feed <- withFeed "test/data/feed.bin"
+  let entities = getFeedEntities feed
+  let tupdates = filterStopUpdates scheduleItemFixture $ filterTripUpdate scheduleItemFixture entities
+  let items = catMaybes $ toList $ createScheduleItems scheduleItemFixture tupdates
+  assertEqual "expecting updated delay" [expected] items
+    where
+      expected = ScheduleItem { tripId = "7136402-BT2015-04_FUL-Weekday-00"
+                              , stopId = "10795"
+                              , serviceName = "Test Service"
+                              , scheduledDepartureTime = TimeOfDay 8 00 00
+                              , departureDelay = -30
+                              , departureTime = TimeOfDay 7 59 30
+                              }
+
+
+scheduleItemFixture ::
+  [ScheduleItem]
+scheduleItemFixture =
+  [ ScheduleItem { tripId = "7136402-BT2015-04_FUL-Weekday-00"
+                 , stopId = "10795"
+                 , serviceName = "Test Service"
+                 , scheduledDepartureTime = TimeOfDay 8 00 00
+                 , departureDelay = 0
+                 , departureTime = TimeOfDay 8 00 00
+                 }
+  ]
+
+testDepartureWithDelay ::
+  TestTree
+testDepartureWithDelay = testCase "check departure with delay" $
+  assertEqual "expected delayed departure" (TimeOfDay 7 0 30) (departureTimeWithDelay (TimeOfDay 7 0 0) 30)
 
 testGetsNextDepartures ::
   TestTree
@@ -134,6 +178,15 @@ prepareStopTime = do
                              , DB.stopTimePickupType = Nothing
                              , DB.stopTimeDropOffType = Nothing
                              }
+
+withFeed ::
+  FilePath
+  -> IO FM.FeedMessage
+withFeed fp = do
+  contents <- L.readFile fp
+  case messageGet contents of
+    Left err -> error err
+    Right (fm, _) -> return fm
 
 main ::
   IO ()

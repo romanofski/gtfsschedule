@@ -15,7 +15,7 @@ import Text.ProtocolBuffers (utf8)
 import Text.ProtocolBuffers.Basic (Utf8)
 import qualified Text.ProtocolBuffers.Header as P'
 import qualified Data.ByteString.Lazy.UTF8 as U (toString)
-import Data.Time.LocalTime (timeToTimeOfDay)
+import Data.Time.LocalTime (timeToTimeOfDay, TimeOfDay)
 import Data.Time.Clock (secondsToDiffTime)
 import Data.Foldable (toList, find)
 import Control.Monad (mfilter)
@@ -87,11 +87,14 @@ createScheduleItem item (Just stu) = Just
                , serviceName = serviceName item
                , scheduledDepartureTime = scheduledDepartureTime item
                , departureDelay = getDepartureDelay stu
-               , departureTime = depTime
+               , departureTime = departureTimeWithDelay (scheduledDepartureTime item) (getDepartureDelay stu)
                }
-  where
-    depTime = timeToTimeOfDay $ secondsToDeparture (
-      scheduledDepartureTime item)(secondsToDiffTime $ getDepartureDelay stu)
+
+departureTimeWithDelay ::
+  TimeOfDay
+  -> Integer
+  -> TimeOfDay
+departureTimeWithDelay depTime d = timeToTimeOfDay $ secondsToDeparture depTime (secondsToDiffTime d)
 
 createScheduleItems ::
   [ScheduleItem]
