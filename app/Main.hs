@@ -58,7 +58,7 @@ runSchedule (Options fp sID delay) = do
   bytes <- simpleHttp "http://gtfsrt.api.translink.com.au/Feed/SEQ"
   case messageGet bytes of
     Left err -> do
-      print err
+      print $ "Error occurred decoding feed: " ++ err
       printSchedule schedule
     Right (fm, _) -> printUpdatedSchedule fm schedule
 
