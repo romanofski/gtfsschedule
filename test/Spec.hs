@@ -1,7 +1,7 @@
 module Main where
 
 import Test.Tasty (defaultMain, TestTree, testGroup)
-import Test.Tasty.HUnit (assertEqual, assertBool, testCase)
+import Test.Tasty.HUnit (assertEqual, assertBool, testCase, (@?=))
 import Data.Time.LocalTime (TimeOfDay(..))
 import Data.Time.Calendar (fromGregorian)
 import Database.Persist (insert, entityVal)
@@ -23,7 +23,7 @@ import qualified Database as DB
 
 tests ::
   TestTree
-tests = testGroup "unit tests" [unitTests]
+tests = testGroup "unit tests" [unitTests, testMinutesToDeparture]
 
 unitTests ::
   TestTree
@@ -33,7 +33,6 @@ unitTests = testGroup "schedule tests"
             , testNoDeparturesForFuturetime
             , testDepartureWithDelay
             , testSucessfullyUpdatesSchedule
-            , testMinutesToDeparture
             ]
 
 testSucessfullyUpdatesSchedule ::
@@ -62,8 +61,10 @@ testSucessfullyUpdatesSchedule = testCase "updates schedule from feed" $ do
 
 testMinutesToDeparture ::
   TestTree
-testMinutesToDeparture = testCase "calculates right delay" $
-  assertEqual "expected delayed departure" 6 $ minutesToDeparture item (TimeOfDay 7 45 00)
+testMinutesToDeparture = testGroup "calculates right delay" $ map makeTest
+  [ ("simple", minutesToDeparture item (TimeOfDay 7 45 00), 6)
+  , ("departure in past", minutesToDeparture item (TimeOfDay 7 52 00), -1)
+  ]
     where
       item = ScheduleItem { tripId = "7136402-BT2015-04_FUL-Weekday-00"
                           , stopId = "10795"
@@ -72,6 +73,7 @@ testMinutesToDeparture = testCase "calculates right delay" $
                           , departureDelay = 60
                           , departureTime = TimeOfDay 7 51 00
                           }
+      makeTest (name, input, expected) = testCase name $ input @?= expected
 
 
 testDepartureWithDelay ::
@@ -103,6 +105,9 @@ testNoDeparturesForFuturetime = testCase "no departures with future time" $ do
 nextDeparturesFromNow ::
   ReaderT Sqlite.SqlBackend (NoLoggingT (ResourceT IO)) [(Sqlite.Entity DB.StopTime, Sqlite.Entity DB.Trip)]
 nextDeparturesFromNow = DB.getNextDepartures "600029" (TimeOfDay 8 05 00) (fromGregorian 2015 1 7)
+
+
+-- | fixtures
 
 prepareStopTime ::
   ReaderT Sqlite.SqlBackend (NoLoggingT (ResourceT IO)) (Sqlite.Key DB.StopTime)
