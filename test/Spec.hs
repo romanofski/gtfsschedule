@@ -17,8 +17,8 @@ import qualified Com.Google.Transit.Realtime.FeedMessage as FM
 import qualified Database.Persist.Sqlite as Sqlite
 import qualified Data.ByteString.Lazy as L
 
-import Message (departureTimeWithDelay, getFeedEntities, filterTripUpdate, filterStopUpdates, createScheduleItems, getDepartureDelay, getStopTimeUpdates)
-import Schedule (ScheduleItem(..))
+import Message
+import Schedule (ScheduleItem(..), minutesToDeparture)
 import qualified Database as DB
 
 tests ::
@@ -33,6 +33,7 @@ unitTests = testGroup "schedule tests"
             , testNoDeparturesForFuturetime
             , testDepartureWithDelay
             , testSucessfullyUpdatesSchedule
+            , testMinutesToDeparture
             ]
 
 testSucessfullyUpdatesSchedule ::
@@ -40,8 +41,8 @@ testSucessfullyUpdatesSchedule ::
 testSucessfullyUpdatesSchedule = testCase "updates schedule from feed" $ do
   feed <- withFeed "test/data/feed.bin"
   let entities = getFeedEntities feed
-  let tupdates = filterStopUpdates scheduleItemFixture $ filterTripUpdate scheduleItemFixture entities
-  let items = catMaybes $ toList $ createScheduleItems scheduleItemFixture tupdates
+  let tupdates = filterStopUpdates schedule $ filterTripUpdate schedule entities
+  let items = catMaybes $ toList $ createScheduleItems schedule tupdates
   assertEqual "expecting updated delay" [expected] items
     where
       expected = ScheduleItem { tripId = "7136402-BT2015-04_FUL-Weekday-00"
@@ -51,19 +52,27 @@ testSucessfullyUpdatesSchedule = testCase "updates schedule from feed" $ do
                               , departureDelay = -30
                               , departureTime = TimeOfDay 7 59 30
                               }
+      schedule = [ ScheduleItem { tripId = "7136402-BT2015-04_FUL-Weekday-00"
+                                , stopId = "10795"
+                                , serviceName = "Test Service"
+                                , scheduledDepartureTime = TimeOfDay 8 00 00
+                                , departureDelay = 0
+                                , departureTime = TimeOfDay 8 00 00
+                                }]
 
+testMinutesToDeparture ::
+  TestTree
+testMinutesToDeparture = testCase "calculates right delay" $
+  assertEqual "expected delayed departure" 6 $ minutesToDeparture item (TimeOfDay 7 45 00)
+    where
+      item = ScheduleItem { tripId = "7136402-BT2015-04_FUL-Weekday-00"
+                          , stopId = "10795"
+                          , serviceName = "Test Service"
+                          , scheduledDepartureTime = TimeOfDay 7 50 00
+                          , departureDelay = 60
+                          , departureTime = TimeOfDay 7 51 00
+                          }
 
-scheduleItemFixture ::
-  [ScheduleItem]
-scheduleItemFixture =
-  [ ScheduleItem { tripId = "7136402-BT2015-04_FUL-Weekday-00"
-                 , stopId = "10795"
-                 , serviceName = "Test Service"
-                 , scheduledDepartureTime = TimeOfDay 8 00 00
-                 , departureDelay = 0
-                 , departureTime = TimeOfDay 8 00 00
-                 }
-  ]
 
 testDepartureWithDelay ::
   TestTree

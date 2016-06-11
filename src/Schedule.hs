@@ -108,10 +108,10 @@ minutesToDeparture ::
   ScheduleItem
   -> TimeOfDay
   -> Integer
-minutesToDeparture x now = round $ toRational (timeOfDayToTime depTime - secondsToDeparture now delay) / 60
+minutesToDeparture x now = round $ toRational (depTimeInSeconds - nowInSeconds) / 60
   where
-    delay = delayAsDiffTime $ departureDelay x
-    depTime = departureTime x
+    nowInSeconds = timeOfDayToTime now
+    depTimeInSeconds = timeOfDayToTime $ departureTime x
 
 secondsToDeparture ::
   TimeOfDay
