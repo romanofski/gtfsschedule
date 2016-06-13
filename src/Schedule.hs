@@ -10,7 +10,7 @@ import Data.Time.LocalTime ( utcToLocalTime
 import Data.Time (getCurrentTime, getCurrentTimeZone)
 import Data.Time.Clock (secondsToDiffTime, DiffTime, UTCTime)
 import Control.Monad.IO.Class (liftIO)
-import Data.Maybe (fromMaybe, catMaybes)
+import Data.Maybe (fromMaybe)
 import qualified Database as DB
 import qualified Data.Text as T
 import Database.Esqueleto (unValue)
