@@ -54,7 +54,6 @@ getSchedule sqliteDBFilepath sCode delay = DB.runDBWithoutLogging (T.pack sqlite
   let lday = localDay $ utcToLocalTime tz t
   let earliestTime = calculateEarliestDepartureTime t tz (delayAsDiffTime delay)
   sID <- DB.getStopID sCode
-  liftIO $ print $ show . unValue <$> sID
   stops <- DB.getNextDepartures (firstStopID sID) earliestTime lday
   return $ makeSchedule stops
     where
