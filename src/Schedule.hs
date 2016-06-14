@@ -82,25 +82,26 @@ delayAsDiffTime delay = secondsToDiffTime (delay * 60)
 -- | prints list the Schedule
 --
 printSchedule ::
-  [ScheduleItem]
+  Integer
+  -> [ScheduleItem]
   -> IO ()
-printSchedule xs = do
+printSchedule walkDelay xs = do
   t <- getCurrentTime
   tz <- getCurrentTimeZone
-  putStr $ concat $ printScheduleItem t tz <$> xs
+  let lTimeOfDay = localTimeOfDay $ utcToLocalTime tz t
+  putStr $ concat $ formatScheduleItem lTimeOfDay walkDelay <$> xs
 
-printScheduleItem ::
-  UTCTime
-  -> TimeZone
+formatScheduleItem ::
+  TimeOfDay
+  -> Integer
   -> ScheduleItem
   -> String
-printScheduleItem t tz item =
-  delayIndicator ++ serviceName item ++ " " ++ show (minutesToDeparture item lTimeOfDay) ++ " min (" ++ show (departureTime item) ++ schedDepTime ++ ") "
+formatScheduleItem nowLT walkDelay item =
+  delayIndicator ++ serviceName item ++ " " ++ show (minutesToDeparture item nowLT - walkDelay) ++ "min (" ++ show (departureTime item) ++ schedDepTime ++ ") "
     where
       delayIndicator = if departureDelay item > 0 then "!" else ""
-      lTimeOfDay = localTimeOfDay $ utcToLocalTime tz t
       schedDepTime = if departureDelay item > 0
-                     then " - " ++ show (departureDelay item) ++ "s"
+                     then " (" ++ show (departureDelay item) ++ "s)"
                      else ""
 
 minutesToDeparture ::

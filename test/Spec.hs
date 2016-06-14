@@ -18,12 +18,12 @@ import qualified Database.Persist.Sqlite as Sqlite
 import qualified Data.ByteString.Lazy as L
 
 import Message
-import Schedule (ScheduleItem(..), minutesToDeparture)
+import Schedule (ScheduleItem(..), minutesToDeparture, formatScheduleItem)
 import qualified Database as DB
 
 tests ::
   TestTree
-tests = testGroup "unit tests" [unitTests, testMinutesToDeparture]
+tests = testGroup "unit tests" [unitTests, testMinutesToDeparture, testFormatScheduleItem]
 
 unitTests ::
   TestTree
@@ -59,6 +59,39 @@ testSucessfullyUpdatesSchedule = testCase "updates schedule from feed" $ do
                                 , departureTime = TimeOfDay 8 00 00
                                 }]
 
+testFormatScheduleItem ::
+  TestTree
+testFormatScheduleItem = testGroup "formates schedule item" $ makeTest <$>
+  [ ("punctual", formatScheduleItem (TimeOfDay 7 45 0) 0 punctual, "Punctual 5min (07:50:00) ")
+  , ("punctual with walking delay", formatScheduleItem (TimeOfDay 7 45 0) 2 punctual, "Punctual 3min (07:50:00) ")
+  , ("running late", formatScheduleItem (TimeOfDay 7 45 0) 0 runningLate, "!Running Late 6min (07:51:00 (60s)) ")
+  , ("running late + walking delay", formatScheduleItem (TimeOfDay 7 45 0) 2 runningLate, "!Running Late 4min (07:51:00 (60s)) ")
+  , ("running ahead", formatScheduleItem (TimeOfDay 7 45 0) 0 runningAhead, "Running Ahead 4min (07:49:00) ")
+  , ("running ahead + walk delay", formatScheduleItem (TimeOfDay 7 45 0) 2 runningAhead, "Running Ahead 2min (07:49:00) ")
+  ]
+    where
+      punctual = ScheduleItem { tripId = "."
+                              , stopId = "."
+                              , serviceName = "Punctual"
+                              , scheduledDepartureTime = TimeOfDay 7 50 00
+                              , departureDelay = 0
+                              , departureTime = TimeOfDay 7 50 00
+                              }
+      runningAhead = ScheduleItem { tripId = "."
+                                  , stopId = "."
+                                  , serviceName = "Running Ahead"
+                                  , scheduledDepartureTime = TimeOfDay 7 50 00
+                                  , departureDelay = -60
+                                  , departureTime = TimeOfDay 7 49 00
+                                  }
+      runningLate = ScheduleItem { tripId = "."
+                                  , stopId = "."
+                                  , serviceName = "Running Late"
+                                  , scheduledDepartureTime = TimeOfDay 7 50 00
+                                  , departureDelay = 60
+                                  , departureTime = TimeOfDay 7 51 00
+                                  }
+
 testMinutesToDeparture ::
   TestTree
 testMinutesToDeparture = testGroup "calculates right delay" $ map makeTest
@@ -73,7 +106,8 @@ testMinutesToDeparture = testGroup "calculates right delay" $ map makeTest
                           , departureDelay = 60
                           , departureTime = TimeOfDay 7 51 00
                           }
-      makeTest (name, input, expected) = testCase name $ input @?= expected
+
+makeTest (name, input, expected) = testCase name $ input @?= expected
 
 
 testDepartureWithDelay ::

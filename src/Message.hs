@@ -26,13 +26,14 @@ import qualified Data.Set as Set
 
 printUpdatedSchedule ::
   FM.FeedMessage
+  -> Integer
   -> [ScheduleItem]
   -> IO ()
-printUpdatedSchedule fm schedule =
+printUpdatedSchedule fm walkDelay schedule =
   if Seq.null tupdates
-  then printSchedule schedule
+  then printSchedule walkDelay schedule
        -- Yikes!! TODO
-  else printSchedule $ catMaybes $ toList $ createScheduleItems schedule tupdates
+  else printSchedule walkDelay $ catMaybes $ toList $ createScheduleItems schedule tupdates
   where
       entities = getFeedEntities fm
       tupdates = filterStopUpdates schedule $ filterTripUpdate schedule entities

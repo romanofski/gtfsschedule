@@ -54,13 +54,14 @@ delayFromMaybe = fromMaybe 0
 
 runSchedule :: Options -> IO ()
 runSchedule (Options fp sID delay) = do
-  schedule <- getSchedule fp sID $ delayFromMaybe delay
+  let walkDelay = delayFromMaybe delay
+  schedule <- getSchedule fp sID walkDelay
   bytes <- simpleHttp "http://gtfsrt.api.translink.com.au/Feed/SEQ"
   case messageGet bytes of
     Left err -> do
       print $ "Error occurred decoding feed: " ++ err
-      printSchedule schedule
-    Right (fm, _) -> printUpdatedSchedule fm schedule
+      printSchedule walkDelay schedule
+    Right (fm, _) -> printUpdatedSchedule fm walkDelay schedule
 
 main :: IO ()
 main = execParser opts >>= runSchedule
