@@ -19,9 +19,7 @@ import Data.Time.LocalTime (timeToTimeOfDay, TimeOfDay)
 import Data.Time.Clock (secondsToDiffTime)
 import Data.Foldable (toList, find)
 import Control.Monad (mfilter)
-import Data.Maybe (catMaybes)
 import qualified Data.Sequence as Seq
-import qualified Data.Set as Set
 
 
 printUpdatedSchedule ::
@@ -33,10 +31,10 @@ printUpdatedSchedule fm walkDelay schedule =
   if Seq.null tupdates
   then printSchedule walkDelay schedule
        -- Yikes!! TODO
-  else printSchedule walkDelay $ catMaybes $ toList $ createScheduleItems schedule tupdates
+  else printSchedule walkDelay $ toList $ updateScheduleItems schedule tupdates
   where
       entities = getFeedEntities fm
-      tupdates = filterStopUpdates schedule $ filterTripUpdate schedule entities
+      tupdates = filterTripUpdate schedule entities
 
 getFeedEntities ::
   FM.FeedMessage
@@ -44,11 +42,18 @@ getFeedEntities ::
 getFeedEntities fm = (`P'.getVal` FE.trip_update) <$> entity
   where entity = P'.getVal fm FM.entity
 
+-- | filter out all relevant trips for the given schedule
+--
+-- relevant means it matches the trip_id and has a start time set.
+-- Note: The reason for checking if a start time is set could be a side effect
+-- of a parser error, since I've found multiple TripUpdates with the same trip_id
+-- but with different content (e.g. only vehicle status update vs. StopTimeUpdates)
+--
 filterTripUpdate ::
   [ScheduleItem]
   -> P'.Seq TU.TripUpdate
   -> P'.Seq TU.TripUpdate
-filterTripUpdate xs = mfilter (\x -> getTripID x `elem` relevantTripIDs)
+filterTripUpdate xs = mfilter (\x -> getTripID x `elem` relevantTripIDs && P'.isSet x TU.stop_time_update)
   where
     relevantTripIDs = tripId <$> xs
 
@@ -60,29 +65,12 @@ getTripID x = utf8ToString tripID
     descriptor = P'.getVal x TU.trip
     tripID = P'.getVal descriptor trip_id
 
-filterStopUpdates ::
-  [ScheduleItem]
-  -> P'.Seq TU.TripUpdate
-  -> P'.Seq TU.TripUpdate
-filterStopUpdates xs = mfilter (Set.isSubsetOf relevantStopIDs . getStopTimeUpdateStopIDs)
-  where
-    -- TODO meh perhaps this can be done better instead of going from Seq -> List -> Set?
-    relevantStopIDs = Set.fromList $ stopId <$> xs
-
-getStopTimeUpdateStopIDs ::
-  TU.TripUpdate
-  -> Set.Set String
-getStopTimeUpdateStopIDs x = Set.fromList $ utf8ToString <$> utf8StopIds
-  where
-    stopTimeUpdates = P'.getVal x TU.stop_time_update
-    utf8StopIds = toList $ (`P'.getVal` STU.stop_id) <$> stopTimeUpdates
-
-createScheduleItem ::
+updateScheduleItem ::
   ScheduleItem
   -> Maybe STU.StopTimeUpdate
-  -> Maybe ScheduleItem
-createScheduleItem _ Nothing = Nothing
-createScheduleItem item (Just stu) = Just
+  -> ScheduleItem
+updateScheduleItem item Nothing = item
+updateScheduleItem item (Just stu) =
   ScheduleItem { tripId = tripId item
                , stopId = stopId item
                , serviceName = serviceName item
@@ -97,14 +85,20 @@ departureTimeWithDelay ::
   -> TimeOfDay
 departureTimeWithDelay depTime d = timeToTimeOfDay $ secondsToDeparture depTime (secondsToDiffTime d)
 
-createScheduleItems ::
+-- | updates existing schedule with realtime updates
+--
+-- Each update is given by a TripUpdate and it's StopTimeUpdates. The sequence
+-- of TripUpdates should be a filtered down list to only TripUpdates with trip_ids
+-- of our ScheduleItems.
+--
+updateScheduleItems ::
   [ScheduleItem]
   -> P'.Seq TU.TripUpdate
-  -> P'.Seq (Maybe ScheduleItem)
-createScheduleItems items tupdates = ( \x -> createScheduleItem x (maybeSTU x $ maybeTU x) ) <$> Seq.fromList items
+  -> P'.Seq ScheduleItem
+updateScheduleItems items tupdates = ( \x -> updateScheduleItem x (maybeSTU x $ maybeTU x) ) <$> Seq.fromList items
   where
     maybeTU s = findTripUpdate (tripId s) tupdates
-    maybeSTU _ Nothing = error "This shouldn't happen"
+    maybeSTU _ Nothing = Nothing  -- don't update the schedule item
     maybeSTU s (Just z) = findStopTimeUpdate (stopId s) (getStopTimeUpdates z)
 
 getStopTimeUpdates ::
