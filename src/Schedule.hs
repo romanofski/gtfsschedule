@@ -30,17 +30,17 @@ data Schedule a = Schedule [a]
 
 
 makeSchedule ::
-  [(Sqlite.Entity DB.StopTime, Sqlite.Entity DB.Trip)]
+  [(Sqlite.Entity DB.StopTime, Sqlite.Entity DB.Trip, Sqlite.Entity DB.Route)]
   -> [ScheduleItem]
-makeSchedule stops = (\(x, y) -> makeItem (Sqlite.entityVal x, Sqlite.entityVal y)) <$> stops
+makeSchedule stops = (\(x, y, z) -> makeItem (Sqlite.entityVal x, Sqlite.entityVal y, Sqlite.entityVal z)) <$> stops
   where
-    makeItem (st, t) = ScheduleItem { tripId = DB.tripTripId t
-                                    , stopId = DB.stopTimeStop st
-                                    , serviceName = fromMaybe (DB.tripTripId t) $ DB.tripHeadsign t
-                                    , scheduledDepartureTime = DB.stopTimeDepartureTime st
-                                    , departureDelay = 0
-                                    , departureTime = DB.stopTimeDepartureTime st
-                                    }
+    makeItem (st, t, r) = ScheduleItem { tripId = DB.tripTripId t
+                                       , stopId = DB.stopTimeStop st
+                                       , serviceName = DB.routeShortName r ++ " " ++ DB.routeLongName r
+                                       , scheduledDepartureTime = DB.stopTimeDepartureTime st
+                                       , departureDelay = 0
+                                       , departureTime = DB.stopTimeDepartureTime st
+                                       }
 
 
 getSchedule ::

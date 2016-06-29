@@ -8,14 +8,39 @@ BEGIN TRANSACTION;
 DROP TABLE IF EXISTS trip;
 DROP TABLE IF EXISTS stop_time;
 DROP TABLE IF EXISTS calendar;
+DROP TABLE IF EXISTS route;
 
 
+
+-- routes
+--
+.import routes.txt temp
+
+CREATE TABLE "route" (
+"id" INTEGER PRIMARY KEY AUTOINCREMENT,
+"route_id" VARCHAR NOT NULL,
+"short_name" VARCHAR NOT NULL,
+"long_name" VARCHAR NOT NULL,
+"desc" VARCHAR NULL,
+"type" VARCHAR NOT NULL,
+"url" VARCHAR NULL,
+"color" VARCHAR NULL,
+"text_color" VARCHAR NULL
+);
+
+insert into route (route_id, short_name, long_name, desc, type, url, color, text_color)
+select route_id, route_short_name, route_long_name, route_desc, route_type, route_url, route_color, route_text_color
+from temp;
+
+-- trips
+--
+DROP TABLE temp;
 .import trips.txt temp
 
 CREATE TABLE "trip"(
 "id" INTEGER PRIMARY KEY AUTOINCREMENT,
 "trip_id" VARCHAR NOT NULL,
-"route_id" VARCHAR NOT NULL,
+"route_id" INTEGER NOT NULL REFERENCES "route",
 "service_id" VARCHAR NOT NULL,
 "headsign" VARCHAR NULL,
 "short_name" VARCHAR NULL,
@@ -26,8 +51,9 @@ CREATE TABLE "trip"(
 "bikes_allowed" INTEGER NULL
 );
 insert into trip (trip_id, route_id, service_id, headsign, short_name, direction_id, block_id, shape_id, wheelchair_accessible, bikes_allowed)
-select trip_id, route_id, service_id, trip_headsign, NULL, direction_id, block_id, shape_id, NULL, NULL
-from temp;
+select trip_id, route.id, service_id, trip_headsign, NULL, direction_id, block_id, shape_id, NULL, NULL
+from temp, route
+where temp.route_id = route.route_id;
 
 -- stops
 --

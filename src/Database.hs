@@ -40,7 +40,7 @@ StopTime
     dropOffType Int Maybe
     deriving Show
 Trip
-    routeId String
+    routeId RouteId
     serviceId String
     tripId String
     headsign String Maybe
@@ -73,7 +73,17 @@ Stop
     url String Maybe
     locationType Int Maybe
     parentStation String Maybe
+Route
+    shortName String
+    longName String
+    desc String Maybe
+    type String
+    url String Maybe
+    color String Maybe
+    textColor String Maybe
 |]
+-- ^-- TODO
+--  RouteType could be enumeration
 
 weekdayToSQLExp ::
   String
@@ -95,24 +105,29 @@ getStopID stopC = select $ from $ \s -> do
   where_ (s ^. StopCode ==. val (Just stopC))
   return (s ^. StopStopId)
 
+-- | Returns next possible departures
+--
+-- TODO: limit is currently hard coded
+--
 getNextDepartures ::
   String
   -> TimeOfDay
   -> Day
-  -> ReaderT Sqlite.SqlBackend (NoLoggingT (ResourceT IO)) [(Sqlite.Entity StopTime, Sqlite.Entity Trip)]
-getNextDepartures stopID now nowDate = select $ from $ \(st, t, c, s) -> do
+  -> ReaderT Sqlite.SqlBackend (NoLoggingT (ResourceT IO)) [(Sqlite.Entity StopTime, Sqlite.Entity Trip, Sqlite.Entity Route)]
+getNextDepartures stopID now nowDate = select $ from $ \(st, t, c, s, r) -> do
   where_ (
     st ^. StopTimeTripId ==. t ^. TripId &&.
-      t ^. TripServiceId ==. c ^. CalendarServiceId &&.
-      st ^. StopTimeStopId ==. s ^. StopId &&.
-      s ^. StopStopId ==. val stopID &&.
-      st ^. StopTimeDepartureTime >. val earliest &&.
-      st ^. StopTimeDepartureTime <. val latest &&.
-      c ^. weekdaySqlExp
+    t ^. TripRouteId ==. r ^. RouteId &&.
+    t ^. TripServiceId ==. c ^. CalendarServiceId &&.
+    st ^. StopTimeStopId ==. s ^. StopId &&.
+    s ^. StopStopId ==. val stopID &&.
+    st ^. StopTimeDepartureTime >. val earliest &&.
+    st ^. StopTimeDepartureTime <. val latest &&.
+    c ^. weekdaySqlExp
     )
   orderBy [asc (st ^. StopTimeDepartureTime)]
   limit 3
-  return (st, t)
+  return (st, t, r)
   where earliest = timeToTimeOfDay $ timeOfDayToTime now - secondsToDiffTime 60
         latest = timeToTimeOfDay $ timeOfDayToTime now + secondsToDiffTime 60 * 30
         weekday = formatTime defaultTimeLocale "%A" nowDate

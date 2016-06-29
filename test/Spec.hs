@@ -83,27 +83,37 @@ testGetsNextDepartures ::
   TestTree
 testGetsNextDepartures = testCase "check next departures" $ do
   stops <- DB.runDBWithoutLogging (T.pack ":memory:") $ prepareStopTime >> nextDeparturesFromNow
-  let l = length $ entityVal . snd <$> stops
+  let l = length $ entityVal . snd' <$> stops
   assertEqual "expected one stop time" 2 l
 
 testNextDeparturesAreSorted ::
   TestTree
 testNextDeparturesAreSorted = testCase "next departures are sorted" $ do
   stops <- DB.runDBWithoutLogging (T.pack ":memory:") $ prepareStopTime >> nextDeparturesFromNow
-  let l = DB.stopTimeDepartureTime . entityVal . fst <$> stops
+  let l = DB.stopTimeDepartureTime . entityVal . fst' <$> stops
   assertEqual "expected one stop time" [TimeOfDay 8 05 00, TimeOfDay 8 21 00] l
 
 testNoDeparturesForFuturetime ::
   TestTree
 testNoDeparturesForFuturetime = testCase "no departures with future time" $ do
   stops <- DB.runDBWithoutLogging (T.pack ":memory:") $ prepareStopTime >> nextDeparturesFuture
-  assertBool "expected no departure" (null $ entityVal . fst <$> stops)
+  assertBool "expected no departure" (null $ entityVal . fst' <$> stops)
   where nextDeparturesFuture = DB.getNextDepartures "600029" (TimeOfDay 8 30 00) (fromGregorian 2015 1 7)
 
 nextDeparturesFromNow ::
-  ReaderT Sqlite.SqlBackend (NoLoggingT (ResourceT IO)) [(Sqlite.Entity DB.StopTime, Sqlite.Entity DB.Trip)]
+  ReaderT Sqlite.SqlBackend (NoLoggingT (ResourceT IO)) [(Sqlite.Entity DB.StopTime, Sqlite.Entity DB.Trip, Sqlite.Entity DB.Route)]
 nextDeparturesFromNow = DB.getNextDepartures "600029" (TimeOfDay 8 05 00) (fromGregorian 2015 1 7)
 
+
+fst' ::
+  (a, b, c)
+  -> a
+fst' (x, _, _) = x
+
+snd' ::
+  (a, b, c)
+  -> b
+snd' (_, x, _) = x
 
 -- | fixtures
 
@@ -112,7 +122,15 @@ prepareStopTime ::
 prepareStopTime = do
           _ <- Sqlite.runMigrationSilent DB.migrateAll
           let serviceId = "QF0815"
-          tID <- insert DB.Trip { DB.tripRouteId = "."
+          routeId <- insert DB.Route { DB.routeShortName = "66"
+                                     , DB.routeLongName = "Hell"
+                                     , DB.routeDesc = Nothing
+                                     , DB.routeType = "6"
+                                     , DB.routeUrl = Nothing
+                                     , DB.routeColor = Nothing
+                                     , DB.routeTextColor = Nothing
+                                     }
+          tID <- insert DB.Trip { DB.tripRouteId = routeId
                                 , DB.tripTripId = "QF0815-00"
                                 , DB.tripServiceId = serviceId
                                 , DB.tripHeadsign = Nothing
