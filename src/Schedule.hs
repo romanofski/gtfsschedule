@@ -36,7 +36,7 @@ makeSchedule stops = (\(x, y, z) -> makeItem (Sqlite.entityVal x, Sqlite.entityV
   where
     makeItem (st, t, r) = ScheduleItem { tripId = DB.tripTripId t
                                        , stopId = DB.stopTimeStop st
-                                       , serviceName = DB.routeShortName r ++ " " ++ DB.routeLongName r
+                                       , serviceName = DB.routeShortName r ++ " " ++ fromMaybe (DB.routeLongName r) (DB.tripHeadsign t)
                                        , scheduledDepartureTime = DB.stopTimeDepartureTime st
                                        , departureDelay = 0
                                        , departureTime = DB.stopTimeDepartureTime st
