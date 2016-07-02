@@ -5,8 +5,11 @@
 
 BEGIN TRANSACTION;
 
+
+DROP TABLE IF EXISTS temp;
 DROP TABLE IF EXISTS trip;
 DROP TABLE IF EXISTS stop_time;
+DROP TABLE IF EXISTS stop;
 DROP TABLE IF EXISTS calendar;
 DROP TABLE IF EXISTS route;
 
@@ -103,11 +106,32 @@ select trip.id, temp.trip_id, time(temp.arrival_time), time(departure_time), tem
 from temp, trip, stop
 where temp.trip_id = trip.trip_id and temp.stop_id = stop.stop_id;
 
+CREATE INDEX stop_seq_index ON stop_time (trip_id, stop_sequence);
+
 -- calendar
 --
-.import calendar.txt calendar
+DROP TABLE temp;
+.import calendar.txt temp
 
-CREATE INDEX stop_seq_index ON stop_time (trip_id, stop_sequence);
+CREATE TABLE "calendar"(
+"id" INTEGER PRIMARY KEY AUTOINCREMENT,
+"service_id" VARCHAR NOT NULL,
+"monday" VARCHAR NOT NULL,
+"tuesday" VARCHAR NOT NULL,
+"wednesday" VARCHAR NOT NULL,
+"thursday" VARCHAR NOT NULL,
+"friday" VARCHAR NOT NULL,
+"saturday" VARCHAR NOT NULL,
+"sunday" VARCHAR NOT NULL,
+"start_date" DATE NOT NULL,
+"end_date" DATE NOT NULL
+);
+
+insert into calendar (service_id, monday, tuesday, wednesday, thursday, friday, saturday, sunday, start_date, end_date)
+select service_id, monday, tuesday, wednesday, thursday, friday, saturday, sunday,
+       (substr(start_date, 1, 4) || '-' || substr(start_date, 5, 2) || '-' || substr(start_date, 7)),
+       (substr(end_date, 1, 4) || '-' || substr(end_date, 5, 2) || '-' || substr(end_date, 7))
+from temp;
 
 DROP TABLE IF EXISTS temp;
 COMMIT;

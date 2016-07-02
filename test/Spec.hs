@@ -2,8 +2,8 @@ module Main where
 
 import Realtime (feedTests)
 
-import Test.Tasty (defaultMain, TestTree, testGroup)
-import Test.Tasty.HUnit (assertEqual, assertBool, testCase, (@?=))
+import Test.Tasty (defaultMain, TestTree, TestName, testGroup)
+import Test.Tasty.HUnit (testCase, (@?=))
 import Data.Time.LocalTime (TimeOfDay(..))
 import Data.Time.Calendar (fromGregorian)
 import Database.Persist (insert, entityVal)
@@ -19,15 +19,11 @@ import qualified Database as DB
 
 tests ::
   TestTree
-tests = testGroup "unit tests" [unitTests, feedTests, testMinutesToDeparture, testFormatScheduleItem]
-
-unitTests ::
-  TestTree
-unitTests = testGroup "schedule tests"
-            [ testGetsNextDepartures
-            , testNextDeparturesAreSorted
-            , testNoDeparturesForFuturetime
-            ]
+tests = testGroup "unit tests" [ feedTests
+                               , testMinutesToDeparture
+                               , testFormatScheduleItem
+                               , testDepartures
+                               ]
 
 testFormatScheduleItem ::
   TestTree
@@ -61,7 +57,7 @@ testFormatScheduleItem = testGroup "formates schedule item" $ makeTest <$>
                                   , departureDelay = 60
                                   , departureTime = TimeOfDay 7 51 00
                                   }
- 
+
 testMinutesToDeparture ::
   TestTree
 testMinutesToDeparture = testGroup "calculates right delay" $ map makeTest
@@ -77,32 +73,39 @@ testMinutesToDeparture = testGroup "calculates right delay" $ map makeTest
                           , departureTime = TimeOfDay 7 51 00
                           }
 
+makeTest ::
+  (Eq a, Show a)
+  => (TestName, a, a)
+  -> TestTree
 makeTest (name, input, expected) = testCase name $ input @?= expected
 
-testGetsNextDepartures ::
-  TestTree
-testGetsNextDepartures = testCase "check next departures" $ do
-  stops <- DB.runDBWithoutLogging (T.pack ":memory:") $ prepareStopTime >> nextDeparturesFromNow
-  let l = length $ entityVal . snd' <$> stops
-  assertEqual "expected one stop time" 2 l
-
-testNextDeparturesAreSorted ::
-  TestTree
-testNextDeparturesAreSorted = testCase "next departures are sorted" $ do
-  stops <- DB.runDBWithoutLogging (T.pack ":memory:") $ prepareStopTime >> nextDeparturesFromNow
+-- TODO: I'd like to make this a bit more generic, so that I can compare against
+-- any accessors type
+--
+makeDatabaseTest (name, prepare, expected) = testCase name $ do
+  stops <- DB.runDBWithoutLogging (T.pack ":memory:") prepare 
   let l = DB.stopTimeDepartureTime . entityVal . fst' <$> stops
-  assertEqual "expected one stop time" [TimeOfDay 8 05 00, TimeOfDay 8 21 00] l
+  l @?= expected
 
-testNoDeparturesForFuturetime ::
+testDepartures ::
   TestTree
-testNoDeparturesForFuturetime = testCase "no departures with future time" $ do
-  stops <- DB.runDBWithoutLogging (T.pack ":memory:") $ prepareStopTime >> nextDeparturesFuture
-  assertBool "expected no departure" (null $ entityVal . fst' <$> stops)
-  where nextDeparturesFuture = DB.getNextDepartures "600029" (TimeOfDay 8 30 00) (fromGregorian 2015 1 7)
-
-nextDeparturesFromNow ::
-  ReaderT Sqlite.SqlBackend (NoLoggingT (ResourceT IO)) [(Sqlite.Entity DB.StopTime, Sqlite.Entity DB.Trip, Sqlite.Entity DB.Route)]
-nextDeparturesFromNow = DB.getNextDepartures "600029" (TimeOfDay 8 05 00) (fromGregorian 2015 1 7)
+testDepartures = testGroup "departure tests" $ makeDatabaseTest <$>
+  [ ( "no departure because now is in future"
+    , prepareStopTime >> DB.getNextDepartures "600029" (TimeOfDay 8 30 00) (fromGregorian 2015 1 7)
+    , [])
+  , ( "no departure because date is in future"
+    , prepareStopTime >> DB.getNextDepartures "600029" (TimeOfDay 8 05 00) (fromGregorian 2015 2 7)
+    , [])
+  , ( "next departures are sorted"
+    , prepareStopTime >> DB.getNextDepartures "600029" (TimeOfDay 8 05 00) (fromGregorian 2015 1 7)
+    , [TimeOfDay 8 05 00, TimeOfDay 8 21 00])
+  , ( "additional temp scheduled service"
+    , prepareStopTime >> DB.getNextDepartures "600029" (TimeOfDay 8 05 00) (fromGregorian 2015 1 28)
+    , [TimeOfDay 8 05 00, TimeOfDay 8 05 33, TimeOfDay 8 21 00])
+  , ( "includes only temp scheduled service"
+    , prepareStopTime >> DB.getNextDepartures "600029" (TimeOfDay 8 05 00) (fromGregorian 2015 2 4)
+    , [TimeOfDay 8 05 33])
+  ]
 
 
 fst' ::
@@ -141,6 +144,19 @@ prepareStopTime = do
                                 , DB.tripWheelchairAccessible = Nothing
                                 , DB.tripBikesAllowed = Nothing
                                 }
+
+          t2 <- insert DB.Trip { DB.tripRouteId = routeId
+                                , DB.tripTripId = "QF0815-00-Ekka"
+                                , DB.tripServiceId = "ekka"
+                                , DB.tripHeadsign = Nothing
+                                , DB.tripDirectionId = Nothing
+                                , DB.tripShortName = Nothing
+                                , DB.tripBlockId = Nothing
+                                , DB.tripShapeId = Nothing
+                                , DB.tripWheelchairAccessible = Nothing
+                                , DB.tripBikesAllowed = Nothing
+                                }
+
           -- scheduled for only Wednesday
           _ <- insert DB.Calendar { DB.calendarServiceId = serviceId
                                   , DB.calendarMonday = False
@@ -151,7 +167,19 @@ prepareStopTime = do
                                   , DB.calendarSaturday = False
                                   , DB.calendarSunday = False
                                   , DB.calendarStartDate = fromGregorian 2011 1 1
-                                  , DB.calendarEndDate = fromGregorian 2020 1 1
+                                  , DB.calendarEndDate = fromGregorian 2015 2 1
+                                  }
+          -- additional service running for a temporary time
+          _ <- insert DB.Calendar { DB.calendarServiceId = "ekka"
+                                  , DB.calendarMonday = False
+                                  , DB.calendarTuesday = False
+                                  , DB.calendarWednesday = True
+                                  , DB.calendarThursday = False
+                                  , DB.calendarFriday = False
+                                  , DB.calendarSaturday = False
+                                  , DB.calendarSunday = False
+                                  , DB.calendarStartDate = fromGregorian 2015 1 25
+                                  , DB.calendarEndDate = fromGregorian 2015 2 15
                                   }
           s1 <- insert DB.Stop { DB.stopStopId = "600029"
                                 , DB.stopCode = Nothing
@@ -180,6 +208,17 @@ prepareStopTime = do
                                   , DB.stopTimeTrip = "QF0815-00"
                                   , DB.stopTimeArrivalTime = TimeOfDay 8 02 00
                                   , DB.stopTimeDepartureTime = TimeOfDay 8 05 00
+                                  , DB.stopTimeStop = "."
+                                  , DB.stopTimeStopId = s1
+                                  , DB.stopTimeStopSequence = "1"
+                                  , DB.stopTimePickupType = Nothing
+                                  , DB.stopTimeDropOffType = Nothing
+                                  }
+
+          _ <- insert DB.StopTime { DB.stopTimeTripId = t2
+                                  , DB.stopTimeTrip = "QF-Service-Ekka"
+                                  , DB.stopTimeArrivalTime = TimeOfDay 8 02 00
+                                  , DB.stopTimeDepartureTime = TimeOfDay 8 05 33
                                   , DB.stopTimeStop = "."
                                   , DB.stopTimeStopId = s1
                                   , DB.stopTimeStopSequence = "1"

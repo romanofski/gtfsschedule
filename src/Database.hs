@@ -38,7 +38,7 @@ StopTime
     stopSequence String
     pickupType Int Maybe
     dropOffType Int Maybe
-    deriving Show
+    deriving Show Eq
 Trip
     routeId RouteId
     serviceId String
@@ -50,7 +50,7 @@ Trip
     shapeId String Maybe
     wheelchairAccessible Int Maybe
     bikesAllowed Int Maybe
-    deriving Show
+    deriving Show Eq
 Calendar
     serviceId String
     monday Bool
@@ -81,6 +81,7 @@ Route
     url String Maybe
     color String Maybe
     textColor String Maybe
+    deriving Show Eq
 |]
 -- ^-- TODO
 --  RouteType could be enumeration
@@ -123,7 +124,9 @@ getNextDepartures stopID now nowDate = select $ from $ \(st, t, c, s, r) -> do
     s ^. StopStopId ==. val stopID &&.
     st ^. StopTimeDepartureTime >. val earliest &&.
     st ^. StopTimeDepartureTime <. val latest &&.
-    c ^. weekdaySqlExp
+    c ^. weekdaySqlExp &&.
+    c ^. CalendarEndDate >=. val nowDate &&.
+    c ^. CalendarStartDate <=. val nowDate
     )
   orderBy [asc (st ^. StopTimeDepartureTime)]
   limit 3
