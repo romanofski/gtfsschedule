@@ -2,7 +2,7 @@ name:                gtfsbrisbane
 version:             0.2.0.0
 synopsis:            Show realtime schedule
 description:         Please see README.md
-homepage:            http://github.com/romanofski/gtfsbrisbane#readme
+homepage:            http://github.com/romanofski/gtfsschedule#readme
 license:             GPL-3
 license-file:        LICENSE
 author:              Róman Joost
@@ -58,7 +58,7 @@ library
                      , Com.Google.Transit.Realtime.VehiclePosition.CongestionLevel
                      , Com.Google.Transit.Realtime.VehiclePosition.OccupancyStatus
 
-executable gtfsbrisbane-exe
+executable gtfsschedule
   hs-source-dirs:      app
   main-is:             Main.hs
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N -Wall
@@ -93,4 +93,4 @@ test-suite unit-tests
 
 source-repository head
   type:     git
-  location: https://github.com/romanofski/gtfsbrisbane
+  location: https://github.com/romanofski/gtfsschedule
