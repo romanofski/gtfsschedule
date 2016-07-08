@@ -1,4 +1,4 @@
-name:                gtfsbrisbane
+name:                gtfsschedule
 version:             0.2.0.0
 synopsis:            Show realtime schedule
 description:         Please see README.md
@@ -63,7 +63,7 @@ executable gtfsschedule
   main-is:             Main.hs
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N -Wall
   build-depends:       base
-                     , gtfsbrisbane
+                     , gtfsschedule
                      , protocol-buffers
                      , bytestring
                      , optparse-applicative
@@ -76,7 +76,7 @@ test-suite unit-tests
   hs-source-dirs:      test
   main-is:             Spec.hs
   build-depends:       base
-                     , gtfsbrisbane
+                     , gtfsschedule
                      , tasty-hunit
                      , tasty
                      , bytestring

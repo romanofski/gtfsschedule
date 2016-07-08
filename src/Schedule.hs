@@ -26,9 +26,6 @@ data ScheduleItem = ScheduleItem { tripId :: String
                                  , departureTime :: TimeOfDay
                                  } deriving (Show, Eq)
 
-data Schedule a = Schedule [a]
-
-
 makeSchedule ::
   [(Sqlite.Entity DB.StopTime, Sqlite.Entity DB.Trip, Sqlite.Entity DB.Route)]
   -> [ScheduleItem]
