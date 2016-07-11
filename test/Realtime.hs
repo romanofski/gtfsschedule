@@ -6,7 +6,6 @@ import Schedule
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertEqual, testCase, (@?=))
 import Data.Time.LocalTime (TimeOfDay(..))
-import Data.Foldable (toList)
 import Text.ProtocolBuffers (messageGet)
 
 import qualified Com.Google.Transit.Realtime.FeedMessage as FM
@@ -24,9 +23,7 @@ testUpdatesScheduleInOrder ::
   TestTree
 testUpdatesScheduleInOrder = testCase "updates in order" $ do
   feed <- withFeed "test/data/feed.bin"
-  let entities = getFeedEntities feed
-  let tupdates = filterTripUpdate schedule entities
-  let items =  toList $ updateScheduleItems schedule tupdates
+  let items =  updateSchedule schedule feed
   assertEqual "expecting updated delay" expected items
     where
       expected = [ ScheduleItem { tripId = "7241124-BCC2015-BCC_FUL-M-Tu-W-Th-10"

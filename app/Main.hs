@@ -1,7 +1,7 @@
 module Main where
 
 import Schedule (printSchedule, getSchedule)
-import Message (printUpdatedSchedule)
+import Message (updateSchedule)
 
 import Options.Applicative.Builder (long
                                    , help
@@ -72,7 +72,7 @@ runSchedule (Options fp sID delay Enabled) = do
     Left err -> do
       print $ "Error occurred decoding feed: " ++ err
       printSchedule walkDelay schedule
-    Right (fm, _) -> printUpdatedSchedule fm walkDelay schedule
+    Right (fm, _) -> printSchedule walkDelay $ updateSchedule schedule fm
 
 main :: IO ()
 main = execParser opts >>= runSchedule

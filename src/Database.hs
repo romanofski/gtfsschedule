@@ -24,7 +24,6 @@ import Control.Monad.Logger (LoggingT(..), runStderrLoggingT)
 import Database.Persist.TH
 import Database.Esqueleto
 import Data.List (stripPrefix)
-import qualified Data.Sequence as Sequence
 import qualified Database.Persist.Sqlite as Sqlite
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|

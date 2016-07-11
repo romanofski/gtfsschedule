@@ -28,7 +28,6 @@ library
                      , resourcet
                      , monad-logger
                      , monad-control
-                     , containers
                      , persistent
                      , persistent-sqlite
                      , persistent-template
@@ -68,13 +67,13 @@ executable gtfsschedule
                      , bytestring
                      , optparse-applicative
                      , http-conduit
-                     , containers
   default-language:    Haskell2010
 
 test-suite unit-tests
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Spec.hs
+  -- ghc-options:         -fprof-auto -fprof-cafs
   build-depends:       base
                      , gtfsschedule
                      , tasty-hunit
