@@ -18,4 +18,4 @@ addons:
       - ghc-7.10.2
 
 script:
-  - stack --no-terminal --skip-ghc-check test
+  - stack --no-terminal --skip-ghc-check --jobs=1 test
