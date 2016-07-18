@@ -1,17 +1,19 @@
 -- | the GTFS schedule
 module Schedule where
 
+import qualified Database as DB
+
 import Data.Time.LocalTime ( utcToLocalTime
                            , LocalTime(..)
                            , TimeOfDay(..)
                            , timeOfDayToTime
                            , timeToTimeOfDay
                            , TimeZone)
+import Data.Time.Calendar (Day)
 import Data.Time (getCurrentTime, getCurrentTimeZone)
 import Data.Time.Clock (secondsToDiffTime, DiffTime, UTCTime)
 import Control.Monad.IO.Class (liftIO)
 import Data.Maybe (fromMaybe)
-import qualified Database as DB
 import qualified Data.Text as T
 import Database.Esqueleto (unValue)
 import qualified Database.Persist.Sqlite as Sqlite
@@ -26,6 +28,21 @@ data ScheduleItem = ScheduleItem { tripId :: String
                                  , departureTime :: TimeOfDay
                                  } deriving (Show, Eq)
 
+
+getSchedule ::
+  String
+  -> String
+  -> Integer
+  -> IO [ScheduleItem]
+getSchedule sqliteDBFilepath sCode delay = nextDepartures (T.pack sqliteDBFilepath) sCode =<< timespec
+  where
+    timespec = do
+      t <- getCurrentTime
+      tz <- getCurrentTimeZone
+      let lday = localDay $ utcToLocalTime tz t
+      let earliestTime = calculateEarliestDepartureTime t tz (delayAsDiffTime delay)
+      return (earliestTime, lday)
+
 makeSchedule ::
   [(Sqlite.Entity DB.StopTime, Sqlite.Entity DB.Trip, Sqlite.Entity DB.Route)]
   -> [ScheduleItem]
@@ -39,19 +56,14 @@ makeSchedule stops = (\(x, y, z) -> makeItem (Sqlite.entityVal x, Sqlite.entityV
                                        , departureTime = DB.stopTimeDepartureTime st
                                        }
 
-
-getSchedule ::
-  String
+nextDepartures ::
+  T.Text
   -> String
-  -> Integer
+  -> (TimeOfDay, Day)
   -> IO [ScheduleItem]
-getSchedule sqliteDBFilepath sCode delay = DB.runDBWithoutLogging (T.pack sqliteDBFilepath) $ do
-  t <- liftIO getCurrentTime
-  tz <- liftIO getCurrentTimeZone
-  let lday = localDay $ utcToLocalTime tz t
-  let earliestTime = calculateEarliestDepartureTime t tz (delayAsDiffTime delay)
+nextDepartures connstr sCode (earliest, day) = DB.runDBWithoutLogging connstr $ do
   sID <- DB.getStopID sCode
-  stops <- DB.getNextDepartures (firstStopID sID) earliestTime lday
+  stops <- DB.getNextDepartures (firstStopID sID) earliest day
   return $ makeSchedule stops
     where
       firstStopID xs = fromMaybe sCode (safeHead $ unValue <$> xs)

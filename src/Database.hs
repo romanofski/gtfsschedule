@@ -18,9 +18,8 @@ import Data.Time.Calendar ( Day(..))
 import Data.Time.Format ( formatTime
                         , defaultTimeLocale)
 import Control.Monad.Trans.Reader (ReaderT)
-import Control.Monad.Trans.Resource (ResourceT, runResourceT)
-import Control.Monad.Logger (NoLoggingT(..), runNoLoggingT)
-import Control.Monad.Logger (LoggingT(..), runStderrLoggingT)
+import Control.Monad.Trans.Resource (runResourceT, MonadResource)
+import Control.Monad.Logger (runNoLoggingT, MonadLoggerIO, runStderrLoggingT)
 import Database.Persist.TH
 import Database.Esqueleto
 import Data.List (stripPrefix)
@@ -99,8 +98,9 @@ weekdayToSQLExp weekday
   | otherwise = error "That should never happen"
 
 getStopID ::
-  String
-  -> ReaderT Sqlite.SqlBackend (NoLoggingT (ResourceT IO)) [Value String]
+  (MonadLoggerIO m, MonadResource m)
+  => String
+  -> ReaderT Sqlite.SqlBackend m [Value String]
 getStopID stopC = select $ from $ \s -> do
   where_ (s ^. StopCode ==. val (Just stopC))
   return (s ^. StopStopId)
@@ -110,10 +110,11 @@ getStopID stopC = select $ from $ \s -> do
 -- TODO: limit is currently hard coded
 --
 getNextDepartures ::
-  String
+  (MonadLoggerIO m, MonadResource m)
+  => String
   -> TimeOfDay
   -> Day
-  -> ReaderT Sqlite.SqlBackend (NoLoggingT (ResourceT IO)) [(Sqlite.Entity StopTime, Sqlite.Entity Trip, Sqlite.Entity Route)]
+  -> ReaderT Sqlite.SqlBackend m [(Sqlite.Entity StopTime, Sqlite.Entity Trip, Sqlite.Entity Route)]
 getNextDepartures stopID now nowDate = select $ from $ \(st, t, c, s, r) -> do
   where_ (
     st ^. StopTimeTripId ==. t ^. TripId &&.
