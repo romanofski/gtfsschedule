@@ -27,7 +27,6 @@ library
                      , transformers
                      , resourcet
                      , monad-logger
-                     , monad-control
                      , persistent
                      , persistent-sqlite
                      , persistent-template
