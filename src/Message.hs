@@ -19,8 +19,11 @@ import qualified Data.ByteString.Lazy.UTF8 as U (toString)
 import Data.Time.LocalTime (timeToTimeOfDay, TimeOfDay)
 import Data.Time.Clock (secondsToDiffTime)
 import Data.Foldable (toList, find)
+import qualified Data.Map.Lazy as Map
 import Data.Maybe (catMaybes)
 import Control.Monad (mfilter)
+import Control.Monad.State (State, execState, get, put)
+import qualified Data.Sequence as Seq
 
 
 getFeedEntities ::
@@ -58,26 +61,29 @@ updateSchedule ::
   [ScheduleItem]
   -> FM.FeedMessage
   -> [ScheduleItem]
-updateSchedule schedule fm = catMaybes $ updateScheduleItem <$> schedule <*> updates
+updateSchedule schedule fm = Map.elems $ execState (mapM updateForTrip tripUpdates) m
   where
-    updates = toList $ filterTripUpdate schedule $ getFeedEntities fm
+    tripUpdates = filterTripUpdate schedule $ getFeedEntities fm
+    m = Map.fromList $ toMap <$> schedule
+    toMap x = (tripId x, x)
 
-
-updateScheduleItem ::
-  ScheduleItem
-  -> TU.TripUpdate
-  -> Maybe ScheduleItem
-updateScheduleItem item tu
-  | getTripID tu == tripId item
-  , Just stu <- findStopTimeUpdate (stopId item) (getStopTimeUpdates tu)
-  = Just ScheduleItem { tripId = tripId item
-                      , stopId = stopId item
-                      , serviceName = serviceName item
-                      , scheduledDepartureTime = scheduledDepartureTime item
-                      , departureDelay = getDepartureDelay stu
-                      , departureTime = departureTimeWithDelay (scheduledDepartureTime item) (getDepartureDelay stu)
-                      }
-  | otherwise = Nothing
+updateForTrip ::
+  TU.TripUpdate
+  -> State (Map.Map String ScheduleItem) ()
+updateForTrip tu = do
+  m <- get
+  let (_, map') = Map.updateLookupWithKey f (getTripID tu) m
+  put map'
+  where
+    f k item = do
+      stu <- findStopTimeUpdate (stopId item) (getStopTimeUpdates tu)
+      Just ScheduleItem { tripId = k
+                        , stopId = stopId item
+                        , serviceName = serviceName item
+                        , scheduledDepartureTime = scheduledDepartureTime item
+                        , departureDelay = getDepartureDelay stu
+                        , departureTime = departureTimeWithDelay (scheduledDepartureTime item) (getDepartureDelay stu)
+                        }
 
 
 departureTimeWithDelay ::
