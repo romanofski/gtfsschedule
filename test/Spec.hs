@@ -14,7 +14,7 @@ import qualified Data.Text as T
 
 import qualified Database.Persist.Sqlite as Sqlite
 
-import Schedule (ScheduleItem(..), minutesToDeparture, formatScheduleItem)
+import Schedule (ScheduleItem(..), ScheduleType(..), minutesToDeparture, formatScheduleItem)
 import qualified Database as DB
 
 tests ::
@@ -42,6 +42,7 @@ testFormatScheduleItem = testGroup "formates schedule item" $ makeTest <$>
                               , scheduledDepartureTime = TimeOfDay 7 50 00
                               , departureDelay = 0
                               , departureTime = TimeOfDay 7 50 00
+                              , scheduleType = SCHEDULED
                               }
       runningAhead = ScheduleItem { tripId = "."
                                   , stopId = "."
@@ -49,6 +50,7 @@ testFormatScheduleItem = testGroup "formates schedule item" $ makeTest <$>
                                   , scheduledDepartureTime = TimeOfDay 7 50 00
                                   , departureDelay = -60
                                   , departureTime = TimeOfDay 7 49 00
+                                  , scheduleType = SCHEDULED
                                   }
       runningLate = ScheduleItem { tripId = "."
                                   , stopId = "."
@@ -56,6 +58,7 @@ testFormatScheduleItem = testGroup "formates schedule item" $ makeTest <$>
                                   , scheduledDepartureTime = TimeOfDay 7 50 00
                                   , departureDelay = 60
                                   , departureTime = TimeOfDay 7 51 00
+                                  , scheduleType = SCHEDULED
                                   }
 
 testMinutesToDeparture ::
@@ -71,6 +74,7 @@ testMinutesToDeparture = testGroup "calculates right delay" $ map makeTest
                           , scheduledDepartureTime = TimeOfDay 7 50 00
                           , departureDelay = 60
                           , departureTime = TimeOfDay 7 51 00
+                          , scheduleType = SCHEDULED
                           }
 
 makeTest ::

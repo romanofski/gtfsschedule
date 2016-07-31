@@ -3,10 +3,12 @@
 -- | A real time update from the GTFS feed
 module Message where
 
-import Schedule (ScheduleItem(..), secondsToDeparture)
+import Schedule (ScheduleItem(..), ScheduleType(..), secondsToDeparture)
 
 import Com.Google.Transit.Realtime.TripUpdate.StopTimeEvent (StopTimeEvent(..), delay)
-import Com.Google.Transit.Realtime.TripDescriptor (trip_id)
+import Com.Google.Transit.Realtime.TripDescriptor (trip_id, TripDescriptor(..))
+import qualified Com.Google.Transit.Realtime.TripDescriptor.ScheduleRelationship as TripSR
+import qualified Com.Google.Transit.Realtime.TripUpdate.StopTimeUpdate.ScheduleRelationship as StopTUSR
 import qualified Com.Google.Transit.Realtime.TripUpdate.StopTimeUpdate as STU
 import qualified Com.Google.Transit.Realtime.FeedMessage as FM
 import qualified Com.Google.Transit.Realtime.TripUpdate as TU
@@ -18,12 +20,11 @@ import qualified Text.ProtocolBuffers.Header as P'
 import qualified Data.ByteString.Lazy.UTF8 as U (toString)
 import Data.Time.LocalTime (timeToTimeOfDay, TimeOfDay)
 import Data.Time.Clock (secondsToDiffTime)
-import Data.Foldable (toList, find)
+import Data.Foldable (find)
 import qualified Data.Map.Lazy as Map
-import Data.Maybe (catMaybes)
 import Control.Monad (mfilter)
 import Control.Monad.State (State, execState, get, put)
-import qualified Data.Sequence as Seq
+import Debug.Trace (trace)
 
 
 getFeedEntities ::
@@ -35,15 +36,12 @@ getFeedEntities fm = (`P'.getVal` FE.trip_update) <$> entity
 -- | filter out all relevant trips for the given schedule
 --
 -- relevant means it matches the trip_id and has a start time set.
--- Note: The reason for checking if a start time is set could be a side effect
--- of a parser error, since I've found multiple TripUpdates with the same trip_id
--- but with different content (e.g. only vehicle status update vs. StopTimeUpdates)
 --
 filterTripUpdate ::
   [ScheduleItem]
   -> P'.Seq TU.TripUpdate
   -> P'.Seq TU.TripUpdate
-filterTripUpdate xs = mfilter (\x -> getTripID x `elem` relevantTripIDs && P'.isSet x TU.stop_time_update)
+filterTripUpdate xs = mfilter (\x -> getTripID x `elem` relevantTripIDs)
   where
     relevantTripIDs = tripId <$> xs
 
@@ -72,10 +70,19 @@ updateForTrip ::
   -> State (Map.Map String ScheduleItem) ()
 updateForTrip tu = do
   m <- get
-  let (_, map') = Map.updateLookupWithKey f (getTripID tu) m
+  let (_, map') = Map.updateLookupWithKey (f tu) (getTripID tu) m
   put map'
   where
-    f k item = do
+    f TU.TripUpdate { TU.trip = TripDescriptor { schedule_relationship = Just TripSR.CANCELED }} k item =
+      Just ScheduleItem { tripId = k
+                        , stopId = stopId item
+                        , serviceName = serviceName item
+                        , scheduledDepartureTime = scheduledDepartureTime item
+                        , departureDelay = 0
+                        , departureTime = departureTime item
+                        , scheduleType = CANCELED
+                        }
+    f _ k item = do
       stu <- findStopTimeUpdate (stopId item) (getStopTimeUpdates tu)
       Just ScheduleItem { tripId = k
                         , stopId = stopId item
@@ -83,7 +90,16 @@ updateForTrip tu = do
                         , scheduledDepartureTime = scheduledDepartureTime item
                         , departureDelay = getDepartureDelay stu
                         , departureTime = departureTimeWithDelay (scheduledDepartureTime item) (getDepartureDelay stu)
+                        , scheduleType = scheduleTypeForStop stu
                         }
+
+-- | helper to set the appropriate schedule type if the service will skip this stop
+--
+scheduleTypeForStop ::
+  STU.StopTimeUpdate
+  -> ScheduleType
+scheduleTypeForStop STU.StopTimeUpdate { STU.schedule_relationship = Just StopTUSR.SKIPPED } = CANCELED
+scheduleTypeForStop _ = SCHEDULED
 
 
 departureTimeWithDelay ::

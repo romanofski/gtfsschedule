@@ -19,12 +19,18 @@ import qualified Database.Persist.Sqlite as Sqlite
 
 
 -- | A scheduled service
+data ScheduleType = CANCELED
+                  | ADDED
+                  | SCHEDULED
+                  deriving (Show, Eq, Ord)
+
 data ScheduleItem = ScheduleItem { tripId :: String
                                  , stopId :: String
                                  , serviceName :: String
                                  , scheduledDepartureTime :: TimeOfDay
                                  , departureDelay :: Integer
                                  , departureTime :: TimeOfDay
+                                 , scheduleType :: ScheduleType
                                  } deriving (Show, Eq, Ord)
 
 
@@ -53,6 +59,7 @@ makeSchedule stops = (\(x, y, z) -> makeItem (Sqlite.entityVal x, Sqlite.entityV
                                        , scheduledDepartureTime = DB.stopTimeDepartureTime st
                                        , departureDelay = 0
                                        , departureTime = DB.stopTimeDepartureTime st
+                                       , scheduleType = SCHEDULED
                                        }
 
 nextDepartures ::
@@ -104,6 +111,8 @@ formatScheduleItem ::
   -> Integer
   -> ScheduleItem
   -> String
+formatScheduleItem _ _ ScheduleItem { serviceName = sn, scheduleType = CANCELED } =
+  sn ++ " !CANCELED! "
 formatScheduleItem nowLT walkDelay item =
   delayIndicator ++ serviceName item ++ " " ++ show (minutesToDeparture item nowLT - walkDelay) ++ "min (" ++ show (departureTime item) ++ schedDepTime ++ ") "
     where
