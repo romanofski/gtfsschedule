@@ -24,7 +24,6 @@ import Data.Foldable (find)
 import qualified Data.Map.Lazy as Map
 import Control.Monad (mfilter)
 import Control.Monad.State (State, execState, get, put)
-import Debug.Trace (trace)
 
 
 getFeedEntities ::
