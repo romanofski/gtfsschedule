@@ -26,15 +26,11 @@ import Network.HTTP.Conduit (simpleHttp)
 
 import Text.ProtocolBuffers (messageGet)
 
-
--- | Flag to enable realtime updates
-data RealTime = Enabled | Disabled
-
 -- | Command line options
 data Options = Options { stationID :: String
                        , sqliteDBFile :: FilePath
                        , walktime :: Maybe Integer
-                       , realtime :: RealTime
+                       , realtime :: Bool
                        }
 
 
@@ -42,16 +38,16 @@ optionParser ::
   Parser Options
 optionParser = Options
                <$> argument str
-               ( metavar "filepath"
-                 <> help "filepath to sqlite3 database populated with GTFS static data feed")
+               ( metavar "FILE"
+                 <> help "path to sqlite3 database populated with GTFS static data feed")
                <*> argument str
-               ( metavar "station"
+               ( metavar "STATION"
                  <> help "Station id to show the schedule for")
                <*> optional
                (option auto
                ( long "walktime"
-                 <> help "Time to reach the stop. Will be added to the current time to allow arriving at the stop on time."))
-               <*> flag Disabled Enabled
+                 <> help "Time to reach the stop. Will be added to the current time to allow arriving at the station just in time for departure."))
+               <*> flag False True
                ( long "realtime"
                <> short 'r'
                <> help "Enable realtime updates")
@@ -62,9 +58,9 @@ delayFromMaybe ::
 delayFromMaybe = fromMaybe 0
 
 runSchedule :: Options -> IO ()
-runSchedule (Options fp sID delay Disabled) =
+runSchedule (Options fp sID delay False) =
   getSchedule fp sID (delayFromMaybe delay) >>= printSchedule (delayFromMaybe delay)
-runSchedule (Options fp sID delay Enabled) = do
+runSchedule (Options fp sID delay True) = do
   let walkDelay = delayFromMaybe delay
   schedule <- getSchedule fp sID walkDelay
   bytes <- simpleHttp "http://gtfsrt.api.translink.com.au/Feed/SEQ"
