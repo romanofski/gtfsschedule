@@ -111,8 +111,8 @@ formatScheduleItem ::
   -> Integer
   -> ScheduleItem
   -> String
-formatScheduleItem _ _ ScheduleItem { serviceName = sn, scheduleType = CANCELED } =
-  sn ++ " !CANCELED! "
+formatScheduleItem _ _ ScheduleItem { serviceName = sn, departureTime = dt, scheduleType = CANCELED } =
+  sn ++ " (" ++ show dt ++ " !CANC!) "
 formatScheduleItem nowLT walkDelay item =
   delayIndicator ++ serviceName item ++ " " ++ show (minutesToDeparture item nowLT - walkDelay) ++ "min (" ++ show (departureTime item) ++ schedDepTime ++ ") "
     where
