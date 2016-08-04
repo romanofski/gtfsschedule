@@ -16,19 +16,24 @@ showing continously next departing vehicles for one particular stop.
     * fix up the times
     * import the CSV files into an sqlite database
     
-* Move the database to a location of your choice, e.g. `$HOME/.config/gtfs/`
+* Move the database to a location of your choice, e.g. `$HOME/.local/share/gtfs/`
 
 ### Usage
 
 Invoke the command to show next departing vehicles from your favorite stop, e.g:
 
     # Transport leaves in 11 minutes
-    gtfsschedule gtfs.sqlite 600248 --walktime 0
+    gtfsschedule 600248 --walktime 0
     Desitnation 11 min (13:17:00)
 
     # Transport leaves in 11 minutes, factor in a walk time to the stop/station of 7 minutes
-    gtfsschedule gtfs.sqlite 600248 --walktime 7
+    gtfsschedule 600248 --walktime 7
 
     # Factor in realtime updates
-    gtfsschedule gtfs.sqlite 600248 --walktime 7 -r
+    gtfsschedule 600248 --walktime 7 -r
     
+## Use in Window Managers
+
+### XMobar
+
+Sample for your `xmobarrc`:

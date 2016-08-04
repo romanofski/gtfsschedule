@@ -26,9 +26,11 @@ import Network.HTTP.Conduit (simpleHttp)
 
 import Text.ProtocolBuffers (messageGet)
 
+import System.Environment.XDG.BaseDir (getUserDataFile)
+
+
 -- | Command line options
 data Options = Options { stationID :: String
-                       , sqliteDBFile :: FilePath
                        , walktime :: Maybe Integer
                        , realtime :: Bool
                        }
@@ -38,9 +40,6 @@ optionParser ::
   Parser Options
 optionParser = Options
                <$> argument str
-               ( metavar "FILE"
-                 <> help "path to sqlite3 database populated with GTFS static data feed")
-               <*> argument str
                ( metavar "STATION"
                  <> help "Station id to show the schedule for")
                <*> optional
@@ -52,16 +51,21 @@ optionParser = Options
                <> short 'r'
                <> help "Enable realtime updates")
 
+databaseFile ::
+  IO String
+databaseFile = getUserDataFile "gtfs" "gtfs.sqlite"
+
 delayFromMaybe ::
   Maybe Integer
   -> Integer
 delayFromMaybe = fromMaybe 0
 
 runSchedule :: Options -> IO ()
-runSchedule (Options fp sID delay False) =
-  getSchedule fp sID (delayFromMaybe delay) >>= printSchedule (delayFromMaybe delay)
-runSchedule (Options fp sID delay True) = do
+runSchedule (Options sID delay False) =
+  databaseFile >>= \fp -> getSchedule fp sID (delayFromMaybe delay) >>= printSchedule (delayFromMaybe delay)
+runSchedule (Options sID delay True) = do
   let walkDelay = delayFromMaybe delay
+  fp <- databaseFile
   schedule <- getSchedule fp sID walkDelay
   bytes <- simpleHttp "http://gtfsrt.api.translink.com.au/Feed/SEQ"
   case messageGet bytes of

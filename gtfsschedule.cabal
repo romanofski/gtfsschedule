@@ -68,6 +68,7 @@ executable gtfsschedule
                      , bytestring
                      , optparse-applicative
                      , http-conduit
+                     , xdg-basedir
   default-language:    Haskell2010
 
 test-suite unit-tests
