@@ -23,6 +23,7 @@ import Control.Monad.Logger (runNoLoggingT, MonadLoggerIO, runStderrLoggingT)
 import Database.Persist.TH
 import Database.Esqueleto
 import Data.List (stripPrefix)
+import System.Environment.XDG.BaseDir (getUserDataFile)
 import qualified Database.Persist.Sqlite as Sqlite
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
@@ -83,6 +84,12 @@ Route
 |]
 -- ^-- TODO
 --  RouteType could be enumeration
+
+-- | Location of the Sqlite database file in the users home
+--
+userDatabaseFile ::
+  IO String
+userDatabaseFile = getUserDataFile "gtfs" "gtfs.sqlite"
 
 weekdayToSQLExp ::
   String

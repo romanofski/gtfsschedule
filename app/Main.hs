@@ -1,5 +1,6 @@
 module Main where
 
+import Database (userDatabaseFile)
 import Schedule (printSchedule, getSchedule)
 import Message (updateSchedule)
 
@@ -26,8 +27,6 @@ import Network.HTTP.Conduit (simpleHttp)
 
 import Text.ProtocolBuffers (messageGet)
 
-import System.Environment.XDG.BaseDir (getUserDataFile)
-
 
 -- | Command line options
 data Options = Options { stationID :: String
@@ -51,21 +50,18 @@ optionParser = Options
                <> short 'r'
                <> help "Enable realtime updates")
 
-databaseFile ::
-  IO String
-databaseFile = getUserDataFile "gtfs" "gtfs.sqlite"
-
 delayFromMaybe ::
   Maybe Integer
   -> Integer
 delayFromMaybe = fromMaybe 0
 
+
 runSchedule :: Options -> IO ()
 runSchedule (Options sID delay False) =
-  databaseFile >>= \fp -> getSchedule fp sID (delayFromMaybe delay) >>= printSchedule (delayFromMaybe delay)
+  userDatabaseFile >>= \fp -> getSchedule fp sID (delayFromMaybe delay) >>= printSchedule (delayFromMaybe delay)
 runSchedule (Options sID delay True) = do
   let walkDelay = delayFromMaybe delay
-  fp <- databaseFile
+  fp <- userDatabaseFile
   schedule <- getSchedule fp sID walkDelay
   bytes <- simpleHttp "http://gtfsrt.api.translink.com.au/Feed/SEQ"
   case messageGet bytes of
