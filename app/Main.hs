@@ -1,8 +1,9 @@
 module Main where
 
-import Database (userDatabaseFile)
+import Database (userDatabaseFile, getLastUpdatedDatabase)
 import Schedule (printSchedule, getSchedule)
 import Message (updateSchedule)
+import Update (isDatasetUpToDate, printWarningForNewDataset, isCurrent)
 
 import Options.Applicative.Builder (long
                                    , help
@@ -26,6 +27,7 @@ import Data.Maybe (fromMaybe)
 import Network.HTTP.Conduit (simpleHttp)
 
 import Text.ProtocolBuffers (messageGet)
+import qualified Data.Text as T
 
 
 -- | Command line options
@@ -55,6 +57,9 @@ delayFromMaybe ::
   -> Integer
 delayFromMaybe = fromMaybe 0
 
+datasetURL :: String
+datasetURL = "https://gtfsrt.api.translink.com.au/GTFS/SEQ_GTFS.zip"
+
 
 runSchedule :: Options -> IO ()
 runSchedule (Options sID delay False) =
@@ -62,13 +67,16 @@ runSchedule (Options sID delay False) =
 runSchedule (Options sID delay True) = do
   let walkDelay = delayFromMaybe delay
   fp <- userDatabaseFile
+  d <- getLastUpdatedDatabase (T.pack fp)
+  isDatasetUpToDate datasetURL d isCurrent >>= printWarningForNewDataset
   schedule <- getSchedule fp sID walkDelay
   bytes <- simpleHttp "http://gtfsrt.api.translink.com.au/Feed/SEQ"
   case messageGet bytes of
     Left err -> do
       print $ "Error occurred decoding feed: " ++ err
       printSchedule walkDelay schedule
-    Right (fm, _) -> printSchedule walkDelay $ updateSchedule schedule fm
+    Right (fm, _) -> do
+      printSchedule walkDelay $ updateSchedule schedule fm
 
 main :: IO ()
 main = execParser opts >>= runSchedule

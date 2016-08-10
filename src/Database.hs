@@ -25,8 +25,12 @@ import Database.Esqueleto
 import Data.List (stripPrefix)
 import System.Environment.XDG.BaseDir (getUserDataFile)
 import qualified Database.Persist.Sqlite as Sqlite
+import qualified Data.Text as T
+
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
+Database
+    lastUpdated Day
 StopTime
     tripId TripId
     trip String
@@ -142,6 +146,22 @@ getNextDepartures stopID now nowDate = select $ from $ \(st, t, c, s, r) -> do
         latest = timeToTimeOfDay $ timeOfDayToTime now + secondsToDiffTime 60 * 30
         weekday = formatTime defaultTimeLocale "%A" nowDate
         weekdaySqlExp = weekdayToSQLExp weekday
+
+getDatabaseInfo ::
+  (MonadLoggerIO m, MonadResource m)
+  => ReaderT Sqlite.SqlBackend m [(Sqlite.Entity Database)]
+getDatabaseInfo = select $ from $ \d -> do
+  limit 1
+  return d
+
+getLastUpdatedDatabase ::
+  T.Text
+  -> IO Day
+getLastUpdatedDatabase connstr = runDBWithoutLogging connstr $ do
+  dbinfo <- getDatabaseInfo
+  let lastupdated = databaseLastUpdated . entityVal <$> dbinfo
+  return $ head lastupdated
+
 
 runDBWithLogging dbName = runResourceT . runStderrLoggingT . Sqlite.withSqliteConn dbName . Sqlite.runSqlConn
 

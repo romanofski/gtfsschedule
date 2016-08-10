@@ -15,6 +15,16 @@ DROP TABLE IF EXISTS route;
 
 
 
+-- metadata
+--
+CREATE TABLE "database" (
+"id" INTEGER PRIMARY KEY AUTOINCREMENT,
+"last_updated" DATE NOT NULL
+);
+
+insert into database (last_updated)
+select date('2016-07-07');
+
 -- routes
 --
 .import routes.txt temp
