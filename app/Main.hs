@@ -1,6 +1,8 @@
 module Main where
 
+import CSV.Import (parseCSV)
 import Database (userDatabaseFile, getLastUpdatedDatabase)
+import Database (runDBWithLogging)
 import Schedule (printSchedule, getSchedule)
 import Message (updateSchedule)
 import Update (isDatasetUpToDate, printWarningForNewDataset, isCurrent)
@@ -28,12 +30,14 @@ import Network.HTTP.Conduit (simpleHttp)
 
 import Text.ProtocolBuffers (messageGet)
 import qualified Data.Text as T
+import qualified Data.ByteString.Lazy as B
 
 
 -- | Command line options
 data Options = Options { stationID :: String
                        , walktime :: Maybe Integer
                        , realtime :: Bool
+                       , setup :: Bool
                        }
 
 
@@ -51,6 +55,10 @@ optionParser = Options
                ( long "realtime"
                <> short 'r'
                <> help "Enable realtime updates")
+               <*> flag False True
+               ( long "setup"
+               <> short 's'
+               <> help "(Development) setup database")
 
 delayFromMaybe ::
   Maybe Integer
@@ -62,9 +70,9 @@ datasetURL = "https://gtfsrt.api.translink.com.au/GTFS/SEQ_GTFS.zip"
 
 
 runSchedule :: Options -> IO ()
-runSchedule (Options sID delay False) =
+runSchedule (Options sID delay False False) =
   userDatabaseFile >>= \fp -> getSchedule fp sID (delayFromMaybe delay) >>= printSchedule (delayFromMaybe delay)
-runSchedule (Options sID delay True) = do
+runSchedule (Options sID delay True False) = do
   let walkDelay = delayFromMaybe delay
   fp <- userDatabaseFile
   d <- getLastUpdatedDatabase (T.pack fp)

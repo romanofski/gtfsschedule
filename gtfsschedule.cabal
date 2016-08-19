@@ -19,6 +19,12 @@ library
                      , Schedule
                      , Database
                      , Update
+                     , CSV.Import
+                     , CSV.Route
+                     , CSV.Trip
+                     , CSV.Calendar
+                     , CSV.Stop
+                     , CSV.StopTime
   build-depends:       base >= 4.8 && < 5
                      , bytestring
                      , protocol-buffers
@@ -37,6 +43,7 @@ library
                      , xdg-basedir
                      , http-conduit
                      , http-types
+                     , cassava
   default-language:    Haskell2010
   exposed-modules:     Com.Google.Transit.Realtime.Alert
                      , Com.Google.Transit.Realtime.Alert.Cause

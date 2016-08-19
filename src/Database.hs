@@ -13,10 +13,11 @@ module Database where
 import Data.Time.LocalTime ( TimeOfDay(..)
                            , timeOfDayToTime
                            , timeToTimeOfDay)
-import Data.Time.Clock (secondsToDiffTime)
+import Data.Time.Clock (secondsToDiffTime, getCurrentTime, UTCTime(..))
 import Data.Time.Calendar ( Day(..))
 import Data.Time.Format ( formatTime
                         , defaultTimeLocale)
+import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Reader (ReaderT)
 import Control.Monad.Trans.Resource (runResourceT, MonadResource)
 import Control.Monad.Logger (runNoLoggingT, MonadLoggerIO, runStderrLoggingT)
@@ -33,19 +34,19 @@ Database
     lastUpdated Day
 StopTime
     tripId TripId
-    trip String
+    csvTripId String
     arrivalTime TimeOfDay
     departureTime TimeOfDay
-    stop String
+    csvStopId String
     stopId StopId
-    stopSequence String
+    stopSequence Int
     pickupType Int Maybe
     dropOffType Int Maybe
     deriving Show Eq
 Trip
     routeId RouteId
     serviceId String
-    tripId String
+    csvTripId String
     headsign String Maybe
     shortName String Maybe
     directionId Bool Maybe
@@ -66,7 +67,7 @@ Calendar
     startDate Day
     endDate Day
 Stop
-    stopId String
+    csvStopId String
     code String Maybe
     name String
     desc String Maybe
@@ -77,6 +78,7 @@ Stop
     locationType Int Maybe
     parentStation String Maybe
 Route
+    csvId String
     shortName String
     longName String
     desc String Maybe
@@ -114,7 +116,7 @@ getStopID ::
   -> ReaderT Sqlite.SqlBackend m [Value String]
 getStopID stopC = select $ from $ \s -> do
   where_ (s ^. StopCode ==. val (Just stopC))
-  return (s ^. StopStopId)
+  return (s ^. StopCsvStopId)
 
 -- | Returns next possible departures
 --
@@ -132,7 +134,7 @@ getNextDepartures stopID now nowDate = select $ from $ \(st, t, c, s, r) -> do
     t ^. TripRouteId ==. r ^. RouteId &&.
     t ^. TripServiceId ==. c ^. CalendarServiceId &&.
     st ^. StopTimeStopId ==. s ^. StopId &&.
-    s ^. StopStopId ==. val stopID &&.
+    s ^. StopCsvStopId ==. val stopID &&.
     st ^. StopTimeDepartureTime >. val earliest &&.
     st ^. StopTimeDepartureTime <. val latest &&.
     c ^. weekdaySqlExp &&.
@@ -162,6 +164,15 @@ getLastUpdatedDatabase connstr = runDBWithoutLogging connstr $ do
   let lastupdated = databaseLastUpdated . entityVal <$> dbinfo
   return $ head lastupdated
 
+-- | prepares new database which is used if we're importing a new dataset
+prepareDatabaseForUpdate ::
+  (MonadLoggerIO m, MonadResource m)
+  => ReaderT Sqlite.SqlBackend m ()
+prepareDatabaseForUpdate = do
+  runMigration migrateAll
+  now <- liftIO getCurrentTime
+  insert $ Database { databaseLastUpdated = utctDay now }
+  return ()
 
 runDBWithLogging dbName = runResourceT . runStderrLoggingT . Sqlite.withSqliteConn dbName . Sqlite.runSqlConn
 
