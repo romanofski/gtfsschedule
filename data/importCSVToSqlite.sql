@@ -23,7 +23,7 @@ CREATE TABLE "database" (
 );
 
 insert into database (last_updated)
-select date('2016-07-07');
+select date('now');
 
 -- routes
 --

@@ -32,7 +32,7 @@ printWarningForNewDataset ::
   Either Error Bool
   -> IO ()
 printWarningForNewDataset (Right False) = print "Note: New dataset available!"
-printWarningForNewDataset (Right _) = putStrLn ""
+printWarningForNewDataset (Right _) = putStr ""
 printWarningForNewDataset (Left _) = hPrint stderr "Warning: Couldn't determine if dataset is outdated."
 
 isCurrent ::
