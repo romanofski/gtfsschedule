@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module CSV.Trip where
 
@@ -10,10 +11,13 @@ import Data.Csv ( FromNamedRecord
 import GHC.Generics hiding (from)
 import Data.Maybe (isJust)
 
+import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Logger (MonadLoggerIO)
 import Control.Monad.Trans.Resource (MonadResource)
-import Database.Esqueleto
+import Database.Persist
 import qualified Database.Persist.Sqlite as Sqlite
+import qualified Data.Text as T
+import Control.Monad.Trans.Reader (ReaderT)
 
 
 data Trip = Trip { route_id :: !String
@@ -30,21 +34,37 @@ instance FromNamedRecord Trip
 instance DefaultOrdered Trip
 
 
+insertIntoDB trip = do
+  Just (Entity routeId _)<- Sqlite.selectFirst [DB.RouteCsvId ==. (route_id trip)] []
+  insert_ $ DB.Trip { DB.tripRouteId = routeId
+                   , DB.tripServiceId = (service_id trip)
+                   , DB.tripCsvTripId = (trip_id trip)
+                   , DB.tripHeadsign = (trip_headsign trip)
+                   , DB.tripShortName = Nothing
+                   , DB.tripDirectionId = (Just (isJust $ direction_id trip))
+                   , DB.tripBlockId = (block_id trip)
+                   , DB.tripShapeId = (shape_id trip)
+                   , DB.tripWheelchairAccessible = Nothing
+                   , DB.tripBikesAllowed = Nothing
+}{-
 insertIntoDB ::
-  (MonadLoggerIO m, MonadResource m)
+  (MonadIO m)
   => Trip
-  -> Sqlite.SqlPersistT m ()
-insertIntoDB trip = insertSelect $ from $ \r -> do
-  where_ (
-    r ^. DB.RouteCsvId ==. val (route_id trip)
-    )
-  return $ DB.Trip <# (r ^. DB.RouteId)
-    <&> val (service_id trip)
-    <&> val (trip_id trip)
-    <&> val (trip_headsign trip)
-    <&> val Nothing
-    <&> val (Just (isJust $ direction_id trip))
-    <&> val (block_id trip)
-    <&> val (shape_id trip)
-    <&> val Nothing
-    <&> val Nothing
+  -> ReaderT Sqlite.SqlBackend m [Entity DB.Trip]
+insertIntoDB trip =
+  rawSql "insert into trip (route_id, service_id, csv_trip_id, headsign, short_name, direction_id, block_id, shape_id, wheelchair_accessible, bikes_allowed) \
+       \ select route.id, ?, ?, ?, ?, ?, ?, ?, ?, ? \
+       \ from route where ? = route.csv_id;"
+    [ PersistText (T.pack $ service_id trip)
+    , PersistText (T.pack $ trip_id trip)
+    , PersistNull
+    , PersistNull
+    , PersistNull
+    , PersistNull
+    , PersistNull
+    , PersistNull
+    , PersistNull
+    , PersistText (T.pack $ route_id trip)
+    ]
+
+-}
