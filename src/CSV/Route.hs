@@ -1,30 +1,26 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE OverloadedStrings #-}
 module CSV.Route where
 
-import qualified Database as DB
+import CSV.Util (maybeToPersist)
 
 import Data.Csv ( FromNamedRecord
                 , DefaultOrdered
                 )
-import Data.Sequence (Seq, empty, singleton ,(|>))
-import Data.Csv.Streaming (Records)
 import GHC.Generics
 
-import Control.Monad.Trans.Reader (ReaderT)
-import Control.Monad.Logger (MonadLoggerIO)
-import Control.Monad.Trans.Resource (MonadResource)
-import Database.Esqueleto
-import qualified Database.Persist.Sqlite as Sqlite
+import Database.Persist (PersistValue(..))
+import qualified Data.Text as T
 
 
-data Route = Route { route_id :: !String
-                   , route_short_name :: !String
-                   , route_long_name :: !String
-                   , route_desc :: Maybe String
-                   , route_type :: !String
-                   , route_url :: Maybe String
-                   , route_color :: Maybe String
-                   , route_text_color :: Maybe String
+data Route = Route { route_id :: !T.Text
+                   , route_short_name :: !T.Text
+                   , route_long_name :: !T.Text
+                   , route_desc :: Maybe T.Text
+                   , route_type :: !T.Text
+                   , route_url :: Maybe T.Text
+                   , route_color :: Maybe T.Text
+                   , route_text_color :: Maybe T.Text
                    }
   deriving (Eq, Generic, Show)
 
@@ -32,16 +28,20 @@ instance FromNamedRecord Route
 instance DefaultOrdered Route
 
 
-insertIntoDB ::
-  (MonadLoggerIO m, MonadResource m)
-  => Route
-  -> ReaderT Sqlite.SqlBackend m (Key DB.Route)
-insertIntoDB r = insert $ DB.Route { DB.routeCsvId = route_id r
-                                   , DB.routeShortName = route_short_name r
-                                   , DB.routeLongName = route_long_name r
-                                   , DB.routeDesc = route_desc r
-                                   , DB.routeType = route_type r
-                                   , DB.routeUrl = route_url r
-                                   , DB.routeColor = route_color r
-                                   , DB.routeTextColor = route_text_color r
-                                   }
+prepareSQL ::
+  T.Text
+prepareSQL = "insert into route (route_id, short_name, long_name, desc, type, url, color, text_color)\
+                    \ values (?, ?, ?, ?, ?, ?, ?, ?);"
+
+convertToValues ::
+  Route
+  -> [PersistValue]
+convertToValues r = [ PersistText $ route_id r
+                    , PersistText $ route_short_name r
+                    , PersistText $ route_long_name r
+                    , maybeToPersist PersistText $ route_desc r
+                    , PersistText $ route_type r
+                    , maybeToPersist PersistText $ route_url r
+                    , maybeToPersist PersistText $ route_color r
+                    , maybeToPersist PersistText $ route_text_color r
+                    ]

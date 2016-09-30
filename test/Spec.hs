@@ -129,7 +129,8 @@ prepareStopTime ::
 prepareStopTime = do
           _ <- Sqlite.runMigrationSilent DB.migrateAll
           let serviceId = "QF0815"
-          routeId <- insert DB.Route { DB.routeShortName = "66"
+          routeId <- insert DB.Route { DB.routeRouteId = "22-0815"
+                                     , DB.routeShortName = "66"
                                      , DB.routeLongName = "Hell"
                                      , DB.routeDesc = Nothing
                                      , DB.routeType = "6"
@@ -137,28 +138,22 @@ prepareStopTime = do
                                      , DB.routeColor = Nothing
                                      , DB.routeTextColor = Nothing
                                      }
-          tID <- insert DB.Trip { DB.tripRouteId = routeId
+          tID <- insert DB.Trip { DB.tripRouteId = "22-0815"
                                 , DB.tripTripId = "QF0815-00"
                                 , DB.tripServiceId = serviceId
                                 , DB.tripHeadsign = Nothing
                                 , DB.tripDirectionId = Nothing
-                                , DB.tripShortName = Nothing
                                 , DB.tripBlockId = Nothing
                                 , DB.tripShapeId = Nothing
-                                , DB.tripWheelchairAccessible = Nothing
-                                , DB.tripBikesAllowed = Nothing
                                 }
 
-          t2 <- insert DB.Trip { DB.tripRouteId = routeId
+          t2 <- insert DB.Trip { DB.tripRouteId = "22-0815"
                                 , DB.tripTripId = "QF0815-00-Ekka"
                                 , DB.tripServiceId = "ekka"
                                 , DB.tripHeadsign = Nothing
                                 , DB.tripDirectionId = Nothing
-                                , DB.tripShortName = Nothing
                                 , DB.tripBlockId = Nothing
                                 , DB.tripShapeId = Nothing
-                                , DB.tripWheelchairAccessible = Nothing
-                                , DB.tripBikesAllowed = Nothing
                                 }
 
           -- scheduled for only Wednesday
@@ -208,46 +203,38 @@ prepareStopTime = do
                                 , DB.stopParentStation = Nothing
                                 }
 
-          _ <- insert DB.StopTime { DB.stopTimeTripId = tID
-                                  , DB.stopTimeTrip = "QF0815-00"
+          _ <- insert DB.StopTime { DB.stopTimeTripId = "QF0815-00"
                                   , DB.stopTimeArrivalTime = TimeOfDay 8 02 00
                                   , DB.stopTimeDepartureTime = TimeOfDay 8 05 00
-                                  , DB.stopTimeStop = "."
-                                  , DB.stopTimeStopId = s1
-                                  , DB.stopTimeStopSequence = "1"
+                                  , DB.stopTimeStopId = "600029"
+                                  , DB.stopTimeStopSequence = 1
                                   , DB.stopTimePickupType = Nothing
                                   , DB.stopTimeDropOffType = Nothing
                                   }
 
-          _ <- insert DB.StopTime { DB.stopTimeTripId = t2
-                                  , DB.stopTimeTrip = "QF-Service-Ekka"
+          _ <- insert DB.StopTime { DB.stopTimeTripId = "QF-Service-Ekka"
                                   , DB.stopTimeArrivalTime = TimeOfDay 8 02 00
                                   , DB.stopTimeDepartureTime = TimeOfDay 8 05 33
-                                  , DB.stopTimeStop = "."
-                                  , DB.stopTimeStopId = s1
-                                  , DB.stopTimeStopSequence = "1"
+                                  , DB.stopTimeStopId = "600029"
+                                  , DB.stopTimeStopSequence = 1
                                   , DB.stopTimePickupType = Nothing
                                   , DB.stopTimeDropOffType = Nothing
                                   }
 
-          _ <- insert DB.StopTime { DB.stopTimeTripId = tID
-                                  , DB.stopTimeTrip = "QF0819-00"
+          _ <- insert DB.StopTime { DB.stopTimeTripId = "QF0815-00"
                                   , DB.stopTimeArrivalTime = TimeOfDay 8 02 00
                                   , DB.stopTimeDepartureTime = TimeOfDay 8 05 00
-                                  , DB.stopTimeStop = "."
-                                  , DB.stopTimeStopId = s2
-                                  , DB.stopTimeStopSequence = "1"
+                                  , DB.stopTimeStopId = "600019"
+                                  , DB.stopTimeStopSequence = 1
                                   , DB.stopTimePickupType = Nothing
                                   , DB.stopTimeDropOffType = Nothing
                                   }
 
-          insert DB.StopTime { DB.stopTimeTripId = tID
-                             , DB.stopTimeTrip = "QF0815-00"
+          insert DB.StopTime { DB.stopTimeTripId = "QF0815-00"
                              , DB.stopTimeArrivalTime = TimeOfDay 8 20 00
                              , DB.stopTimeDepartureTime = TimeOfDay 8 21 00
-                             , DB.stopTimeStop = "."
-                             , DB.stopTimeStopId = s1
-                             , DB.stopTimeStopSequence = "1"
+                             , DB.stopTimeStopId = "600029"
+                             , DB.stopTimeStopSequence = 1
                              , DB.stopTimePickupType = Nothing
                              , DB.stopTimeDropOffType = Nothing
                              }

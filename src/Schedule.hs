@@ -53,8 +53,8 @@ makeSchedule ::
   -> [ScheduleItem]
 makeSchedule stops = (\(x, y, z) -> makeItem (Sqlite.entityVal x, Sqlite.entityVal y, Sqlite.entityVal z)) <$> stops
   where
-    makeItem (st, t, r) = ScheduleItem { tripId = DB.tripCsvTripId t
-                                       , stopId = DB.stopTimeCsvStopId st
+    makeItem (st, t, r) = ScheduleItem { tripId = DB.tripTripId t
+                                       , stopId = DB.stopTimeStopId st
                                        , serviceName = DB.routeShortName r ++ " " ++ fromMaybe (DB.routeLongName r) (DB.tripHeadsign t)
                                        , scheduledDepartureTime = DB.stopTimeDepartureTime st
                                        , departureDelay = 0

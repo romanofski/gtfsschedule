@@ -1,30 +1,29 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE OverloadedStrings #-}
 module CSV.Stop where
 
-import qualified Database as DB
+import CSV.Util (maybeToPersist)
 
 import Data.Csv ( FromNamedRecord
                 , DefaultOrdered
                 )
 import GHC.Generics
 
-import Control.Monad.Trans.Reader (ReaderT)
-import Control.Monad.Logger (MonadLoggerIO)
-import Control.Monad.Trans.Resource (MonadResource)
-import Database.Esqueleto hiding (desc)
-import qualified Database.Persist.Sqlite as Sqlite
+import Data.Int (Int64)
+import Database.Persist (PersistValue(..))
+import qualified Data.Text as T
 
 
-data Stop = Stop { stop_id :: !String
-                 , code :: Maybe String
-                 , name :: !String
-                 , desc :: Maybe String
-                 , lat :: !Double
-                 , lon :: !Double
-                 , zone_id :: Maybe String
-                 , url :: Maybe String
-                 , location_type :: Maybe Int
-                 , parent_station :: Maybe String
+data Stop = Stop { stop_id :: !T.Text
+                 , stop_code :: Maybe T.Text
+                 , stop_name :: !T.Text
+                 , stop_desc :: Maybe T.Text
+                 , stop_lat :: !Double
+                 , stop_lon :: !Double
+                 , zone_id :: Maybe T.Text
+                 , stop_url :: Maybe T.Text
+                 , location_type :: Maybe Int64
+                 , parent_station :: Maybe T.Text
                  }
   deriving (Eq, Generic, Show)
 
@@ -32,18 +31,23 @@ instance FromNamedRecord Stop
 instance DefaultOrdered Stop
 
 
-insertIntoDB ::
-  (MonadLoggerIO m, MonadResource m)
-  => Stop
-  -> ReaderT Sqlite.SqlBackend m (Key DB.Stop)
-insertIntoDB r = insert $ DB.Stop { DB.stopCsvStopId = stop_id r
-                                  , DB.stopCode = code r
-                                  , DB.stopName = name r
-                                  , DB.stopDesc = desc r
-                                  , DB.stopLat = lat r
-                                  , DB.stopLon = lon r
-                                  , DB.stopZoneId = zone_id r
-                                  , DB.stopUrl = url r
-                                  , DB.stopLocationType = location_type r
-                                  , DB.stopParentStation = parent_station r
-                                  }
+prepareSQL ::
+  T.Text
+prepareSQL = "insert into stop (stop_id, code, name, desc, lat, lon, zone_id, url, location_type, parent_station)\
+                    \ values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"
+
+convertToValues ::
+  Stop
+  -> [PersistValue]
+convertToValues r =
+  [ PersistText $ stop_id r
+  , maybeToPersist PersistText (stop_code r)
+  , PersistText $ stop_name r
+  , maybeToPersist PersistText (stop_desc r)  -- TODO: should actually be NULL?
+  , PersistDouble $ stop_lat r
+  , PersistDouble $ stop_lon r
+  , maybeToPersist PersistText (zone_id r)
+  , maybeToPersist PersistText (stop_url r)
+  , maybeToPersist PersistInt64 (location_type r)
+  , maybeToPersist PersistText (parent_station r)
+  ]

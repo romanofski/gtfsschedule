@@ -7,34 +7,59 @@ import qualified CSV.Stop as CSVStop
 import qualified CSV.StopTime as CSVStopTime
 
 import qualified Data.ByteString.Lazy as B
-import Data.Csv.Streaming (decodeByName, Records)
+import Data.Csv.Streaming (decodeByName)
 import Data.Csv (FromNamedRecord)
 
+import Data.Int (Int64)
+import Control.Monad (liftM)
+import Control.Monad.Trans.Reader (ReaderT, ask)
+import Control.Monad.IO.Class (liftIO, MonadIO)
+import Control.Monad.Trans.Resource (MonadResource)
+import Database.Esqueleto (persistBackend, PersistValue(..))
 import qualified Database as DB
 import qualified Data.Text as T
+import qualified Database.Persist.Sqlite as Sqlite
 
-
-parseCSV ::
-  FromNamedRecord a
-  => B.ByteString
-  -> Either String (Records a)
-parseCSV contents =
-  case decodeByName contents of
-    Left errmsg -> Left errmsg
-    Right (_, r) -> Right r
 
 runImport :: IO ()
-runImport = do
-  DB.runDBWithoutLogging dbpath DB.prepareDatabaseForUpdate
-  importCSV dbpath "data/routes.txt" CSVRoute.insertIntoDB
-  importCSV dbpath "data/trips.txt" CSVTrip.insertIntoDB
-  importCSV dbpath "data/calendar.txt" CSVCalendar.insertIntoDB
-  importCSV dbpath "data/stops.txt" CSVStop.insertIntoDB
-  importCSV dbpath "data/stop_times.txt" CSVStopTime.insertIntoDB
-  return ()
-    where dbpath = T.pack ":memory:"
+runImport = DB.runDBWithoutLogging (T.pack ":memory:") $ do
+  DB.prepareDatabaseForUpdate
+  importCSV ("data/routes.txt", CSVRoute.prepareSQL, CSVRoute.convertToValues)
+  importCSV ("data/stops.txt", CSVStop.prepareSQL, CSVStop.convertToValues)
+  importCSV ("data/trips.txt", CSVTrip.prepareSQL, CSVTrip.convertToValues)
+  importCSV ("data/calendar.txt", CSVCalendar.prepareSQL, CSVCalendar.convertToValues)
+  importCSV ("data/stop_times.txt", CSVStopTime.prepareSQL, CSVStopTime.convertToValues)
 
-importCSV dbpath filepath func = do
-  contents' <- B.readFile filepath
-  let (Right trips) = parseCSV contents' -- :-O
-  mapM_ (\x -> DB.runDBWithLogging dbpath $ func x) (trips)
+importCSV ::
+  (FromNamedRecord a, MonadIO m, MonadResource m)
+  => (String, T.Text, (a -> [PersistValue]))
+  -> ReaderT Sqlite.SqlBackend m ()
+importCSV (filepath, sql, convertfunc) = do
+  liftIO $ print filepath
+  contents <- liftIO $ B.readFile filepath
+  case decodeByName contents of
+    Left errmsg -> liftIO $ print errmsg
+    Right (_, records) -> do
+      stmt <- prepareStmt sql
+      mapM_ (\x -> rawInsert stmt $ convertfunc x) records
+      liftIO $ Sqlite.stmtFinalize stmt
+      return ()
+
+prepareStmt ::
+  (MonadIO m)
+  => T.Text
+  -> ReaderT Sqlite.SqlBackend m Sqlite.Statement
+prepareStmt sql = do
+  conn <- persistBackend `liftM` ask
+  stmt <- liftIO $ Sqlite.connPrepare conn sql
+  return stmt
+
+rawInsert ::
+  (MonadIO m, MonadResource m)
+  => Sqlite.Statement
+  -> [Sqlite.PersistValue]
+  -> ReaderT Sqlite.SqlBackend m Int64
+rawInsert stmt vals = do
+  res <- liftIO $ Sqlite.stmtExecute stmt vals
+  liftIO $ Sqlite.stmtReset stmt
+  return res

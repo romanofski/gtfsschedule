@@ -3,68 +3,44 @@
 
 module CSV.Trip where
 
-import qualified Database as DB
+import CSV.Util (maybeToPersist)
 
 import Data.Csv ( FromNamedRecord
                 , DefaultOrdered
                 )
 import GHC.Generics hiding (from)
-import Data.Maybe (isJust)
 
-import Control.Monad.IO.Class (MonadIO)
-import Control.Monad.Logger (MonadLoggerIO)
-import Control.Monad.Trans.Resource (MonadResource)
+import Data.Int (Int64)
 import Database.Persist
-import qualified Database.Persist.Sqlite as Sqlite
 import qualified Data.Text as T
-import Control.Monad.Trans.Reader (ReaderT)
 
 
-data Trip = Trip { route_id :: !String
-                 , service_id :: !String
-                 , trip_id :: !String
-                 , trip_headsign :: Maybe String
-                 , direction_id :: Maybe Integer
-                 , block_id :: Maybe String
-                 , shape_id :: Maybe String
+data Trip = Trip { route_id :: !T.Text
+                 , service_id :: !T.Text
+                 , trip_id :: !T.Text
+                 , trip_headsign :: Maybe T.Text
+                 , direction_id :: Maybe Int64
+                 , block_id :: Maybe T.Text
+                 , shape_id :: Maybe T.Text
                  }
   deriving (Eq, Generic, Show)
 
 instance FromNamedRecord Trip
 instance DefaultOrdered Trip
 
+prepareSQL ::
+  T.Text
+prepareSQL = "insert into trip (route_id, service_id, trip_id, headsign, direction_id, block_id, shape_id) \
+       \ values (?, ?, ?, ?, ?, ?, ?)"
 
-insertIntoDB trip = do
-  Just (Entity routeId _)<- Sqlite.selectFirst [DB.RouteCsvId ==. (route_id trip)] []
-  insert_ $ DB.Trip { DB.tripRouteId = routeId
-                   , DB.tripServiceId = (service_id trip)
-                   , DB.tripCsvTripId = (trip_id trip)
-                   , DB.tripHeadsign = (trip_headsign trip)
-                   , DB.tripShortName = Nothing
-                   , DB.tripDirectionId = (Just (isJust $ direction_id trip))
-                   , DB.tripBlockId = (block_id trip)
-                   , DB.tripShapeId = (shape_id trip)
-                   , DB.tripWheelchairAccessible = Nothing
-                   , DB.tripBikesAllowed = Nothing
-}{-
-insertIntoDB ::
-  (MonadIO m)
-  => Trip
-  -> ReaderT Sqlite.SqlBackend m [Entity DB.Trip]
-insertIntoDB trip =
-  rawSql "insert into trip (route_id, service_id, csv_trip_id, headsign, short_name, direction_id, block_id, shape_id, wheelchair_accessible, bikes_allowed) \
-       \ select route.id, ?, ?, ?, ?, ?, ?, ?, ?, ? \
-       \ from route where ? = route.csv_id;"
-    [ PersistText (T.pack $ service_id trip)
-    , PersistText (T.pack $ trip_id trip)
-    , PersistNull
-    , PersistNull
-    , PersistNull
-    , PersistNull
-    , PersistNull
-    , PersistNull
-    , PersistNull
-    , PersistText (T.pack $ route_id trip)
-    ]
-
--}
+convertToValues ::
+  Trip
+  -> [PersistValue]
+convertToValues trip = [ PersistText $ route_id trip
+                       , PersistText $ service_id trip
+                       , PersistText $ trip_id trip
+                       , maybeToPersist PersistText (trip_headsign trip)
+                       , maybeToPersist PersistInt64 (direction_id trip)
+                       , maybeToPersist PersistText (block_id trip)
+                       , maybeToPersist PersistText (shape_id trip)
+                       ]

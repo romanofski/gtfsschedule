@@ -1,6 +1,5 @@
 module Main where
 
-import CSV.Import (parseCSV)
 import Database (userDatabaseFile, getLastUpdatedDatabase)
 import Database (runDBWithLogging)
 import Schedule (printSchedule, getSchedule)

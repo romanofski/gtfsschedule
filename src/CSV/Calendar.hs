@@ -1,7 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE OverloadedStrings #-}
 module CSV.Calendar where
-
-import qualified Database as DB
 
 import Data.Csv ( FromNamedRecord
                 , DefaultOrdered
@@ -13,15 +12,12 @@ import Data.Time.Format ( parseTimeM
 import Data.Time.Calendar (Day)
 import GHC.Generics
 
-import Control.Monad.Trans.Reader (ReaderT)
-import Control.Monad.Logger (MonadLoggerIO)
-import Control.Monad.Trans.Resource (MonadResource)
-import Database.Esqueleto
-import qualified Database.Persist.Sqlite as Sqlite
+import Database.Persist (PersistValue(..))
 import qualified Data.ByteString.Char8 as B
+import qualified Data.Text as T
 
 
-data Calendar = Calendar { service_id :: !String
+data Calendar = Calendar { service_id :: !T.Text
                          , monday :: !Int
                          , tuesday :: !Int
                          , wednesday :: !Int
@@ -47,18 +43,22 @@ toBool ::
 toBool 0 = False
 toBool _ = True
 
-insertIntoDB ::
-  (MonadLoggerIO m, MonadResource m)
-  => Calendar
-  -> ReaderT Sqlite.SqlBackend m (Key DB.Calendar)
-insertIntoDB r = insert $ DB.Calendar { DB.calendarServiceId = service_id r
-                                      , DB.calendarMonday = toBool $ monday r
-                                      , DB.calendarTuesday = toBool $ tuesday r
-                                      , DB.calendarWednesday = toBool $ wednesday r
-                                      , DB.calendarThursday = toBool $ thursday r
-                                      , DB.calendarFriday = toBool $ friday r
-                                      , DB.calendarSaturday = toBool $ saturday r
-                                      , DB.calendarSunday = toBool $ sunday r
-                                      , DB.calendarStartDate = start_date r
-                                      , DB.calendarEndDate = end_date r
-                                      }
+prepareSQL ::
+  T.Text
+prepareSQL = "insert into calendar (service_id, monday, tuesday, wednesday, thursday, friday, saturday, sunday, start_date, end_date) \
+             \ values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+
+convertToValues ::
+  Calendar
+  -> [PersistValue]
+convertToValues r = [ PersistText $ service_id r
+                    , PersistBool $ toBool $ monday r
+                    , PersistBool $ toBool $ tuesday r
+                    , PersistBool $ toBool $ wednesday r
+                    , PersistBool $ toBool $ thursday r
+                    , PersistBool $ toBool $ friday r
+                    , PersistBool $ toBool $ saturday r
+                    , PersistBool $ toBool $ sunday r
+                    , PersistDay $ start_date r
+                    , PersistDay $ end_date r
+                    ]

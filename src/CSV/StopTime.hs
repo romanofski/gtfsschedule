@@ -1,56 +1,60 @@
+{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE DeriveGeneric #-}
-module CSV.StopTime (insertIntoDB) where
+{-# LANGUAGE OverloadedStrings #-}
+module CSV.StopTime where
 
-import qualified Database as DB
+import CSV.Util (maybeToPersist)
 
 import Data.Csv ( FromNamedRecord
                 , DefaultOrdered
-                , FromField(..)
                 )
-import Control.Applicative (empty)
 import GHC.Generics hiding (from)
-import Data.Time.LocalTime ( TimeOfDay )
-import Data.Time.Format (parseTimeM, defaultTimeLocale)
-import qualified Data.ByteString.Char8 as C
 
-import Control.Monad.Logger (MonadLoggerIO)
-import Control.Monad.Trans.Resource (MonadResource)
-import Database.Esqueleto
-import qualified Database.Persist.Sqlite as Sqlite
+import Data.Int (Int64)
+import Database.Persist (PersistValue(..))
+import qualified Data.Text as T
 
-data StopTime = StopTime { trip_id :: !String
-                         , arrival_time :: !TimeOfDay
-                         , departure_time :: !TimeOfDay
-                         , stop_id :: !String
-                         , stop_sequence :: !Int
-                         , pickup_type :: Maybe Int
-                         , drop_off_type :: Maybe Int
+data StopTime = StopTime { trip_id :: !T.Text
+                         , arrival_time :: !T.Text
+                         , departure_time :: !T.Text
+                         , stop_id :: !T.Text
+                         , stop_sequence :: !Int64
+                         , pickup_type :: Maybe Int64
+                         , drop_off_type :: Maybe Int64
                          }
   deriving (Eq, Generic, Show)
 
 instance FromNamedRecord StopTime
 instance DefaultOrdered StopTime
 
-instance FromField TimeOfDay where
-  parseField s = case parseTimeM True defaultTimeLocale "%T" (C.unpack s) of
-    Just t -> pure t
-    Nothing -> empty
 
-insertIntoDB ::
-  (MonadLoggerIO m, MonadResource m)
-  => StopTime
-  -> Sqlite.SqlPersistT m ()
-insertIntoDB st = insertSelect $ from $ \(t, s) -> do
-  where_ (
-    t ^. DB.TripCsvTripId ==. val (trip_id st) &&.
-    s ^. DB.StopCsvStopId ==. val (stop_id st)
-    )
-  return $ DB.StopTime <# (t ^. DB.TripId)
-    <&> val (trip_id st)
-    <&> val (arrival_time st)
-    <&> val (departure_time st)
-    <&> val (stop_id st)
-    <&> (s ^. DB.StopId)
-    <&> val (stop_sequence st)
-    <&> val (pickup_type st)
-    <&> val (drop_off_type st)
+fixUpTimes ::
+  T.Text
+  -> T.Text
+fixUpTimes t = T.pack (go $ T.unpack t)
+  where go ('2':'5':rest) = "01" ++ rest
+        go ('2':'6':rest) = "02" ++ rest
+        go ('2':'7':rest) = "03" ++ rest
+        go ('2':'8':rest) = "04" ++ rest
+        go ('2':'9':rest) = "05" ++ rest
+        go ('3':'0':rest) = "06" ++ rest
+        go ('3':'1':rest) = "07" ++ rest
+        go xs = xs
+
+
+prepareSQL ::
+  T.Text
+prepareSQL = "insert into stop_time (trip_id, arrival_time, departure_time, stop_id, stop_sequence, pickup_type, drop_off_type) \
+            \ values (?, ?, ?, ?, ?, ?, ?)"
+
+convertToValues ::
+  StopTime
+  -> [PersistValue]
+convertToValues st = [ PersistText $ trip_id st
+                     , PersistText $ fixUpTimes $ arrival_time st
+                     , PersistText $ fixUpTimes $ departure_time st
+                     , PersistText $ stop_id st
+                     , PersistInt64 $ stop_sequence st
+                     , maybeToPersist PersistInt64 (pickup_type st)
+                     , maybeToPersist PersistInt64 (drop_off_type st)
+                     ]
