@@ -57,12 +57,14 @@ runImport ::
   T.Text
   -> IO ()
 runImport dbpath = DB.runDBWithoutLogging dbpath $ do
-  DB.prepareDatabaseForUpdate
+  Sqlite.runMigration DB.migrateAll
+  DB.prepareDatabaseForUpdate DB.Started
   importCSV ("data/routes.txt", CSVRoute.prepareSQL, CSVRoute.convertToValues)
   importCSV ("data/stops.txt", CSVStop.prepareSQL, CSVStop.convertToValues)
   importCSV ("data/trips.txt", CSVTrip.prepareSQL, CSVTrip.convertToValues)
   importCSV ("data/calendar.txt", CSVCalendar.prepareSQL, CSVCalendar.convertToValues)
   importCSV ("data/stop_times.txt", CSVStopTime.prepareSQL, CSVStopTime.convertToValues)
+  DB.prepareDatabaseForUpdate DB.Finished
 
 importCSV ::
   (FromNamedRecord a, MonadIO m, MonadResource m)

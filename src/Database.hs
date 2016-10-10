@@ -31,8 +31,13 @@ import qualified Data.Text as T
 
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
-Database
-    lastUpdated Day
+ImportStarted
+    upid UpdateProcessId
+ImportFinished
+    upid UpdateProcessId
+UpdateProcess
+    when Day
+    status Bool
 StopTime
     tripId String
     arrivalTime TimeOfDay
@@ -147,28 +152,38 @@ getNextDepartures stopID now nowDate = select $ from $ \(st, t, c, s, r) -> do
 
 getDatabaseInfo ::
   (MonadLoggerIO m, MonadResource m)
-  => ReaderT Sqlite.SqlBackend m [(Sqlite.Entity Database)]
-getDatabaseInfo = select $ from $ \d -> do
+  => ReaderT Sqlite.SqlBackend m [(Sqlite.Entity UpdateProcess)]
+getDatabaseInfo = select $ from $ \(uf, up) -> do
+  where_(
+    uf ^. ImportFinishedUpid ==. up ^. UpdateProcessId &&.
+    up ^. UpdateProcessStatus ==. val True)
   limit 1
-  return d
+  return up
 
 getLastUpdatedDatabase ::
   T.Text
   -> IO Day
 getLastUpdatedDatabase connstr = runDBWithoutLogging connstr $ do
   dbinfo <- getDatabaseInfo
-  let lastupdated = databaseLastUpdated . entityVal <$> dbinfo
+  let lastupdated = updateProcessWhen . entityVal <$> dbinfo
   return $ head lastupdated
+
+
+data UpdateType = Started
+                | Finished
+
 
 -- | prepares new database which is used if we're importing a new dataset
 prepareDatabaseForUpdate ::
   (MonadIO m, MonadResource m)
-  => ReaderT Sqlite.SqlBackend m ()
-prepareDatabaseForUpdate = do
-  runMigration migrateAll
+  => UpdateType
+  -> ReaderT Sqlite.SqlBackend m ()
+prepareDatabaseForUpdate updateType = do
   now <- liftIO getCurrentTime
-  insert_ Database { databaseLastUpdated = utctDay now }
-  return ()
+  upKey <- insert $ UpdateProcess { updateProcessWhen = utctDay now, updateProcessStatus = True }
+  case updateType of
+    Started -> insert_ $ ImportStarted { importStartedUpid = upKey }
+    Finished -> insert_ $ ImportFinished { importFinishedUpid = upKey }
 
 runDBWithLogging ::
   (MonadIO m, MonadBaseControl IO m)

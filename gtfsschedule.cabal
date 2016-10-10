@@ -115,6 +115,7 @@ benchmark benchmark-csv-import
   build-depends:       base
                      , gtfsschedule
                      , cassava
+                     , text
   default-language:    Haskell2010
 
 source-repository head
