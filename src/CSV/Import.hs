@@ -1,4 +1,4 @@
-module CSV.Import where
+module CSV.Import (runImport) where
 
 import qualified CSV.Route as CSVRoute
 import qualified CSV.Trip as CSVTrip
@@ -10,19 +10,53 @@ import qualified Data.ByteString.Lazy as B
 import Data.Csv.Streaming (decodeByName)
 import Data.Csv (FromNamedRecord)
 
+import Network.HTTP.Conduit (responseBody, http, parseRequest, tlsManagerSettings, newManager)
+import Data.Conduit (($$+-))
+import Data.Conduit.Binary (sinkFile)
+
 import Data.Int (Int64)
 import Control.Monad (liftM)
 import Control.Monad.Trans.Reader (ReaderT, ask)
 import Control.Monad.IO.Class (liftIO, MonadIO)
-import Control.Monad.Trans.Resource (MonadResource)
+import Control.Monad.Trans.Resource (MonadResource, runResourceT)
 import Database.Esqueleto (persistBackend, PersistValue(..))
 import qualified Database as DB
-import qualified Data.Text as T
 import qualified Database.Persist.Sqlite as Sqlite
+import qualified Data.Text as T
+import qualified Codec.Archive.Zip as Zip
 
 
-runImport :: IO ()
-runImport = DB.runDBWithoutLogging (T.pack ":memory:") $ do
+
+-- | Downloads new data set to systems temp directory
+-- TODO: file is assumed to be a zip file
+--
+downloadStaticDataset ::
+  String
+  -> FilePath
+  -> IO ()
+downloadStaticDataset url downloadDir = runResourceT $ do
+  manager <- liftIO $ newManager tlsManagerSettings
+  request <- liftIO $ parseRequest url
+  response <- http request manager
+  responseBody response $$+- sinkFile (concat [downloadDir, "/", "StaticSet.zip"])
+
+
+unzipDataset ::
+  FilePath
+  -> FilePath
+  -> IO (FilePath)
+unzipDataset zipfile destination = do
+  contents <- B.readFile zipfile
+  Zip.extractFilesFromArchive [Zip.OptDestination destination] (Zip.toArchive contents)
+  return destination
+
+
+-- | runs the import against the given database
+--
+runImport ::
+  T.Text
+  -> IO ()
+runImport dbpath = DB.runDBWithoutLogging dbpath $ do
   DB.prepareDatabaseForUpdate
   importCSV ("data/routes.txt", CSVRoute.prepareSQL, CSVRoute.convertToValues)
   importCSV ("data/stops.txt", CSVStop.prepareSQL, CSVStop.convertToValues)

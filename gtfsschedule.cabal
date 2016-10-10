@@ -44,8 +44,11 @@ library
                      , esqueleto
                      , xdg-basedir
                      , http-conduit
+                     , conduit
+                     , conduit-extra >= 1.1
                      , http-types
                      , cassava
+                     , zip-archive
   default-language:    Haskell2010
   exposed-modules:     Com.Google.Transit.Realtime.Alert
                      , Com.Google.Transit.Realtime.Alert.Cause
