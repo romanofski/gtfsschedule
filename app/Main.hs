@@ -1,22 +1,18 @@
 module Main where
 
 import Database (userDatabaseFile, getLastUpdatedDatabase)
-import Database (runDBWithLogging)
 import Schedule (printSchedule, getSchedule)
 import Message (updateSchedule)
 import Update (isDatasetUpToDate, printWarningForNewDataset, isCurrent)
+import CSV.Import (createNewDatabase)
 
+import qualified Options.Applicative.Builder as Builder
 import Options.Applicative.Builder (long
                                    , help
                                    , (<>)
-                                   , metavar
                                    , option
                                    , flag
-                                   , argument
                                    , str
-                                   , fullDesc
-                                   , progDesc
-                                   , header
                                    , info
                                    , short
                                    , auto)
@@ -29,22 +25,38 @@ import Network.HTTP.Conduit (simpleHttp)
 
 import Text.ProtocolBuffers (messageGet)
 import qualified Data.Text as T
-import qualified Data.ByteString.Lazy as B
 
 
 -- | Command line options
-data Options = Options { stationID :: String
-                       , walktime :: Maybe Integer
-                       , realtime :: Bool
-                       , setup :: Bool
-                       }
+data Command = Run { stationID :: String
+                   , walktime :: Maybe Integer
+                   , realtime :: Bool
+                   , setup :: Bool
+                   }
+             | Setup { logging :: Bool }
 
 
 optionParser ::
-  Parser Options
-optionParser = Options
-               <$> argument str
-               ( metavar "STATION"
+  Parser Command
+optionParser = Builder.subparser
+               ( Builder.command "run" (info runOptions
+                                        (Builder.progDesc "Run gtfsschedule"))
+               <> Builder.command "setup" (info setupOptions
+                                           (Builder.progDesc "Setup the gtfsschedule database"))
+               )
+
+setupOptions ::
+  Parser Command
+setupOptions = Setup
+  <$> Builder.flag False True
+  (Builder.long "logging"
+    <> help "Enable logging")
+
+runOptions ::
+  Parser Command
+runOptions = Run
+               <$> Builder.argument str
+               ( Builder.metavar "STATION"
                  <> help "Station id to show the schedule for")
                <*> optional
                (option auto
@@ -68,10 +80,11 @@ datasetURL :: String
 datasetURL = "https://gtfsrt.api.translink.com.au/GTFS/SEQ_GTFS.zip"
 
 
-runSchedule :: Options -> IO ()
-runSchedule (Options sID delay False False) =
+runSchedule :: Command -> IO ()
+runSchedule (Setup _) = createNewDatabase datasetURL
+runSchedule (Run sID delay False False) =
   userDatabaseFile >>= \fp -> getSchedule fp sID (delayFromMaybe delay) >>= printSchedule (delayFromMaybe delay)
-runSchedule (Options sID delay True False) = do
+runSchedule (Run sID delay True False) = do
   let walkDelay = delayFromMaybe delay
   fp <- userDatabaseFile
   d <- getLastUpdatedDatabase (T.pack fp)
@@ -88,6 +101,6 @@ runSchedule (Options sID delay True False) = do
 main :: IO ()
 main = execParser opts >>= runSchedule
   where opts = info (helper <*> optionParser)
-               ( fullDesc
-                 <> progDesc "Shows schedule of departing vehicles based on static GTFS data."
-                 <> header "gtfs - a gtfs enabled transport schedule")
+               ( Builder.fullDesc
+                 <> Builder.progDesc "Shows schedule of departing vehicles based on static GTFS data."
+                 <> Builder.header "gtfs - a gtfs enabled transport schedule")

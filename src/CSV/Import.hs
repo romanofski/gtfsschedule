@@ -1,4 +1,4 @@
-module CSV.Import (runImport) where
+module CSV.Import (createNewDatabase) where
 
 import qualified CSV.Route as CSVRoute
 import qualified CSV.Trip as CSVTrip
@@ -24,8 +24,20 @@ import qualified Database as DB
 import qualified Database.Persist.Sqlite as Sqlite
 import qualified Data.Text as T
 import qualified Codec.Archive.Zip as Zip
+import System.IO.Temp (withSystemTempDirectory)
+import System.Directory (renameFile)
 
 
+datasetZipFilename :: String
+datasetZipFilename = "StaticDataset.zip"
+
+createNewDatabase ::
+  String
+  -> IO ()
+createNewDatabase url = withSystemTempDirectory "NewGTFSDB" $ \x -> do
+  newDB <- downloadStaticDataset url x >>= unzipDataset >> runImport
+  currentDB <- DB.userDatabaseFile
+  renameFile newDB currentDB
 
 -- | Downloads new data set to systems temp directory
 -- TODO: file is assumed to be a zip file
@@ -33,45 +45,48 @@ import qualified Codec.Archive.Zip as Zip
 downloadStaticDataset ::
   String
   -> FilePath
-  -> IO ()
+  -> IO (FilePath)
 downloadStaticDataset url downloadDir = runResourceT $ do
   manager <- liftIO $ newManager tlsManagerSettings
   request <- liftIO $ parseRequest url
   response <- http request manager
-  responseBody response $$+- sinkFile (concat [downloadDir, "/", "StaticSet.zip"])
+  responseBody response $$+- sinkFile downloadfp
+  return downloadDir
+    where downloadfp = (concat [downloadDir, "/", datasetZipFilename])
 
 
 unzipDataset ::
   FilePath
-  -> FilePath
   -> IO (FilePath)
-unzipDataset zipfile destination = do
+unzipDataset downloaddir = do
   contents <- B.readFile zipfile
-  Zip.extractFilesFromArchive [Zip.OptDestination destination] (Zip.toArchive contents)
-  return destination
+  Zip.extractFilesFromArchive [Zip.OptDestination downloaddir] (Zip.toArchive contents)
+  return downloaddir
+    where zipfile = concat [downloaddir, "/", datasetZipFilename]
 
 
 -- | runs the import against the given database
 --
-runImport ::
-  T.Text
-  -> IO ()
-runImport dbpath = DB.runDBWithoutLogging dbpath $ do
-  Sqlite.runMigration DB.migrateAll
-  DB.prepareDatabaseForUpdate DB.Started
-  importCSV ("data/routes.txt", CSVRoute.prepareSQL, CSVRoute.convertToValues)
-  importCSV ("data/stops.txt", CSVStop.prepareSQL, CSVStop.convertToValues)
-  importCSV ("data/trips.txt", CSVTrip.prepareSQL, CSVTrip.convertToValues)
-  importCSV ("data/calendar.txt", CSVCalendar.prepareSQL, CSVCalendar.convertToValues)
-  importCSV ("data/stop_times.txt", CSVStopTime.prepareSQL, CSVStopTime.convertToValues)
-  DB.prepareDatabaseForUpdate DB.Finished
+runImport :: IO (FilePath)
+runImport = do
+  currentDBFile <- DB.userDatabaseFile
+  let newDBFile = T.pack $ currentDBFile ++ ".new"
+  DB.runDBWithoutLogging newDBFile $ do
+    Sqlite.runMigration DB.migrateAll
+    DB.prepareDatabaseForUpdate DB.Started
+    importCSV ("routes.txt", CSVRoute.prepareSQL, CSVRoute.convertToValues)
+    importCSV ("stops.txt", CSVStop.prepareSQL, CSVStop.convertToValues)
+    importCSV ("trips.txt", CSVTrip.prepareSQL, CSVTrip.convertToValues)
+    importCSV ("calendar.txt", CSVCalendar.prepareSQL, CSVCalendar.convertToValues)
+    importCSV ("stop_times.txt", CSVStopTime.prepareSQL, CSVStopTime.convertToValues)
+    DB.prepareDatabaseForUpdate DB.Finished
+    return $ T.unpack newDBFile
 
 importCSV ::
   (FromNamedRecord a, MonadIO m, MonadResource m)
   => (String, T.Text, (a -> [PersistValue]))
   -> ReaderT Sqlite.SqlBackend m ()
 importCSV (filepath, sql, convertfunc) = do
-  liftIO $ print filepath
   contents <- liftIO $ B.readFile filepath
   case decodeByName contents of
     Left errmsg -> liftIO $ print errmsg
