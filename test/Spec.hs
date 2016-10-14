@@ -126,118 +126,123 @@ snd' (_, x, _) = x
 
 prepareStopTime ::
   ReaderT Sqlite.SqlBackend (NoLoggingT (ResourceT IO)) (Sqlite.Key DB.StopTime)
-prepareStopTime = do
-          _ <- Sqlite.runMigrationSilent DB.migrateAll
-          let serviceId = "QF0815"
-          routeId <- insert DB.Route { DB.routeRouteId = "22-0815"
-                                     , DB.routeShortName = "66"
-                                     , DB.routeLongName = "Hell"
-                                     , DB.routeDesc = Nothing
-                                     , DB.routeType = "6"
-                                     , DB.routeUrl = Nothing
-                                     , DB.routeColor = Nothing
-                                     , DB.routeTextColor = Nothing
-                                     }
-          tID <- insert DB.Trip { DB.tripRouteId = "22-0815"
-                                , DB.tripTripId = "QF0815-00"
-                                , DB.tripServiceId = serviceId
-                                , DB.tripHeadsign = Nothing
-                                , DB.tripDirectionId = Nothing
-                                , DB.tripBlockId = Nothing
-                                , DB.tripShapeId = Nothing
-                                }
-
-          t2 <- insert DB.Trip { DB.tripRouteId = "22-0815"
-                                , DB.tripTripId = "QF0815-00-Ekka"
-                                , DB.tripServiceId = "ekka"
-                                , DB.tripHeadsign = Nothing
-                                , DB.tripDirectionId = Nothing
-                                , DB.tripBlockId = Nothing
-                                , DB.tripShapeId = Nothing
-                                }
-
-          -- scheduled for only Wednesday
-          _ <- insert DB.Calendar { DB.calendarServiceId = serviceId
-                                  , DB.calendarMonday = False
-                                  , DB.calendarTuesday = False
-                                  , DB.calendarWednesday = True
-                                  , DB.calendarThursday = False
-                                  , DB.calendarFriday = False
-                                  , DB.calendarSaturday = False
-                                  , DB.calendarSunday = False
-                                  , DB.calendarStartDate = fromGregorian 2011 1 1
-                                  , DB.calendarEndDate = fromGregorian 2015 2 1
-                                  }
-          -- additional service running for a temporary time
-          _ <- insert DB.Calendar { DB.calendarServiceId = "ekka"
-                                  , DB.calendarMonday = False
-                                  , DB.calendarTuesday = False
-                                  , DB.calendarWednesday = True
-                                  , DB.calendarThursday = False
-                                  , DB.calendarFriday = False
-                                  , DB.calendarSaturday = False
-                                  , DB.calendarSunday = False
-                                  , DB.calendarStartDate = fromGregorian 2015 1 25
-                                  , DB.calendarEndDate = fromGregorian 2015 2 15
-                                  }
-          s1 <- insert DB.Stop { DB.stopStopId = "600029"
-                                , DB.stopCode = Nothing
-                                , DB.stopName = "."
-                                , DB.stopDesc = Nothing
-                                , DB.stopLat = 0.0
-                                , DB.stopLon = 0.0
-                                , DB.stopZoneId = Nothing
-                                , DB.stopUrl = Nothing
-                                , DB.stopLocationType = Nothing
-                                , DB.stopParentStation = Nothing
-                                }
-          s2 <- insert DB.Stop { DB.stopStopId = "600019"
-                                , DB.stopCode = Nothing
-                                , DB.stopName = "."
-                                , DB.stopDesc = Nothing
-                                , DB.stopLat = 0.0
-                                , DB.stopLon = 0.0
-                                , DB.stopZoneId = Nothing
-                                , DB.stopUrl = Nothing
-                                , DB.stopLocationType = Nothing
-                                , DB.stopParentStation = Nothing
-                                }
-
-          _ <- insert DB.StopTime { DB.stopTimeTripId = "QF0815-00"
-                                  , DB.stopTimeArrivalTime = TimeOfDay 8 02 00
-                                  , DB.stopTimeDepartureTime = TimeOfDay 8 05 00
-                                  , DB.stopTimeStopId = "600029"
-                                  , DB.stopTimeStopSequence = 1
-                                  , DB.stopTimePickupType = Nothing
-                                  , DB.stopTimeDropOffType = Nothing
-                                  }
-
-          _ <- insert DB.StopTime { DB.stopTimeTripId = "QF-Service-Ekka"
-                                  , DB.stopTimeArrivalTime = TimeOfDay 8 02 00
-                                  , DB.stopTimeDepartureTime = TimeOfDay 8 05 33
-                                  , DB.stopTimeStopId = "600029"
-                                  , DB.stopTimeStopSequence = 1
-                                  , DB.stopTimePickupType = Nothing
-                                  , DB.stopTimeDropOffType = Nothing
-                                  }
-
-          _ <- insert DB.StopTime { DB.stopTimeTripId = "QF0815-00"
-                                  , DB.stopTimeArrivalTime = TimeOfDay 8 02 00
-                                  , DB.stopTimeDepartureTime = TimeOfDay 8 05 00
-                                  , DB.stopTimeStopId = "600019"
-                                  , DB.stopTimeStopSequence = 1
-                                  , DB.stopTimePickupType = Nothing
-                                  , DB.stopTimeDropOffType = Nothing
-                                  }
-
-          insert DB.StopTime { DB.stopTimeTripId = "QF0815-00"
-                             , DB.stopTimeArrivalTime = TimeOfDay 8 20 00
-                             , DB.stopTimeDepartureTime = TimeOfDay 8 21 00
-                             , DB.stopTimeStopId = "600029"
-                             , DB.stopTimeStopSequence = 1
-                             , DB.stopTimePickupType = Nothing
-                             , DB.stopTimeDropOffType = Nothing
-                             }
+prepareStopTime =
+  do _ <- Sqlite.runMigrationSilent DB.migrateAll
+     let serviceId = "QF0815"
+     Sqlite.insert_
+       DB.Route {DB.routeRouteId = "22-0815"
+                ,DB.routeShortName = "66"
+                ,DB.routeLongName = "Hell"
+                ,DB.routeDesc = Nothing
+                ,DB.routeType = "6"
+                ,DB.routeUrl = Nothing
+                ,DB.routeColor = Nothing
+                ,DB.routeTextColor = Nothing}
+     Sqlite.insert_
+       DB.Trip {DB.tripRouteId = "22-0815"
+               ,DB.tripTripId = "QF0815-00"
+               ,DB.tripServiceId = serviceId
+               ,DB.tripHeadsign = Nothing
+               ,DB.tripDirectionId = Nothing
+               ,DB.tripBlockId = Nothing
+               ,DB.tripShapeId = Nothing}
+     Sqlite.insert_
+       DB.Trip {DB.tripRouteId = "22-0815"
+               ,DB.tripTripId = "QF0815-00-Ekka"
+               ,DB.tripServiceId = "ekka"
+               ,DB.tripHeadsign = Nothing
+               ,DB.tripDirectionId = Nothing
+               ,DB.tripBlockId = Nothing
+               ,DB.tripShapeId = Nothing}
+     -- scheduled for only Wednesday
+     Sqlite.insert_
+       DB.Calendar {DB.calendarServiceId = serviceId
+                   ,DB.calendarMonday = False
+                   ,DB.calendarTuesday = False
+                   ,DB.calendarWednesday = True
+                   ,DB.calendarThursday = False
+                   ,DB.calendarFriday = False
+                   ,DB.calendarSaturday = False
+                   ,DB.calendarSunday = False
+                   ,DB.calendarStartDate =
+                      fromGregorian 2011 1 1
+                   ,DB.calendarEndDate =
+                      fromGregorian 2015 2 1}
+     -- additional service running for a temporary time
+     Sqlite.insert_
+       DB.Calendar {DB.calendarServiceId = "ekka"
+                   ,DB.calendarMonday = False
+                   ,DB.calendarTuesday = False
+                   ,DB.calendarWednesday = True
+                   ,DB.calendarThursday = False
+                   ,DB.calendarFriday = False
+                   ,DB.calendarSaturday = False
+                   ,DB.calendarSunday = False
+                   ,DB.calendarStartDate =
+                      fromGregorian 2015 1 25
+                   ,DB.calendarEndDate =
+                      fromGregorian 2015 2 15}
+     Sqlite.insert_
+       DB.Stop {DB.stopStopId = "600029"
+               ,DB.stopCode = Nothing
+               ,DB.stopName = "."
+               ,DB.stopDesc = Nothing
+               ,DB.stopLat = 0.0
+               ,DB.stopLon = 0.0
+               ,DB.stopZoneId = Nothing
+               ,DB.stopUrl = Nothing
+               ,DB.stopLocationType = Nothing
+               ,DB.stopParentStation = Nothing}
+     Sqlite.insert_
+       DB.Stop {DB.stopStopId = "600019"
+               ,DB.stopCode = Nothing
+               ,DB.stopName = "."
+               ,DB.stopDesc = Nothing
+               ,DB.stopLat = 0.0
+               ,DB.stopLon = 0.0
+               ,DB.stopZoneId = Nothing
+               ,DB.stopUrl = Nothing
+               ,DB.stopLocationType = Nothing
+               ,DB.stopParentStation = Nothing}
+     Sqlite.insert_
+       DB.StopTime {DB.stopTimeTripId = "QF0815-00"
+                   ,DB.stopTimeArrivalTime =
+                      TimeOfDay 8 2 0
+                   ,DB.stopTimeDepartureTime =
+                      TimeOfDay 8 5 0
+                   ,DB.stopTimeStopId = "600029"
+                   ,DB.stopTimeStopSequence = 1
+                   ,DB.stopTimePickupType = Nothing
+                   ,DB.stopTimeDropOffType = Nothing}
+     Sqlite.insert_
+       DB.StopTime {DB.stopTimeTripId = "QF0815-00-Ekka"
+                   ,DB.stopTimeArrivalTime =
+                      TimeOfDay 8 2 0
+                   ,DB.stopTimeDepartureTime =
+                      TimeOfDay 8 5 33
+                   ,DB.stopTimeStopId = "600029"
+                   ,DB.stopTimeStopSequence = 1
+                   ,DB.stopTimePickupType = Nothing
+                   ,DB.stopTimeDropOffType = Nothing}
+     Sqlite.insert_
+       DB.StopTime {DB.stopTimeTripId = "QF0815-00"
+                   ,DB.stopTimeArrivalTime =
+                      TimeOfDay 8 2 0
+                   ,DB.stopTimeDepartureTime =
+                      TimeOfDay 8 5 0
+                   ,DB.stopTimeStopId = "600019"
+                   ,DB.stopTimeStopSequence = 1
+                   ,DB.stopTimePickupType = Nothing
+                   ,DB.stopTimeDropOffType = Nothing}
+     insert DB.StopTime {DB.stopTimeTripId = "QF0815-00"
+                        ,DB.stopTimeArrivalTime =
+                           TimeOfDay 8 20 0
+                        ,DB.stopTimeDepartureTime =
+                           TimeOfDay 8 21 0
+                        ,DB.stopTimeStopId = "600029"
+                        ,DB.stopTimeStopSequence = 1
+                        ,DB.stopTimePickupType = Nothing
+                        ,DB.stopTimeDropOffType = Nothing}
 
 main ::
   IO ()
