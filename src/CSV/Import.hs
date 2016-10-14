@@ -35,9 +35,10 @@ createNewDatabase ::
   String
   -> IO ()
 createNewDatabase url = withSystemTempDirectory "NewGTFSDB" $ \x -> do
-  newDB <- downloadStaticDataset url x >>= unzipDataset >> runImport
   currentDB <- DB.userDatabaseFile
-  renameFile newDB currentDB
+  let newDBFile = currentDB ++ ".new"
+  downloadStaticDataset url x >>= unzipDataset >>= runImport newDBFile
+  renameFile newDBFile currentDB
 
 -- | Downloads new data set to systems temp directory
 -- TODO: file is assumed to be a zip file
@@ -67,20 +68,20 @@ unzipDataset downloaddir = do
 
 -- | runs the import against the given database
 --
-runImport :: IO (FilePath)
-runImport = do
-  currentDBFile <- DB.userDatabaseFile
-  let newDBFile = T.pack $ currentDBFile ++ ".new"
-  DB.runDBWithoutLogging newDBFile $ do
+runImport ::
+  FilePath
+  -> FilePath
+  -> IO ()
+runImport newDBFile downloaddir = DB.runDBWithoutLogging (T.pack newDBFile) $ do
     Sqlite.runMigration DB.migrateAll
     DB.prepareDatabaseForUpdate DB.Started
-    importCSV ("routes.txt", CSVRoute.prepareSQL, CSVRoute.convertToValues)
-    importCSV ("stops.txt", CSVStop.prepareSQL, CSVStop.convertToValues)
-    importCSV ("trips.txt", CSVTrip.prepareSQL, CSVTrip.convertToValues)
-    importCSV ("calendar.txt", CSVCalendar.prepareSQL, CSVCalendar.convertToValues)
-    importCSV ("stop_times.txt", CSVStopTime.prepareSQL, CSVStopTime.convertToValues)
+    importCSV (absolutePath downloaddir "routes.txt", CSVRoute.prepareSQL, CSVRoute.convertToValues)
+    importCSV (absolutePath downloaddir "stops.txt", CSVStop.prepareSQL, CSVStop.convertToValues)
+    importCSV (absolutePath downloaddir "trips.txt", CSVTrip.prepareSQL, CSVTrip.convertToValues)
+    importCSV (absolutePath downloaddir "calendar.txt", CSVCalendar.prepareSQL, CSVCalendar.convertToValues)
+    importCSV (absolutePath downloaddir "stop_times.txt", CSVStopTime.prepareSQL, CSVStopTime.convertToValues)
     DB.prepareDatabaseForUpdate DB.Finished
-    return $ T.unpack newDBFile
+      where absolutePath path file = concat [path, "/", file]
 
 importCSV ::
   (FromNamedRecord a, MonadIO m, MonadResource m)
