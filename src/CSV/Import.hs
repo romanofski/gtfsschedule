@@ -80,6 +80,7 @@ runImport newDBFile downloaddir = DB.runDBWithoutLogging (T.pack newDBFile) $ do
     importCSV (absolutePath downloaddir "trips.txt", CSVTrip.prepareSQL, CSVTrip.convertToValues)
     importCSV (absolutePath downloaddir "calendar.txt", CSVCalendar.prepareSQL, CSVCalendar.convertToValues)
     importCSV (absolutePath downloaddir "stop_times.txt", CSVStopTime.prepareSQL, CSVStopTime.convertToValues)
+    DB.addDatabaseIndices
     DB.prepareDatabaseForUpdate DB.Finished
       where absolutePath path file = concat [path, "/", file]
 

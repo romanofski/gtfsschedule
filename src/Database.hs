@@ -185,6 +185,19 @@ prepareDatabaseForUpdate updateType = do
     Started -> insert_ $ ImportStarted { importStartedUpid = upKey }
     Finished -> insert_ $ ImportFinished { importFinishedUpid = upKey }
 
+addDatabaseIndices ::
+  (MonadIO m, MonadResource m)
+  => ReaderT Sqlite.SqlBackend m ()
+addDatabaseIndices = do
+  mapM_ (\x -> Sqlite.rawExecute (T.pack x) []) indices
+  return ()
+    where indices = [ "create index stop_time_index ON stop_time (stop_id);"
+                    , "create index trip_index on trip (trip_id, route_id, service_id);"
+                    , "create index route_index on route (route_id);"
+                    , "create index calendar_index on calendar (service_id);"
+                    , "create index stop_index on stop (stop_id, code)"
+                    ]
+
 runDBWithLogging ::
   (MonadIO m, MonadBaseControl IO m)
   => T.Text
@@ -196,9 +209,3 @@ runDBWithoutLogging ::
   => T.Text
   -> SqlPersistT (NoLoggingT (ResourceT m)) a -> m a
 runDBWithoutLogging dbName = runResourceT . runNoLoggingT . Sqlite.withSqliteConn dbName . Sqlite.runSqlConn
-
-
-
-
-
-
