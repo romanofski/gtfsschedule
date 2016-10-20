@@ -1,4 +1,4 @@
-module CSV.Import (createNewDatabase) where
+module CSV.Import (createNewDatabase, runImport) where
 
 import qualified CSV.Route as CSVRoute
 import qualified CSV.Trip as CSVTrip
@@ -14,12 +14,10 @@ import Network.HTTP.Conduit (responseBody, http, parseRequest, tlsManagerSetting
 import Data.Conduit (($$+-))
 import Data.Conduit.Binary (sinkFile)
 
-import Data.Int (Int64)
-import Control.Monad (liftM)
-import Control.Monad.Trans.Reader (ReaderT, ask)
+import Control.Monad.Trans.Reader (ReaderT)
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Monad.Trans.Resource (MonadResource, runResourceT)
-import Database.Esqueleto (persistBackend, PersistValue(..))
+import Database.Esqueleto (PersistValue(..))
 import qualified Database as DB
 import qualified Database.Persist.Sqlite as Sqlite
 import qualified Data.Text as T
@@ -93,26 +91,7 @@ importCSV (filepath, sql, convertfunc) = do
   case decodeByName contents of
     Left errmsg -> liftIO $ print errmsg
     Right (_, records) -> do
-      stmt <- prepareStmt sql
-      mapM_ (\x -> rawInsert stmt $ convertfunc x) records
+      stmt <- DB.prepareStmt sql
+      mapM_ (\x -> DB.rawInsert stmt $ convertfunc x) records
       liftIO $ Sqlite.stmtFinalize stmt
       return ()
-
-prepareStmt ::
-  (MonadIO m)
-  => T.Text
-  -> ReaderT Sqlite.SqlBackend m Sqlite.Statement
-prepareStmt sql = do
-  conn <- persistBackend `liftM` ask
-  stmt <- liftIO $ Sqlite.connPrepare conn sql
-  return stmt
-
-rawInsert ::
-  (MonadIO m, MonadResource m)
-  => Sqlite.Statement
-  -> [Sqlite.PersistValue]
-  -> ReaderT Sqlite.SqlBackend m Int64
-rawInsert stmt vals = do
-  res <- liftIO $ Sqlite.stmtExecute stmt vals
-  liftIO $ Sqlite.stmtReset stmt
-  return res

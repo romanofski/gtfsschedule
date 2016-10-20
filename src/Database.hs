@@ -17,8 +17,10 @@ import Data.Time.Clock (secondsToDiffTime, getCurrentTime, UTCTime(..))
 import Data.Time.Calendar ( Day(..))
 import Data.Time.Format ( formatTime
                         , defaultTimeLocale)
+import Data.Int (Int64)
+import Control.Monad (liftM)
 import Control.Monad.IO.Class (liftIO, MonadIO)
-import Control.Monad.Trans.Reader (ReaderT)
+import Control.Monad.Trans.Reader (ReaderT, ask)
 import Control.Monad.Trans.Resource (runResourceT, MonadResource, ResourceT)
 import Control.Monad.Trans.Resource (MonadBaseControl)
 import Control.Monad.Logger (runNoLoggingT, runStderrLoggingT, MonadLoggerIO, NoLoggingT, LoggingT)
@@ -197,6 +199,25 @@ addDatabaseIndices = do
                     , "create index calendar_index on calendar (service_id);"
                     , "create index stop_index on stop (stop_id, code)"
                     ]
+
+prepareStmt ::
+  (MonadIO m)
+  => T.Text
+  -> ReaderT Sqlite.SqlBackend m Sqlite.Statement
+prepareStmt sql = do
+  conn <- persistBackend `liftM` ask
+  stmt <- liftIO $ Sqlite.connPrepare conn sql
+  return stmt
+
+rawInsert ::
+  (MonadIO m, MonadResource m)
+  => Sqlite.Statement
+  -> [Sqlite.PersistValue]
+  -> ReaderT Sqlite.SqlBackend m Int64
+rawInsert stmt vals = do
+  res <- liftIO $ Sqlite.stmtExecute stmt vals
+  liftIO $ Sqlite.stmtReset stmt
+  return res
 
 runDBWithLogging ::
   (MonadIO m, MonadBaseControl IO m)
