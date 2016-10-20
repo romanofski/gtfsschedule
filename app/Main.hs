@@ -1,7 +1,7 @@
 module Main where
 
 import Database (userDatabaseFile, getLastUpdatedDatabase)
-import Schedule (printSchedule, getSchedule)
+import Schedule (printSchedule, getSchedule, getTimeSpecFromNow)
 import Message (updateSchedule)
 import Update (isDatasetUpToDate, printWarningForNewDataset, isCurrent)
 import CSV.Import (createNewDatabase)
@@ -82,14 +82,17 @@ datasetURL = "https://gtfsrt.api.translink.com.au/GTFS/SEQ_GTFS.zip"
 
 runSchedule :: Command -> IO ()
 runSchedule (Setup _) = createNewDatabase datasetURL
-runSchedule (Run sID delay False False) =
-  userDatabaseFile >>= \fp -> getSchedule fp sID (delayFromMaybe delay) >>= printSchedule (delayFromMaybe delay)
+runSchedule (Run sID delay False False) = do
+  fp <- userDatabaseFile
+  timespec <- getTimeSpecFromNow $ delayFromMaybe delay
+  getSchedule fp sID timespec >>= printSchedule (delayFromMaybe delay)
 runSchedule (Run sID delay True False) = do
   let walkDelay = delayFromMaybe delay
   fp <- userDatabaseFile
   d <- getLastUpdatedDatabase (T.pack fp)
   isDatasetUpToDate datasetURL d isCurrent >>= printWarningForNewDataset
-  schedule <- getSchedule fp sID walkDelay
+  timespec <- getTimeSpecFromNow walkDelay
+  schedule <- getSchedule fp sID timespec
   bytes <- simpleHttp "http://gtfsrt.api.translink.com.au/Feed/SEQ"
   case messageGet bytes of
     Left err -> do

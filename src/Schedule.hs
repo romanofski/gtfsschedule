@@ -33,20 +33,27 @@ data ScheduleItem = ScheduleItem { tripId :: String
                                  , scheduleType :: ScheduleType
                                  } deriving (Show, Eq, Ord)
 
+-- | A specific point in time from when we want to calculate the next departing
+--   services
+data TimeSpec = TimeSpec TimeOfDay Day
+
 
 getSchedule ::
   String
   -> String
-  -> Integer
+  -> TimeSpec
   -> IO [ScheduleItem]
-getSchedule sqliteDBFilepath sCode delay = nextDepartures (T.pack sqliteDBFilepath) sCode =<< timespec
-  where
-    timespec = do
+getSchedule sqliteDBFilepath sCode timespec = nextDepartures (T.pack sqliteDBFilepath) sCode timespec
+
+getTimeSpecFromNow ::
+  Integer
+  -> IO TimeSpec
+getTimeSpecFromNow delay = do
       t <- getCurrentTime
       tz <- getCurrentTimeZone
       let lday = localDay $ utcToLocalTime tz t
       let earliestTime = calculateEarliestDepartureTime t tz (delayAsDiffTime delay)
-      return (earliestTime, lday)
+      return $ TimeSpec earliestTime lday
 
 makeSchedule ::
   [(Sqlite.Entity DB.StopTime, Sqlite.Entity DB.Trip, Sqlite.Entity DB.Route)]
@@ -65,9 +72,9 @@ makeSchedule stops = (\(x, y, z) -> makeItem (Sqlite.entityVal x, Sqlite.entityV
 nextDepartures ::
   T.Text
   -> String
-  -> (TimeOfDay, Day)
+  -> TimeSpec
   -> IO [ScheduleItem]
-nextDepartures connstr sCode (earliest, day) = DB.runDBWithoutLogging connstr $ do
+nextDepartures connstr sCode (TimeSpec earliest day) = DB.runDBWithoutLogging connstr $ do
   sID <- DB.getStopID sCode
   stops <- DB.getNextDepartures (firstStopID sID) earliest day
   return $ makeSchedule stops
