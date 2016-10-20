@@ -1,0 +1,3 @@
+service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,start_date,end_date
+QF0815,0,0,1,0,0,0,0,20110101,20150201
+ekka,0,0,1,0,0,0,0,20150125,20150215

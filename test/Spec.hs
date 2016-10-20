@@ -1,4 +1,14 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Main where
+
+import Schedule ( ScheduleItem(..)
+                , ScheduleType(..)
+                , TimeSpec(..)
+                , minutesToDeparture
+                , formatScheduleItem
+                , getSchedule)
+import qualified Database as DB
+import qualified CSV.Import as CSV
 
 import Realtime (feedTests)
 
@@ -6,16 +16,14 @@ import Test.Tasty (defaultMain, TestTree, TestName, testGroup)
 import Test.Tasty.HUnit (testCase, (@?=))
 import Data.Time.LocalTime (TimeOfDay(..))
 import Data.Time.Calendar (fromGregorian)
-import Database.Persist (insert, entityVal)
+import Database.Persist (insert)
 import Control.Monad.Trans.Reader (ReaderT)
 import Control.Monad.Trans.Resource (ResourceT)
 import Control.Monad.Logger (NoLoggingT(..))
-import qualified Data.Text as T
+import System.IO.Temp (withSystemTempFile)
+import System.Directory (getCurrentDirectory)
 
 import qualified Database.Persist.Sqlite as Sqlite
-
-import Schedule (ScheduleItem(..), ScheduleType(..), minutesToDeparture, formatScheduleItem)
-import qualified Database as DB
 
 tests ::
   TestTree
@@ -24,6 +32,12 @@ tests = testGroup "unit tests" [ feedTests
                                , testFormatScheduleItem
                                , testDepartures
                                ]
+
+makeTest ::
+  (Eq a, Show a)
+  => (TestName, a, a)
+  -> TestTree
+makeTest (name, input, expected) = testCase name $ input @?= expected
 
 testFormatScheduleItem ::
   TestTree
@@ -77,40 +91,110 @@ testMinutesToDeparture = testGroup "calculates right delay" $ map makeTest
                           , scheduleType = SCHEDULED
                           }
 
-makeTest ::
-  (Eq a, Show a)
-  => (TestName, a, a)
+makeDatabaseImportTest ::
+  TestInput
   -> TestTree
-makeTest (name, input, expected) = testCase name $ input @?= expected
+makeDatabaseImportTest (TestInput name csvdatadir scode timespec expected) =
+  testCase name $
+  do withSystemTempFile
+       "GTFSTest"
+       (\tmpfile _ ->
+          do
+             cwd <- getCurrentDirectory
+             CSV.runImport tmpfile $ concat [cwd, "/", "test", "/", "data", "/", csvdatadir]
+             schedule <- getSchedule tmpfile scode timespec
+             schedule @?= expected)
 
--- TODO: I'd like to make this a bit more generic, so that I can compare against
--- any accessors type
---
-makeDatabaseTest (name, prepare, expected) = testCase name $ do
-  stops <- DB.runDBWithoutLogging (T.pack ":memory:") prepare 
-  let l = DB.stopTimeDepartureTime . entityVal . fst' <$> stops
-  l @?= expected
+
+data TestInput = TestInput { testName :: String
+                           , csvdatadirectory :: String
+                           , stopcode :: String
+                           , now :: TimeSpec
+                           , testExpectedSchedule :: [ScheduleItem]
+                           }
 
 testDepartures ::
   TestTree
-testDepartures = testGroup "departure tests" $ makeDatabaseTest <$>
-  [ ( "no departure because now is in future"
-    , prepareStopTime >> DB.getNextDepartures "600029" (TimeOfDay 8 30 00) (fromGregorian 2015 1 7)
-    , [])
-  , ( "no departure because date is in future"
-    , prepareStopTime >> DB.getNextDepartures "600029" (TimeOfDay 8 05 00) (fromGregorian 2015 2 7)
-    , [])
-  , ( "next departures are sorted"
-    , prepareStopTime >> DB.getNextDepartures "600029" (TimeOfDay 8 05 00) (fromGregorian 2015 1 7)
-    , [TimeOfDay 8 05 00, TimeOfDay 8 21 00])
-  , ( "additional temp scheduled service"
-    , prepareStopTime >> DB.getNextDepartures "600029" (TimeOfDay 8 05 00) (fromGregorian 2015 1 28)
-    , [TimeOfDay 8 05 00, TimeOfDay 8 05 33, TimeOfDay 8 21 00])
-  , ( "includes only temp scheduled service"
-    , prepareStopTime >> DB.getNextDepartures "600029" (TimeOfDay 8 05 00) (fromGregorian 2015 2 4)
-    , [TimeOfDay 8 05 33])
-  ]
-
+testDepartures =
+    testGroup "departure tests with imports" $
+    makeDatabaseImportTest <$>
+    [ TestInput
+      { testName = "no departure because date is past all scheduled services"
+      , csvdatadirectory = "regular"
+      , stopcode = "600029"
+      , now = TimeSpec (TimeOfDay 8 5 0) (fromGregorian 2015 2 7)
+      , testExpectedSchedule = []
+      }
+    , TestInput
+      { testName = "no departure because time is past all scheduled services"
+      , csvdatadirectory = "regular"
+      , stopcode = "600029"
+      , now = TimeSpec (TimeOfDay 8 5 0) (fromGregorian 2013 1 7)
+      , testExpectedSchedule = []
+      }
+    , TestInput
+      { testName = "imports aftermidnight services"
+      , csvdatadirectory = "aftermidnight"
+      , stopcode = "600029"
+      , now = TimeSpec (TimeOfDay 1 0 0) (fromGregorian 2013 2 4)
+      , testExpectedSchedule = [ ScheduleItem
+                                 { tripId = "1"
+                                 , stopId = "600029"
+                                 , serviceName = "66 Graveyard Express"
+                                 , scheduledDepartureTime = TimeOfDay 1 1 0
+                                 , departureDelay = 0
+                                 , departureTime = TimeOfDay 1 1 0
+                                 , scheduleType = SCHEDULED
+                                 }]
+      }
+    , TestInput
+      { testName = "additional temp scheduled service"
+      , csvdatadirectory = "tempservice"
+      , stopcode = "600029"
+      , now = TimeSpec (TimeOfDay 8 5 0) (fromGregorian 2015 1 28)
+      , testExpectedSchedule = [ ScheduleItem
+                                 { tripId = "QF0815-00"
+                                 , stopId = "600029"
+                                 , serviceName = "66 not relevant"
+                                 , scheduledDepartureTime = TimeOfDay 8 5 0
+                                 , departureDelay = 0
+                                 , departureTime = TimeOfDay 8 5 0
+                                 , scheduleType = SCHEDULED
+                                 }
+                               , ScheduleItem
+                                 { tripId = "QF0815-00-Ekka"
+                                 , stopId = "600029"
+                                 , serviceName = "66 not relevant"
+                                 , scheduledDepartureTime = TimeOfDay 8 5 33
+                                 , departureDelay = 0
+                                 , departureTime = TimeOfDay 8 5 33
+                                 , scheduleType = SCHEDULED
+                                 }
+                               , ScheduleItem
+                                 { tripId = "QF0815-00"
+                                 , stopId = "600029"
+                                 , serviceName = "66 not relevant"
+                                 , scheduledDepartureTime = TimeOfDay 8 21 33
+                                 , departureDelay = 0
+                                 , departureTime = TimeOfDay 8 21 33
+                                 , scheduleType = SCHEDULED
+                                 }]
+      }
+    , TestInput
+      { testName = "includes only temp scheduled service"
+      , csvdatadirectory = "tempservice"
+      , stopcode = "600029"
+      , now = TimeSpec (TimeOfDay 8 5 0) (fromGregorian 2015 2 4)
+      , testExpectedSchedule = [ ScheduleItem
+                                 { tripId = "QF0815-00-Ekka"
+                                 , stopId = "600029"
+                                 , serviceName = "66 not relevant"
+                                 , scheduledDepartureTime = TimeOfDay 8 5 33
+                                 , departureDelay = 0
+                                 , departureTime = TimeOfDay 8 5 33
+                                 , scheduleType = SCHEDULED
+                                 }]
+      }]
 
 fst' ::
   (a, b, c)

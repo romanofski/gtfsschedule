@@ -1,0 +1,2 @@
+route_id,route_short_name,route_long_name,route_desc,route_type,route_url,route_color,route_text_color
+1,66,"Graveyard",,6,http://foo.test/travel-information/network-information/hyperloops/T/22,71BF5B,000000

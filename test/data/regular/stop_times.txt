@@ -1,0 +1,4 @@
+trip_id,arrival_time,departure_time,stop_id,stop_sequence,pickup_type,drop_off_type
+QF0815-00,08:02:00,08:05:00,600029,1,0,0
+QF0815-00,08:02:59,08:04:33,600019,1,0,0
+QF0815-00,08:20:00,08:21:33,600029,1,0,0
