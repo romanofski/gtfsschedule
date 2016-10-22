@@ -1,3 +1,11 @@
+{- | This module provides functions to download, unpack and import the static
+schedule from the provided CSV files.
+
+GTFS traffic data comes with a static set of CSV files, apart from the realtime
+data providing changes to the static schedule.
+
+See also: https://developers.google.com/transit/gtfs/reference/
+-}
 module CSV.Import (createNewDatabase, runImport) where
 
 import qualified CSV.Route as CSVRoute
@@ -14,6 +22,8 @@ import Network.HTTP.Conduit (responseBody, http, parseRequest, tlsManagerSetting
 import Data.Conduit (($$+-))
 import Data.Conduit.Binary (sinkFile)
 
+import System.IO.Temp (withSystemTempDirectory)
+import System.Directory (renameFile)
 import Control.Monad.Trans.Reader (ReaderT)
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Monad.Trans.Resource (MonadResource, runResourceT)
@@ -22,16 +32,25 @@ import qualified Database as DB
 import qualified Database.Persist.Sqlite as Sqlite
 import qualified Data.Text as T
 import qualified Codec.Archive.Zip as Zip
-import System.IO.Temp (withSystemTempDirectory)
-import System.Directory (renameFile)
 
 
 datasetZipFilename :: String
 datasetZipFilename = "StaticDataset.zip"
 
-createNewDatabase ::
-  String
-  -> IO ()
+-- | Creates a new database by fetching a GTFS static dataset from the given URL
+-- The sequence of actions is as follows:
+--
+--  * Download the static dataset as a zip file
+--
+--  * extract all CSV files
+--
+--  * create a new, temporary database in which we import necessary CSV data
+--
+--  * rename current database with the newly created one
+--
+createNewDatabase
+    :: String  -- ^ URL to the static dataset
+    -> IO ()
 createNewDatabase url = withSystemTempDirectory "NewGTFSDB" $ \x -> do
   currentDB <- DB.userDatabaseFile
   let newDBFile = currentDB ++ ".new"
@@ -39,6 +58,7 @@ createNewDatabase url = withSystemTempDirectory "NewGTFSDB" $ \x -> do
   renameFile newDBFile currentDB
 
 -- | Downloads new data set to systems temp directory
+--
 -- TODO: file is assumed to be a zip file
 --
 downloadStaticDataset ::
@@ -66,9 +86,11 @@ unzipDataset downloaddir = do
 
 -- | runs the import against the given database
 --
+-- CSV file names have to conform with Googles GTFS reference, e.g. (routes.txt, instead of routes.csv)
+--
 runImport ::
-  FilePath
-  -> FilePath
+  FilePath  -- ^ path to new SQLite database file
+  -> FilePath  -- ^ directory in which CSV files are found
   -> IO ()
 runImport newDBFile downloaddir = DB.runDBWithoutLogging (T.pack newDBFile) $ do
     Sqlite.runMigration DB.migrateAll

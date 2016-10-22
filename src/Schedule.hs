@@ -1,4 +1,5 @@
--- | the GTFS schedule
+{- | This module provides schedule information. The information is primarily retrieved from the static schedule (e.g. from the database), but is updated with realtime information.
+-}
 module Schedule where
 
 import qualified Database as DB
@@ -18,7 +19,7 @@ import Database.Esqueleto (unValue)
 import qualified Database.Persist.Sqlite as Sqlite
 
 
--- | A scheduled service
+-- | A poor mans data type to express the state of the service
 data ScheduleType = CANCELED
                   | ADDED
                   | SCHEDULED
