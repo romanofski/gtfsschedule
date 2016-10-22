@@ -28,22 +28,29 @@ import qualified Data.Text as T
 
 
 -- | Command line options
-data Command = Run { stationID :: String
-                   , walktime :: Maybe Integer
-                   , realtime :: Bool
-                   , setup :: Bool
-                   }
-             | Setup { logging :: Bool }
+data Command
+    = Monitor { stationID :: String
+              , walktime :: Maybe Integer
+              , realtime :: Bool
+              , setup :: Bool}
+    | Setup { logging :: Bool}
 
 
 optionParser ::
   Parser Command
-optionParser = Builder.subparser
-               ( Builder.command "run" (info runOptions
-                                        (Builder.progDesc "Run gtfsschedule"))
-               <> Builder.command "setup" (info setupOptions
-                                           (Builder.progDesc "Setup the gtfsschedule database"))
-               )
+optionParser =
+    Builder.subparser
+        (Builder.command
+             "monitor"
+             (info
+                  monitorOptions
+                  (Builder.progDesc
+                       "Monitor a stop/station and print next departing services")) <>
+         Builder.command
+             "setup"
+             (info
+                  setupOptions
+                  (Builder.progDesc "Setup the gtfsschedule database")))
 
 setupOptions ::
   Parser Command
@@ -52,24 +59,28 @@ setupOptions = Setup
   (Builder.long "logging"
     <> help "Enable logging")
 
-runOptions ::
+monitorOptions ::
   Parser Command
-runOptions = Run
-               <$> Builder.argument str
-               ( Builder.metavar "STATION"
-                 <> help "Station id to show the schedule for")
-               <*> optional
-               (option auto
-               ( long "walktime"
-                 <> help "Time to reach the stop. Will be added to the current time to allow arriving at the station just in time for departure."))
-               <*> flag False True
-               ( long "realtime"
-               <> short 'r'
-               <> help "Enable realtime updates")
-               <*> flag False True
-               ( long "setup"
-               <> short 's'
-               <> help "(Development) setup database")
+monitorOptions =
+    Monitor <$>
+    Builder.argument
+        str
+        (Builder.metavar "STATION" <>
+         help "Station id to show the schedule for") <*>
+    optional
+        (option
+             auto
+             (long "walktime" <>
+              help
+                  "Time to reach the stop. Will be added to the current time to allow arriving at the station just in time for departure.")) <*>
+    flag
+        False
+        True
+        (long "realtime" <> short 'r' <> help "Enable realtime updates") <*>
+    flag
+        False
+        True
+        (long "setup" <> short 's' <> help "(Development) setup database")
 
 delayFromMaybe ::
   Maybe Integer
@@ -82,11 +93,11 @@ datasetURL = "https://gtfsrt.api.translink.com.au/GTFS/SEQ_GTFS.zip"
 
 runSchedule :: Command -> IO ()
 runSchedule (Setup _) = createNewDatabase datasetURL
-runSchedule (Run sID delay False False) = do
+runSchedule (Monitor sID delay False False) = do
   fp <- userDatabaseFile
   timespec <- getTimeSpecFromNow $ delayFromMaybe delay
   getSchedule fp sID timespec >>= printSchedule (delayFromMaybe delay)
-runSchedule (Run sID delay True False) = do
+runSchedule (Monitor sID delay True False) = do
   let walkDelay = delayFromMaybe delay
   fp <- userDatabaseFile
   d <- getLastUpdatedDatabase (T.pack fp)
