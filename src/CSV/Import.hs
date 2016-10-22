@@ -93,7 +93,7 @@ runImport ::
   -> FilePath  -- ^ directory in which CSV files are found
   -> IO ()
 runImport newDBFile downloaddir = DB.runDBWithoutLogging (T.pack newDBFile) $ do
-    Sqlite.runMigration DB.migrateAll
+    _ <- Sqlite.runMigrationSilent DB.migrateAll
     DB.prepareDatabaseForUpdate DB.Started
     importCSV (absolutePath downloaddir "routes.txt", CSVRoute.prepareSQL, CSVRoute.convertToValues)
     importCSV (absolutePath downloaddir "stops.txt", CSVStop.prepareSQL, CSVStop.convertToValues)
