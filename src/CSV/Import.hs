@@ -8,11 +8,11 @@ See also: https://developers.google.com/transit/gtfs/reference/
 -}
 module CSV.Import (createNewDatabase, runImport) where
 
-import qualified CSV.Route as CSVRoute
-import qualified CSV.Trip as CSVTrip
-import qualified CSV.Calendar as CSVCalendar
-import qualified CSV.Stop as CSVStop
-import qualified CSV.StopTime as CSVStopTime
+import qualified CSV.Import.Route as CSVRoute
+import qualified CSV.Import.Trip as CSVTrip
+import qualified CSV.Import.Calendar as CSVCalendar
+import qualified CSV.Import.Stop as CSVStop
+import qualified CSV.Import.StopTime as CSVStopTime
 
 import qualified Data.ByteString.Lazy as B
 import Data.Csv.Streaming (decodeByName)

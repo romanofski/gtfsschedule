@@ -1,9 +1,9 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
-module CSV.StopTime where
+module CSV.Import.StopTime where
 
-import CSV.Util (maybeToPersist)
+import CSV.Import.Util (maybeToPersist)
 
 import Data.Csv ( FromNamedRecord
                 , DefaultOrdered

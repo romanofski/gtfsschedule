@@ -1,8 +1,8 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
-module CSV.Route where
+module CSV.Import.Route where
 
-import CSV.Util (maybeToPersist)
+import CSV.Import.Util (maybeToPersist)
 
 import Data.Csv ( FromNamedRecord
                 , DefaultOrdered

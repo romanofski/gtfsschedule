@@ -1,8 +1,8 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
-module CSV.Stop where
+module CSV.Import.Stop where
 
-import CSV.Util (maybeToPersist)
+import CSV.Import.Util (maybeToPersist)
 
 import Data.Csv ( FromNamedRecord
                 , DefaultOrdered

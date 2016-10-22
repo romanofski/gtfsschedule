@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
-module CSV.Calendar where
+module CSV.Import.Calendar where
 
 import Data.Csv ( FromNamedRecord
                 , DefaultOrdered

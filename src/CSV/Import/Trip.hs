@@ -1,9 +1,9 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module CSV.Trip where
+module CSV.Import.Trip where
 
-import CSV.Util (maybeToPersist)
+import CSV.Import.Util (maybeToPersist)
 
 import Data.Csv ( FromNamedRecord
                 , DefaultOrdered

@@ -21,12 +21,12 @@ library
                      , Database
                      , Update
                      , CSV.Import
-                     , CSV.Route
-                     , CSV.Trip
-                     , CSV.Calendar
-                     , CSV.Stop
-                     , CSV.StopTime
-                     , CSV.Util
+                     , CSV.Import.Route
+                     , CSV.Import.Trip
+                     , CSV.Import.Calendar
+                     , CSV.Import.Stop
+                     , CSV.Import.StopTime
+                     , CSV.Import.Util
   build-depends:       base >= 4.8 && < 5
                      , bytestring
                      , protocol-buffers
