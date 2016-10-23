@@ -27,7 +27,7 @@ library
                      , CSV.Import.Stop
                      , CSV.Import.StopTime
                      , CSV.Import.Util
-  build-depends:       base >= 4.8 && < 5
+  build-depends:       base >= 4.7 && < 5
                      , bytestring
                      , protocol-buffers
                      , time
@@ -39,15 +39,15 @@ library
                      , persistent
                      , containers
                      , mtl
-                     , persistent-sqlite
-                     , persistent-template
+                     , persistent-sqlite <= 2.2
+                     , persistent-template <= 2.1.3.6
                      , esqueleto
                      , xdg-basedir
                      , http-conduit
                      , conduit
                      , conduit-extra >= 1.1
                      , http-types
-                     , cassava
+                     , cassava >= 0.4.5.0
                      , zip-archive
                      , temporary
                      , directory >= 1.2
