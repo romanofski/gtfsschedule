@@ -15,8 +15,10 @@ import Data.Time.LocalTime ( TimeOfDay(..)
                            , timeToTimeOfDay)
 import Data.Time.Clock (secondsToDiffTime, getCurrentTime, UTCTime(..))
 import Data.Time.Calendar ( Day(..))
-import Data.Time.Format ( formatTime
-                        , defaultTimeLocale)
+import System.Locale (defaultTimeLocale)
+import Data.Time.Format (formatTime)
+import Data.Functor ((<$>))
+
 import Data.Int (Int64)
 import Control.Monad (liftM)
 import Control.Monad.IO.Class (liftIO, MonadIO)

@@ -5,6 +5,10 @@ module Message where
 
 import Schedule (ScheduleItem(..), ScheduleType(..), secondsToDeparture)
 
+import Data.Functor ((<$>))
+import Prelude hiding (mapM)
+import Data.Traversable (mapM)
+
 import Com.Google.Transit.Realtime.TripUpdate.StopTimeEvent (StopTimeEvent(..), delay)
 import Com.Google.Transit.Realtime.TripDescriptor (trip_id, TripDescriptor(..))
 import qualified Com.Google.Transit.Realtime.TripDescriptor.ScheduleRelationship as TripSR

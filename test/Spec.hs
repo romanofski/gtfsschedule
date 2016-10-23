@@ -12,6 +12,8 @@ import qualified CSV.Import as CSV
 
 import Realtime (feedTests)
 
+import Data.Functor ((<$>))
+
 import Test.Tasty (defaultMain, TestTree, TestName, testGroup)
 import Test.Tasty.HUnit (testCase, (@?=))
 import Data.Time.LocalTime (TimeOfDay(..))

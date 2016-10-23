@@ -6,6 +6,9 @@ import Message (updateSchedule)
 import Update (isDatasetUpToDate, printWarningForNewDataset, isCurrent)
 import CSV.Import (createNewDatabase)
 
+import Data.Functor ((<$>))
+import Control.Applicative ((<*>))
+
 import qualified Options.Applicative.Builder as Builder
 import Options.Applicative.Builder (long
                                    , help

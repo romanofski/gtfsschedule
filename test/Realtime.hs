@@ -3,6 +3,8 @@ module Realtime (feedTests) where
 import Message
 import Schedule
 
+import Data.Functor ((<$>))
+
 import Test.Tasty (TestTree, TestName, testGroup)
 import Test.Tasty.HUnit (testCase, (@?=))
 import Data.Time.LocalTime (TimeOfDay(..))

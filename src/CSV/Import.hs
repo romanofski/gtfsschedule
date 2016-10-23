@@ -18,7 +18,10 @@ import qualified Data.ByteString.Lazy as B
 import Data.Csv.Streaming (decodeByName)
 import Data.Csv (FromNamedRecord)
 
-import Network.HTTP.Conduit (responseBody, http, parseRequest, tlsManagerSettings, newManager)
+import Network.HTTP.Conduit (responseBody, http, parseUrl, newManager)
+import Network.HTTP.Client.Conduit (defaultManagerSettings)
+import Prelude hiding (mapM_)
+import Data.Foldable (mapM_)
 import Data.Conduit (($$+-))
 import Data.Conduit.Binary (sinkFile)
 
@@ -66,8 +69,8 @@ downloadStaticDataset ::
   -> FilePath
   -> IO (FilePath)
 downloadStaticDataset url downloadDir = runResourceT $ do
-  manager <- liftIO $ newManager tlsManagerSettings
-  request <- liftIO $ parseRequest url
+  manager <- liftIO $ newManager defaultManagerSettings
+  request <- liftIO $ parseUrl url
   response <- http request manager
   responseBody response $$+- sinkFile downloadfp
   return downloadDir

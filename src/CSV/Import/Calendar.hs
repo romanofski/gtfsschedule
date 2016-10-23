@@ -7,8 +7,9 @@ import Data.Csv ( FromNamedRecord
                 , FromField
                 , parseField
                 )
-import Data.Time.Format ( parseTimeM
-                        , defaultTimeLocale)
+import Control.Monad (mzero)
+import System.Locale (defaultTimeLocale)
+import Data.Time.Format ( parseTime)
 import Data.Time.Calendar (Day)
 import GHC.Generics
 
@@ -35,7 +36,9 @@ instance DefaultOrdered Calendar
 
 -- 20160912
 instance FromField Day where
-  parseField str = parseTimeM False defaultTimeLocale "%Y%m%d" (B.unpack str)
+  parseField str = case (parseTime defaultTimeLocale "%Y%m%d" (B.unpack str)) of
+    Just d -> return d
+    Nothing -> mzero
 
 toBool ::
   Int

@@ -3,8 +3,8 @@ module Update (isDatasetUpToDate, printWarningForNewDataset, isCurrent) where
 import Network.HTTP.Conduit
 import Network.HTTP.Types.Header (ResponseHeaders, Header, hLastModified)
 import Data.Time.Calendar (Day)
-import Data.Time.Format ( parseTimeM
-                        , defaultTimeLocale)
+import System.Locale (defaultTimeLocale)
+import Data.Time.Format (parseTime)
 import Data.List (find)
 import System.IO (hPrint, stderr)
 import qualified Data.ByteString.Char8 as B
@@ -48,8 +48,8 @@ getHeadersForDataset ::
   String
   -> IO ResponseHeaders
 getHeadersForDataset url = do
-  request <- parseRequest ("HEAD " ++ url)
-  manager <- newManager tlsManagerSettings
+  request <- parseUrl ("HEAD " ++ url)
+  manager <- newManager conduitManagerSettings
   response <- httpLbs request manager
   return $ responseHeaders response
 
@@ -61,5 +61,5 @@ getLastModified = find (\(n, _) -> n == hLastModified)
 parseLastModified ::
   Maybe Header
   -> Maybe Day
-parseLastModified (Just (_, modified)) = parseTimeM False defaultTimeLocale "%a, %d %b %Y %T %Z" (B.unpack modified)
+parseLastModified (Just (_, modified)) = parseTime defaultTimeLocale "%a, %d %b %Y %T %Z" (B.unpack modified)
 parseLastModified Nothing = Nothing

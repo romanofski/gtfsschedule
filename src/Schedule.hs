@@ -4,6 +4,8 @@ module Schedule where
 
 import qualified Database as DB
 
+import Data.Functor ((<$>))
+
 import Data.Time.LocalTime ( utcToLocalTime
                            , LocalTime(..)
                            , TimeOfDay(..)
