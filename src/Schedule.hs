@@ -1,6 +1,10 @@
 {- | This module provides schedule information. The information is primarily retrieved from the static schedule (e.g. from the database), but is updated with realtime information.
 -}
-module Schedule where
+module Schedule
+       (ScheduleState(..), ScheduleItem(..), TimeSpec(..), getSchedule,
+        getTimeSpecFromNow, printSchedule, formatScheduleItem,
+        minutesToDeparture, secondsToDeparture)
+       where
 
 import qualified Database as DB
 
@@ -22,32 +26,37 @@ import qualified Database.Persist.Sqlite as Sqlite
 
 
 -- | A poor mans data type to express the state of the service
-data ScheduleType = CANCELED
-                  | ADDED
-                  | SCHEDULED
-                  deriving (Show, Eq, Ord)
+data ScheduleState
+    = CANCELED
+    | ADDED
+    | SCHEDULED
+    deriving (Show,Eq,Ord)
 
-data ScheduleItem = ScheduleItem { tripId :: String
-                                 , stopId :: String
-                                 , serviceName :: String
-                                 , scheduledDepartureTime :: TimeOfDay
-                                 , departureDelay :: Integer
-                                 , departureTime :: TimeOfDay
-                                 , scheduleType :: ScheduleType
-                                 } deriving (Show, Eq, Ord)
+-- | One entity giving information about the departure of a service
+data ScheduleItem = ScheduleItem
+    { tripId :: String
+    , stopId :: String
+    , serviceName :: String  -- ^ short service name
+    , scheduledDepartureTime :: TimeOfDay  -- ^ the time this service departure was originally scheduled
+    , departureDelay :: Integer  -- ^ delay retrieved from the realtime feed if available
+    , departureTime :: TimeOfDay  -- ^ departure time including the realtime update if available
+    , scheduleType :: ScheduleState
+    } deriving (Show,Eq,Ord)
 
 -- | A specific point in time from when we want to calculate the next departing
 --   services
 data TimeSpec = TimeSpec TimeOfDay Day
 
 
+-- | Return the next services which are due in the next couple of minutes
 getSchedule ::
-  String
-  -> String
+  String  -- ^ database file path
+  -> String  -- ^ stop code
   -> TimeSpec
   -> IO [ScheduleItem]
 getSchedule sqliteDBFilepath sCode timespec = nextDepartures (T.pack sqliteDBFilepath) sCode timespec
 
+-- | Create a specific point in time from the current time/date
 getTimeSpecFromNow ::
   Integer
   -> IO TimeSpec
@@ -57,6 +66,52 @@ getTimeSpecFromNow delay = do
       let lday = localDay $ utcToLocalTime tz t
       let earliestTime = calculateEarliestDepartureTime t tz (delayAsDiffTime delay)
       return $ TimeSpec earliestTime lday
+
+-- | prints list the Schedule to stdout
+--
+printSchedule ::
+  Integer
+  -> [ScheduleItem]
+  -> IO ()
+printSchedule walkDelay xs = do
+  t <- getCurrentTime
+  tz <- getCurrentTimeZone
+  let lTimeOfDay = localTimeOfDay $ utcToLocalTime tz t
+  putStr $ concat $ formatScheduleItem lTimeOfDay walkDelay <$> xs
+
+-- | Format a schedule item in a user friendly way for printing
+formatScheduleItem ::
+  TimeOfDay  -- ^ current time (typically invokation of the program)
+  -> Integer  -- ^ delay in seconds which is subtracted from current time
+  -> ScheduleItem  -- ^ item to format
+  -> String
+formatScheduleItem _ _ ScheduleItem { serviceName = sn, departureTime = dt, scheduleType = CANCELED } =
+  sn ++ " (" ++ show dt ++ " !CANC!) "
+formatScheduleItem nowLT walkDelay item =
+  delayIndicator ++ serviceName item ++ " " ++ show (minutesToDeparture item nowLT - walkDelay) ++ "min (" ++ show (departureTime item) ++ schedDepTime ++ ") "
+    where
+      delayIndicator = if departureDelay item > 0 then "!" else ""
+      schedDepTime = if departureDelay item > 0
+                     then " (" ++ show (departureDelay item) ++ "s)"
+                     else ""
+
+-- | calculates how many minutes we have before the service departs
+minutesToDeparture ::
+  ScheduleItem
+  -> TimeOfDay  -- ^ current time
+  -> Integer
+minutesToDeparture x now = round $ toRational (depTimeInSeconds - nowInSeconds) / 60
+  where
+    nowInSeconds = timeOfDayToTime now
+    depTimeInSeconds = timeOfDayToTime $ departureTime x
+
+-- | conversion function to calculate the seconds until departure
+secondsToDeparture ::
+  TimeOfDay  -- ^ current time
+  -> DiffTime  -- ^ delay to add to current time (e.g. how long it takes us to walk to the stop)
+  -> DiffTime
+secondsToDeparture now delay = timeOfDayToTime now + delay
+
 
 makeSchedule ::
   [(Sqlite.Entity DB.StopTime, Sqlite.Entity DB.Trip, Sqlite.Entity DB.Route)]
@@ -103,45 +158,3 @@ delayAsDiffTime ::
   Integer
   -> DiffTime
 delayAsDiffTime delay = secondsToDiffTime (delay * 60)
-
--- | prints list the Schedule
---
-printSchedule ::
-  Integer
-  -> [ScheduleItem]
-  -> IO ()
-printSchedule walkDelay xs = do
-  t <- getCurrentTime
-  tz <- getCurrentTimeZone
-  let lTimeOfDay = localTimeOfDay $ utcToLocalTime tz t
-  putStr $ concat $ formatScheduleItem lTimeOfDay walkDelay <$> xs
-
-formatScheduleItem ::
-  TimeOfDay
-  -> Integer
-  -> ScheduleItem
-  -> String
-formatScheduleItem _ _ ScheduleItem { serviceName = sn, departureTime = dt, scheduleType = CANCELED } =
-  sn ++ " (" ++ show dt ++ " !CANC!) "
-formatScheduleItem nowLT walkDelay item =
-  delayIndicator ++ serviceName item ++ " " ++ show (minutesToDeparture item nowLT - walkDelay) ++ "min (" ++ show (departureTime item) ++ schedDepTime ++ ") "
-    where
-      delayIndicator = if departureDelay item > 0 then "!" else ""
-      schedDepTime = if departureDelay item > 0
-                     then " (" ++ show (departureDelay item) ++ "s)"
-                     else ""
-
-minutesToDeparture ::
-  ScheduleItem
-  -> TimeOfDay
-  -> Integer
-minutesToDeparture x now = round $ toRational (depTimeInSeconds - nowInSeconds) / 60
-  where
-    nowInSeconds = timeOfDayToTime now
-    depTimeInSeconds = timeOfDayToTime $ departureTime x
-
-secondsToDeparture ::
-  TimeOfDay
-  -> DiffTime
-  -> DiffTime
-secondsToDeparture now delay = timeOfDayToTime now + delay

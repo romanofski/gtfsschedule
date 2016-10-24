@@ -2,7 +2,7 @@
 module Main where
 
 import Schedule ( ScheduleItem(..)
-                , ScheduleType(..)
+                , ScheduleState(..)
                 , TimeSpec(..)
                 , minutesToDeparture
                 , formatScheduleItem

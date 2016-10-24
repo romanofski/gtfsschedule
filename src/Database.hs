@@ -8,7 +8,20 @@
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE PatternGuards              #-}
-module Database where
+{- | Database integration with Sqlite
+
+This module provides basic functions to interact with the static database imported in Sqlite.
+
+-}
+module Database
+       (ImportStarted(..), ImportStartedId, ImportFinished(..),
+        ImportFinishedId, StopTime(..), StopTimeId, Trip(..), TripId,
+        Calendar(..), CalendarId, Stop(..), StopId, Route(..), RouteId,
+        UpdateType(..), migrateAll, userDatabaseFile, getStopID,
+        getNextDepartures, getLastUpdatedDatabase,
+        prepareDatabaseForUpdate, addDatabaseIndices, prepareStmt,
+        rawInsert, runDBWithLogging, runDBWithoutLogging)
+       where
 
 import Data.Time.LocalTime ( TimeOfDay(..)
                            , timeOfDayToTime
@@ -115,9 +128,10 @@ weekdayToSQLExp weekday
   | Just _ <- stripPrefix "Sunday" weekday = CalendarSunday
   | otherwise = error "That should never happen"
 
+-- | Returns the stop id for a given stop code
 getStopID ::
   (MonadLoggerIO m, MonadResource m)
-  => String
+  => String  -- ^ stop code
   -> ReaderT Sqlite.SqlBackend m [Value String]
 getStopID stopC = select $ from $ \s -> do
   where_ (s ^. StopCode ==. val (Just stopC))
@@ -129,9 +143,9 @@ getStopID stopC = select $ from $ \s -> do
 --
 getNextDepartures ::
   (MonadLoggerIO m, MonadResource m)
-  => String
-  -> TimeOfDay
-  -> Day
+  => String  -- ^ stop id
+  -> TimeOfDay  -- ^ current time
+  -> Day  -- ^ current date
   -> ReaderT Sqlite.SqlBackend m [(Sqlite.Entity StopTime, Sqlite.Entity Trip, Sqlite.Entity Route)]
 getNextDepartures stopID now nowDate = select $ from $ \(st, t, c, s, r) -> do
   where_ (
@@ -164,8 +178,11 @@ getDatabaseInfo = select $ from $ \(uf, up) -> do
   limit 1
   return up
 
+-- | Returns information about the last time the database was updated, which is
+-- needed for determining if the static dataset has been updated
+--
 getLastUpdatedDatabase ::
-  T.Text
+  T.Text  -- ^ database file path
   -> IO Day
 getLastUpdatedDatabase connstr = runDBWithoutLogging connstr $ do
   dbinfo <- getDatabaseInfo
@@ -173,6 +190,7 @@ getLastUpdatedDatabase connstr = runDBWithoutLogging connstr $ do
   return $ head lastupdated
 
 
+-- | Datatype to symbolize the update process from started to finished
 data UpdateType = Started
                 | Finished
 
@@ -189,6 +207,7 @@ prepareDatabaseForUpdate updateType = do
     Started -> insert_ $ ImportStarted { importStartedUpid = upKey }
     Finished -> insert_ $ ImportFinished { importFinishedUpid = upKey }
 
+-- | Add needed database indices for a speedy lookup
 addDatabaseIndices ::
   (MonadIO m, MonadResource m)
   => ReaderT Sqlite.SqlBackend m ()
@@ -202,6 +221,7 @@ addDatabaseIndices = do
                     , "create index stop_index on stop (stop_id, code)"
                     ]
 
+-- | Low-level sqlite preparation of statements
 prepareStmt ::
   (MonadIO m)
   => T.Text
@@ -211,6 +231,7 @@ prepareStmt sql = do
   stmt <- liftIO $ Sqlite.connPrepare conn sql
   return stmt
 
+-- | Low-level sqlite insert of a prepared statement
 rawInsert ::
   (MonadIO m, MonadResource m)
   => Sqlite.Statement
