@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -fno-warn-type-defaults #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Update (isDatasetUpToDate, printWarningForNewDataset, isCurrent) where
 
 import Network.HTTP.Conduit
@@ -48,7 +50,8 @@ getHeadersForDataset ::
   String
   -> IO ResponseHeaders
 getHeadersForDataset url = do
-  request <- parseUrl ("HEAD " ++ url)
+  initReq <- parseUrl url
+  let request = initReq { method = "HEAD" }
   manager <- newManager conduitManagerSettings
   response <- httpLbs request manager
   return $ responseHeaders response

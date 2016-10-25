@@ -44,7 +44,7 @@ library
                      , persistent-template <= 2.1.3.6
                      , esqueleto
                      , xdg-basedir
-                     , http-conduit
+                     , http-conduit <= 2.1.5
                      , conduit
                      , conduit-extra >= 1.1
                      , http-types
