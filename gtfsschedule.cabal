@@ -21,6 +21,29 @@ library
                      , Database
                      , Update
                      , CSV.Import
+  other-modules:       Com.Google.Transit.Realtime.Alert
+                     , Com.Google.Transit.Realtime.Alert.Cause
+                     , Com.Google.Transit.Realtime.Alert.Effect
+                     , Com.Google.Transit.Realtime.EntitySelector
+                     , Com.Google.Transit.Realtime.FeedEntity
+                     , Com.Google.Transit.Realtime.FeedHeader
+                     , Com.Google.Transit.Realtime.FeedHeader.Incrementality
+                     , Com.Google.Transit.Realtime.FeedMessage
+                     , Com.Google.Transit.Realtime.Position
+                     , Com.Google.Transit.Realtime.TimeRange
+                     , Com.Google.Transit.Realtime.TranslatedString
+                     , Com.Google.Transit.Realtime.TranslatedString.Translation
+                     , Com.Google.Transit.Realtime.TripUpdate
+                     , Com.Google.Transit.Realtime.TripUpdate.StopTimeEvent
+                     , Com.Google.Transit.Realtime.TripUpdate.StopTimeUpdate.ScheduleRelationship
+                     , Com.Google.Transit.Realtime.TripUpdate.StopTimeUpdate
+                     , Com.Google.Transit.Realtime.TripDescriptor
+                     , Com.Google.Transit.Realtime.TripDescriptor.ScheduleRelationship
+                     , Com.Google.Transit.Realtime.VehicleDescriptor
+                     , Com.Google.Transit.Realtime.VehiclePosition
+                     , Com.Google.Transit.Realtime.VehiclePosition.VehicleStopStatus
+                     , Com.Google.Transit.Realtime.VehiclePosition.CongestionLevel
+                     , Com.Google.Transit.Realtime.VehiclePosition.OccupancyStatus
                      , CSV.Import.Route
                      , CSV.Import.Trip
                      , CSV.Import.Calendar
@@ -53,29 +76,6 @@ library
                      , temporary
                      , directory >= 1.2
   default-language:    Haskell2010
-  exposed-modules:     Com.Google.Transit.Realtime.Alert
-                     , Com.Google.Transit.Realtime.Alert.Cause
-                     , Com.Google.Transit.Realtime.Alert.Effect
-                     , Com.Google.Transit.Realtime.EntitySelector
-                     , Com.Google.Transit.Realtime.FeedEntity
-                     , Com.Google.Transit.Realtime.FeedHeader
-                     , Com.Google.Transit.Realtime.FeedHeader.Incrementality
-                     , Com.Google.Transit.Realtime.FeedMessage
-                     , Com.Google.Transit.Realtime.Position
-                     , Com.Google.Transit.Realtime.TimeRange
-                     , Com.Google.Transit.Realtime.TranslatedString
-                     , Com.Google.Transit.Realtime.TranslatedString.Translation
-                     , Com.Google.Transit.Realtime.TripUpdate
-                     , Com.Google.Transit.Realtime.TripUpdate.StopTimeEvent
-                     , Com.Google.Transit.Realtime.TripUpdate.StopTimeUpdate.ScheduleRelationship
-                     , Com.Google.Transit.Realtime.TripUpdate.StopTimeUpdate
-                     , Com.Google.Transit.Realtime.TripDescriptor
-                     , Com.Google.Transit.Realtime.TripDescriptor.ScheduleRelationship
-                     , Com.Google.Transit.Realtime.VehicleDescriptor
-                     , Com.Google.Transit.Realtime.VehiclePosition
-                     , Com.Google.Transit.Realtime.VehiclePosition.VehicleStopStatus
-                     , Com.Google.Transit.Realtime.VehiclePosition.CongestionLevel
-                     , Com.Google.Transit.Realtime.VehiclePosition.OccupancyStatus
 
 executable gtfsschedule
   hs-source-dirs:      app

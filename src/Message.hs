@@ -7,7 +7,7 @@ the schedule data.
 
 See also: https://developers.google.com/transit/gtfs-realtime/reference/
 -}
-module Message (updateSchedule, departureTimeWithDelay) where
+module Message (updateSchedule, departureTimeWithDelay, FM.FeedMessage) where
 
 import Schedule (ScheduleItem(..), ScheduleState(..), secondsToDeparture)
 
