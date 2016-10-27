@@ -31,6 +31,8 @@ import Control.Monad.Trans.Reader (ReaderT)
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Monad.Trans.Resource (MonadResource, runResourceT)
 import Database.Esqueleto (PersistValue(..))
+import System.Directory (createDirectoryIfMissing)
+import qualified Filesystem.Path.CurrentOS as Path
 import qualified Database as DB
 import qualified Database.Persist.Sqlite as Sqlite
 import qualified Data.Text as T
@@ -53,12 +55,23 @@ datasetZipFilename = "StaticDataset.zip"
 --
 createNewDatabase
     :: String  -- ^ URL to the static dataset
+    -> FilePath  -- ^ Path to the users database file (if it exists)
     -> IO ()
-createNewDatabase url = withSystemTempDirectory "NewGTFSDB" $ \x -> do
-  currentDB <- DB.userDatabaseFile
-  let newDBFile = currentDB ++ ".new"
+createNewDatabase url currentDBFile = withSystemTempDirectory "NewGTFSDB" $ \x -> do
+  let newDBFile = currentDBFile ++ ".new"
   downloadStaticDataset url x >>= unzipDataset >>= runImport newDBFile
-  renameFile newDBFile currentDB
+  ensureUserDatabaseDir (Path.fromText $ T.pack currentDBFile)
+  renameFile newDBFile currentDBFile
+
+-- | Prepares the user database directory if it doesn't exist
+--
+ensureUserDatabaseDir ::
+  Path.FilePath
+  -> IO ()
+ensureUserDatabaseDir userdbfile =
+  case Path.toText $ Path.directory userdbfile of
+    Right dbdir -> createDirectoryIfMissing True (T.unpack dbdir)
+    Left path -> ioError $ userError ("Path has invalid encoding: " ++ T.unpack path)
 
 -- | Downloads new data set to systems temp directory
 --

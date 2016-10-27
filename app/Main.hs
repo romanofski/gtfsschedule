@@ -95,7 +95,7 @@ datasetURL = "https://gtfsrt.api.translink.com.au/GTFS/SEQ_GTFS.zip"
 
 
 runSchedule :: Command -> IO ()
-runSchedule (Setup _) = createNewDatabase datasetURL
+runSchedule (Setup _) = userDatabaseFile >>= createNewDatabase datasetURL
 runSchedule (Monitor sID delay False False) = do
   fp <- userDatabaseFile
   timespec <- getTimeSpecFromNow $ delayFromMaybe delay
