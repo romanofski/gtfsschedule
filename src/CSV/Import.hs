@@ -59,8 +59,8 @@ createNewDatabase
     -> IO ()
 createNewDatabase url currentDBFile = withSystemTempDirectory "NewGTFSDB" $ \x -> do
   let newDBFile = currentDBFile ++ ".new"
-  downloadStaticDataset url x >>= unzipDataset >>= runImport newDBFile
   ensureUserDatabaseDir (Path.fromText $ T.pack currentDBFile)
+  downloadStaticDataset url x >>= unzipDataset >>= runImport newDBFile
   renameFile newDBFile currentDBFile
 
 -- | Prepares the user database directory if it doesn't exist

@@ -11,6 +11,7 @@ import qualified Database as DB
 import qualified CSV.Import as CSV
 
 import Realtime (feedTests)
+import CSVImport (importTests)
 
 import Data.Functor ((<$>))
 
@@ -30,6 +31,7 @@ import qualified Database.Persist.Sqlite as Sqlite
 tests ::
   TestTree
 tests = testGroup "unit tests" [ feedTests
+                               , importTests
                                , testMinutesToDeparture
                                , testFormatScheduleItem
                                , testDepartures

@@ -106,6 +106,12 @@ test-suite unit-tests
                      , persistent-sqlite
                      , text
                      , transformers
+                     , transformers-base
+                     , lifted-base
+                     , network
+                     , conduit
+                     , conduit-extra >= 1.1
+                     , streaming-commons >= 0.1
                      , resourcet
                      , monad-logger
                      , protocol-buffers
