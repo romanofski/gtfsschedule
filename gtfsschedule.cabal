@@ -95,6 +95,10 @@ test-suite unit-tests
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Spec.hs
+  other-modules:       CSVImport
+                       Realtime
+                       Fixtures
+                       TestUpdate
   -- ghc-options:         -fprof-auto -fprof-cafs
   build-depends:       base
                      , gtfsschedule

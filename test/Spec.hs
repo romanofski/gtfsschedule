@@ -12,6 +12,7 @@ import qualified CSV.Import as CSV
 
 import Realtime (feedTests)
 import CSVImport (importTests)
+import TestUpdate (updateTests)
 
 import Data.Functor ((<$>))
 
@@ -32,6 +33,7 @@ tests ::
   TestTree
 tests = testGroup "unit tests" [ feedTests
                                , importTests
+                               , updateTests
                                , testMinutesToDeparture
                                , testFormatScheduleItem
                                , testDepartures

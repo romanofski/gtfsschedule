@@ -16,7 +16,7 @@ import qualified Data.ByteString.Char8 as B
 
 
 data Error = Error String
-  deriving Show
+  deriving (Eq, Show)
 
 -- | Returns True if the static dataset has been updated on the remote server.
 -- The function performs a HEAD request and extracts the last-modified header. The
