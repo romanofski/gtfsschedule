@@ -70,3 +70,7 @@ is used to indicate how long it takes to get to the stop. For example:
 Xmobar:
 
     Run Com "gtfsschedule" ["monitor", "600248", "-r", "--walktime", "7"] "gtfs" 600
+
+Poor mans statusbar with `watch`. Use a terminal window and:
+
+    watch -n 60 "gtfsschedule monitor 600248 --walktime 7"
