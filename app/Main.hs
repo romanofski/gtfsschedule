@@ -35,7 +35,7 @@ data Command
     = Monitor { stationID :: String
               , walktime :: Maybe Integer
               , realtime :: Bool
-              , setup :: Bool}
+              }
     | Setup { logging :: Bool}
 
 
@@ -79,11 +79,7 @@ monitorOptions =
     flag
         False
         True
-        (long "realtime" <> short 'r' <> help "Enable realtime updates") <*>
-    flag
-        False
-        True
-        (long "setup" <> short 's' <> help "(Development) setup database")
+        (long "realtime" <> short 'r' <> help "Enable realtime updates")
 
 delayFromMaybe ::
   Maybe Integer
@@ -96,11 +92,11 @@ datasetURL = "https://gtfsrt.api.translink.com.au/GTFS/SEQ_GTFS.zip"
 
 runSchedule :: Command -> IO ()
 runSchedule (Setup _) = userDatabaseFile >>= createNewDatabase datasetURL
-runSchedule (Monitor sID delay False False) = do
+runSchedule (Monitor sID delay False) = do
   fp <- userDatabaseFile
   timespec <- getTimeSpecFromNow $ delayFromMaybe delay
   getSchedule fp sID timespec >>= printSchedule (delayFromMaybe delay)
-runSchedule (Monitor sID delay True False) = do
+runSchedule (Monitor sID delay True) = do
   let walkDelay = delayFromMaybe delay
   fp <- userDatabaseFile
   d <- getLastUpdatedDatabase (T.pack fp)
