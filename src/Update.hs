@@ -3,7 +3,9 @@
 {- |  Update functionality: We determine if the static dataset is outdated.
 -}
 module Update
-       (isDatasetUpToDate, printWarningForNewDataset, isCurrent) where
+       (isDatasetUpToDate, printWarningForNewDataset, isCurrent,
+        Error(..))
+       where
 
 import Network.HTTP.Conduit
 import Network.HTTP.Types.Header (ResponseHeaders, Header, hLastModified)
@@ -29,11 +31,27 @@ isDatasetUpToDate ::
   -> (Day -> Day -> Bool)
   -> IO (Either Error Bool)
 isDatasetUpToDate url dbmodified f = do
-  headers <- getHeadersForDataset url
-  let lastmod = getLastModified headers
-  case parseLastModified lastmod of
-    Just datasetModified -> return $ Right (f datasetModified dbmodified)
-    Nothing -> return $ Left (Error ("Couldn't parse last modified header: " ++ show headers))
+    headers <- getHeadersForDataset url
+    case getLastModified headers of
+        Nothing ->
+            return $
+            Left
+                (Error
+                     ("Couldn't find last-modified headers in: " ++
+                      show headers))
+        Just (_,modifiedHeader) ->
+            case parseTime
+                     defaultTimeLocale
+                     "%a, %d %b %Y %T %Z"
+                     (B.unpack modifiedHeader) of
+                Just datasetModified ->
+                    return $ Right (f datasetModified dbmodified)
+                Nothing ->
+                    return $
+                    Left
+                        (Error
+                             ("Couldn't parse last modified header: " ++
+                              show modifiedHeader))
 
 -- | Prints an additional line to let the user know an updated static dataset is available
 printWarningForNewDataset ::
@@ -67,9 +85,3 @@ getLastModified ::
   ResponseHeaders
   -> Maybe Header
 getLastModified = find (\(n, _) -> n == hLastModified)
-
-parseLastModified ::
-  Maybe Header
-  -> Maybe Day
-parseLastModified (Just (_, modified)) = parseTime defaultTimeLocale "%a, %d %b %Y %T %Z" (B.unpack modified)
-parseLastModified Nothing = Nothing

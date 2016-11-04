@@ -5,7 +5,7 @@
 module TestUpdate (updateTests) where
 
 import Fixtures (withConcurrentTCPServer)
-import Update (isDatasetUpToDate, isCurrent)
+import Update (isDatasetUpToDate, isCurrent, Error(..))
 
 import Data.Time.Calendar (fromGregorian)
 import Test.Tasty.HUnit (testCase, (@?=))
@@ -19,6 +19,8 @@ updateTests ::
 updateTests = testGroup "update tests"
             [ testDatabaseUpToDate
             , testDatabaseOutdated
+            , testNoModifiedHeaders
+            , testGarbledHeaders
             ]
 
 testDatabaseUpToDate :: TestTree
@@ -39,3 +41,34 @@ withHTTPDataHeadersOnly :: AppData -> IO ()
 withHTTPDataHeadersOnly appData = src $$ appSink appData
   where
     src = yield "HTTP/1.1 200 OK\r\nLast-Modified: Tue, 25 Oct 2016 01:51:58 GMT\r\nContent-Type: text/plain\r\n\r\nTest"
+
+testNoModifiedHeaders :: TestTree
+testNoModifiedHeaders =
+    testCase "no modified headers results in error" $
+    withConcurrentTCPServer withHTTPDataNoModifiedHeader $ \port -> do
+      result <- isDatasetUpToDate ("http://127.0.0.1:" ++ show port) (fromGregorian 2016 10 23) isCurrent
+      result @?= Left (Error "Couldn't find last-modified headers in: [(\"Content-Type\",\"text/plain\")]")
+
+withHTTPDataNoModifiedHeader :: AppData -> IO ()
+withHTTPDataNoModifiedHeader appData = src $$ appSink appData
+  where
+    src = yield "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nTest"
+
+testGarbledHeaders :: TestTree
+testGarbledHeaders =
+    testCase "garbled modified headers results in error" $
+    withConcurrentTCPServer withHTTPData $
+    \port ->
+         do result <-
+                isDatasetUpToDate
+                    ("http://127.0.0.1:" ++ show port)
+                    (fromGregorian 2016 10 23)
+                    isCurrent
+            result @?=
+                Left
+                    (Error
+                         "Couldn't parse last modified header: \"text/plain\"")
+  where
+    withHTTPData appData =
+        yield "HTTP/1.1 200 OK\r\nLast-Modified: text/plain\r\n\r\nTest" $$
+        appSink appData
