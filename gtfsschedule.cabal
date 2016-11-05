@@ -10,7 +10,8 @@ maintainer:          roman@bromeco.de
 copyright:           2015 Róman Joost
 category:            Web
 build-type:          Simple
--- extra-source-files:
+extra-source-files:  README.md
+                     ChangeLog.md
 cabal-version:       >=1.10
 
 library
