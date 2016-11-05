@@ -23,6 +23,8 @@ import Options.Applicative (optional)
 import Options.Applicative.Types (Parser)
 import Options.Applicative.Extra ( execParser
                                  , helper)
+import Data.Version (showVersion)
+import Paths_gtfsschedule (version)
 import Data.Maybe (fromMaybe)
 import Network.HTTP.Conduit (simpleHttp)
 
@@ -90,6 +92,10 @@ datasetURL :: String
 datasetURL = "https://gtfsrt.api.translink.com.au/GTFS/SEQ_GTFS.zip"
 
 
+programHeader :: String
+programHeader =
+  "gtfsschedule - Be on time for your next public transport service (v. " ++ showVersion version ++ ")"
+
 runSchedule :: Command -> IO ()
 runSchedule (Setup _) = userDatabaseFile >>= createNewDatabase datasetURL
 runSchedule (Monitor sID delay False) = do
@@ -116,4 +122,4 @@ main = execParser opts >>= runSchedule
   where opts = info (helper <*> optionParser)
                ( Builder.fullDesc
                  <> Builder.progDesc "Shows schedule of departing vehicles based on static GTFS data."
-                 <> Builder.header "gtfs - a gtfs enabled transport schedule")
+                 <> Builder.header programHeader)
