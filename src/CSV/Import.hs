@@ -25,6 +25,7 @@ import Data.Foldable (mapM_)
 import Data.Conduit (($$+-))
 import Data.Conduit.Binary (sinkFile)
 
+import System.IO (hPutStr, stderr)
 import System.IO.Temp (withSystemTempDirectory)
 import System.Directory (renameFile)
 import Control.Monad.Trans.Reader (ReaderT)
@@ -53,6 +54,8 @@ datasetZipFilename = "StaticDataset.zip"
 --
 --  * rename current database with the newly created one
 --
+-- For each step a progress is reported to stderr
+--
 createNewDatabase
     :: String  -- ^ URL to the static dataset
     -> FilePath  -- ^ Path to the users database file (if it exists)
@@ -60,8 +63,26 @@ createNewDatabase
 createNewDatabase url currentDBFile = withSystemTempDirectory "NewGTFSDB" $ \x -> do
   let newDBFile = currentDBFile ++ ".new"
   ensureUserDatabaseDir (Path.fromText $ T.pack currentDBFile)
-  downloadStaticDataset url x >>= unzipDataset >>= runImport newDBFile
-  renameFile newDBFile currentDBFile
+  _ <- printProgress 2 ""
+  downloadStaticDataset url x >>= printProgress 3 >>= unzipDataset >>= printProgress 5 >>= runImport newDBFile
+  _ <- printProgress 8 currentDBFile >>= renameFile newDBFile >> printProgress 10 ""
+  return ()
+
+-- | shows a progress bar to indicate overall import progress
+-- Kudos to: http://stackoverflow.com/questions/8953636/simple-progress-indication-in-console
+--
+printProgress :: Int -> a -> IO (a)
+printProgress progress x = do
+  putProgress $ drawProgressBar 50 (fromIntegral progress / 10)
+  return x
+
+putProgress :: String -> IO ()
+putProgress s = hPutStr stderr $ "\r\ESC[K" ++ s
+
+drawProgressBar :: Int -> Rational -> String
+drawProgressBar width progress = "[" ++ replicate dots '.' ++ replicate spaces ' ' ++ "]"
+  where dots = round (progress * fromIntegral width)
+        spaces = width - dots
 
 -- | Prepares the user database directory if it doesn't exist
 --
