@@ -7,7 +7,7 @@ cache:
 
 before_install:
   - mkdir -p ~/.local/bin
-  - export PATH=/opt/ghc/7.10.2/bin:$HOME/.local/bin:$PATH
+  - export PATH=/opt/ghc/7.8.4/bin:$HOME/.local/bin:$PATH
   - travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
 
 addons:
@@ -15,7 +15,7 @@ addons:
     sources:
       - hvr-ghc
     packages:
-      - ghc-7.10.2
+      - ghc-7.8.4
 
 script:
   - stack --no-terminal --skip-ghc-check test

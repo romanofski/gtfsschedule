@@ -3,12 +3,13 @@ module Realtime (feedTests) where
 import Message
 import Schedule
 
+import Data.Functor ((<$>))
+
 import Test.Tasty (TestTree, TestName, testGroup)
 import Test.Tasty.HUnit (testCase, (@?=))
 import Data.Time.LocalTime (TimeOfDay(..))
 import Text.ProtocolBuffers (messageGet)
 
-import qualified Com.Google.Transit.Realtime.FeedMessage as FM
 import qualified Data.ByteString.Lazy as L
 
 
@@ -22,7 +23,7 @@ feedTests = testGroup "realtime feed Tests"
 
 makeFeedTest ::
   (Eq a, Show a)
-  => (TestName, FM.FeedMessage -> a, a)
+  => (TestName, FeedMessage -> a, a)
   -> TestTree
 makeFeedTest (name, prepare, expected) = testCase name $ do
   feed <- withFeed "test/data/feed.bin"
@@ -172,7 +173,7 @@ testDepartureWithDelay = testGroup "check departure with delay" $ makeTest <$>
 
 withFeed ::
   FilePath
-  -> IO FM.FeedMessage
+  -> IO FeedMessage
 withFeed fp = do
   contents <- L.readFile fp
   case messageGet contents of

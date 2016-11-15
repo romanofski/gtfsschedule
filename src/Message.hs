@@ -1,9 +1,19 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternGuards     #-}
--- | A real time update from the GTFS feed
-module Message where
+{- | Module to parse the real time feed for real time updates
 
-import Schedule (ScheduleItem(..), ScheduleType(..), secondsToDeparture)
+This module uses protocol buffers to parse the feedmessage in order to update
+the schedule data.
+
+See also: https://developers.google.com/transit/gtfs-realtime/reference/
+-}
+module Message (updateSchedule, departureTimeWithDelay, FM.FeedMessage) where
+
+import Schedule (ScheduleItem(..), ScheduleState(..), secondsToDeparture)
+
+import Data.Functor ((<$>))
+import Prelude hiding (mapM)
+import Data.Traversable (mapM)
 
 import Com.Google.Transit.Realtime.TripUpdate.StopTimeEvent (StopTimeEvent(..), delay)
 import Com.Google.Transit.Realtime.TripDescriptor (trip_id, TripDescriptor(..))
@@ -25,6 +35,25 @@ import qualified Data.Map.Lazy as Map
 import Control.Monad (mfilter)
 import Control.Monad.State (State, execState, get, put)
 
+
+-- | Updates schedule with trip updates given by feed
+--
+updateSchedule ::
+  [ScheduleItem]
+  -> FM.FeedMessage
+  -> [ScheduleItem]
+updateSchedule schedule fm = Map.elems $ execState (mapM updateForTrip tripUpdates) m
+  where
+    tripUpdates = filterTripUpdate schedule $ getFeedEntities fm
+    m = Map.fromList $ toMap <$> schedule
+    toMap x = (tripId x, x)
+
+-- | calculate the new departure time with a delay from the real time update
+departureTimeWithDelay ::
+  TimeOfDay
+  -> Integer
+  -> TimeOfDay
+departureTimeWithDelay depTime d = timeToTimeOfDay $ secondsToDeparture depTime (secondsToDiffTime d)
 
 getFeedEntities ::
   FM.FeedMessage
@@ -51,18 +80,6 @@ getTripID x = utf8ToString tripID
   where
     descriptor = P'.getVal x TU.trip
     tripID = P'.getVal descriptor trip_id
-
--- | Updates schedule with trip updates given by feed
---
-updateSchedule ::
-  [ScheduleItem]
-  -> FM.FeedMessage
-  -> [ScheduleItem]
-updateSchedule schedule fm = Map.elems $ execState (mapM updateForTrip tripUpdates) m
-  where
-    tripUpdates = filterTripUpdate schedule $ getFeedEntities fm
-    m = Map.fromList $ toMap <$> schedule
-    toMap x = (tripId x, x)
 
 updateForTrip ::
   TU.TripUpdate
@@ -96,16 +113,9 @@ updateForTrip tu = do
 --
 scheduleTypeForStop ::
   STU.StopTimeUpdate
-  -> ScheduleType
+  -> ScheduleState
 scheduleTypeForStop STU.StopTimeUpdate { STU.schedule_relationship = Just StopTUSR.SKIPPED } = CANCELED
 scheduleTypeForStop _ = SCHEDULED
-
-
-departureTimeWithDelay ::
-  TimeOfDay
-  -> Integer
-  -> TimeOfDay
-departureTimeWithDelay depTime d = timeToTimeOfDay $ secondsToDeparture depTime (secondsToDiffTime d)
 
 getStopTimeUpdates ::
   TU.TripUpdate
