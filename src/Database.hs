@@ -8,6 +8,7 @@
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE PatternGuards              #-}
+{-# LANGUAGE CPP                        #-}
 {- | Database integration with Sqlite
 
 This module provides basic functions to interact with the static database imported in Sqlite.
@@ -28,7 +29,11 @@ import Data.Time.LocalTime ( TimeOfDay(..)
                            , timeToTimeOfDay)
 import Data.Time.Clock (secondsToDiffTime, getCurrentTime, UTCTime(..))
 import Data.Time.Calendar ( Day(..))
+#if MIN_VERSION_time(1, 5, 0)
+import Data.Time.Format (defaultTimeLocale)
+#else
 import System.Locale (defaultTimeLocale)
+#endif
 import Data.Time.Format (formatTime)
 import Data.Functor ((<$>))
 
