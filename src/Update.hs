@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 {- |  Update functionality: We determine if the static dataset is outdated.
 -}
@@ -10,7 +11,11 @@ module Update
 import Network.HTTP.Conduit
 import Network.HTTP.Types.Header (ResponseHeaders, Header, hLastModified)
 import Data.Time.Calendar (Day)
+#if MIN_VERSION_time(1, 5, 0)
+import Data.Time.Format (defaultTimeLocale)
+#else
 import System.Locale (defaultTimeLocale)
+#endif
 import Data.Time.Format (parseTime)
 import Data.List (find)
 import System.IO (hPrint, stderr)

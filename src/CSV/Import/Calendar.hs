@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 module CSV.Import.Calendar where
@@ -8,7 +9,11 @@ import Data.Csv ( FromNamedRecord
                 , parseField
                 )
 import Control.Monad (mzero)
+#if MIN_VERSION_time(1, 5, 0)
+import Data.Time.Format (defaultTimeLocale)
+#else
 import System.Locale (defaultTimeLocale)
+#endif
 import Data.Time.Format ( parseTime)
 import Data.Time.Calendar (Day)
 import GHC.Generics
@@ -48,8 +53,7 @@ toBool _ = True
 
 prepareSQL ::
   T.Text
-prepareSQL = "insert into calendar (service_id, monday, tuesday, wednesday, thursday, friday, saturday, sunday, start_date, end_date) \
-             \ values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+prepareSQL = "insert into calendar (service_id, monday, tuesday, wednesday, thursday, friday, saturday, sunday, start_date, end_date) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 
 convertToValues ::
   Calendar

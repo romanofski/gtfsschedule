@@ -4,18 +4,44 @@ sudo: false
 cache:
   directories:
     - $HOME/.stack
+    - $HOME/.ghc
 
 before_install:
   - mkdir -p ~/.local/bin
-  - export PATH=/opt/ghc/7.8.4/bin:$HOME/.local/bin:$PATH
+  - export PATH=/opt/ghc/$GHCVER/bin:$PATH
   - travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
-
-addons:
-  apt:
-    sources:
-      - hvr-ghc
-    packages:
-      - ghc-7.8.4
 
 script:
   - stack --no-terminal --skip-ghc-check test
+
+# The different configurations we want to test. We have BUILD=cabal which uses
+# cabal-install, and BUILD=stack which uses Stack. More documentation on each
+# of those below.
+#
+# We set the compiler values here to tell Travis to use a different
+# cache file per set of arguments.
+#
+# If you need to have different apt packages for each combination in the
+# matrix, you can use a line such as:
+#     addons: {apt: {packages: [libfcgi-dev,libgmp-dev]}}
+matrix:
+  include:
+  # The Stack builds. We can pass in arbitrary Stack arguments via the ARGS
+  # variable, such as using --stack-yaml to point to a different file.
+  - env: STACK_YAML="stack.yaml" GHCVER=7.10.3
+    compiler: ": #stack default"
+    addons: {apt: {packages: [ghc-7.10.3], sources: [hvr-ghc]}}
+
+  - env: STACK_YAML="stack-lts-22.yaml" GHCVER=7.8.4
+    compiler: ": #stack 7.8.4"
+    addons: {apt: {packages: [ghc-7.8.4], sources: [hvr-ghc]}}
+
+  allow_failures:
+    # Different OS' than Linux. Nice to know at this point.
+    - env: STACK_YAML="stack.yaml" GHCVER=7.10.3
+      compiler: ": #stack default"
+      os: osx
+
+    - env: STACK_YAML="stack-lts-22.yaml" GHCVER=7.8.4
+      compiler: ": #stack 7.8.4"
+      os: osx
