@@ -72,6 +72,18 @@ is used to indicate how long it takes to get to the stop. For example:
     # Factor in realtime updates
     gtfsschedule monitor 600248 --walktime 7 -r
 
+### Schedule change indicators
+
+When you run the program with realtime updates, the following changes are indicated as follows:
+
+    # Delayed service
+    !GTPB Destination 11 min (13:17:06) (66s)  <-- delay
+                              ^ departure time including delay
+
+    # Canceled service
+    GTPB Destination 11 min (13:17:00 !CANC!)
+
+
 ### Updating the database
 
 The command checks if the dataset can be updated in which it prints a
