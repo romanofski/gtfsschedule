@@ -6,7 +6,7 @@
 
 Name:           %{pkg_name}
 Version:        0.4.0.0
-Release:        1.20161127%{?dist}
+Release:        1.20161204%{?dist}
 Summary:        Be on time for your next public transport service
 
 License:        GPLv3+
@@ -89,7 +89,7 @@ This package provides the Haskell %{name} library development files.
 
 %ghc_fix_dynamic_rpath %{pkg_name}
 
-rm %{buildroot}%{ghc_pkgdocdir}/LICENSE
+rm %{buildroot}/%{?_defaultlicensedir}%{!?_defaultlicensedir:%_docdir}/%{name}/LICENSE
 
 
 %check
@@ -121,6 +121,10 @@ rm %{buildroot}%{ghc_pkgdocdir}/LICENSE
 
 
 %changelog
+* Sun Dec 04 2016 Róman Joost <roman@bromeco.de> - 0.4.0.0-1.20161204
+- use a different macro to remove the license from the buildroot during
+  build
+
 * Mon Nov 28 2016 Róman Joost <roman@bromeco.de> - 0.4.0.0-1.20161127
 - GHC 7.10.3 upgrade
 
