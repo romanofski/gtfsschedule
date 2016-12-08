@@ -1,3 +1,5 @@
+{-# LANGUAGE RecordWildCards #-}
+
 module Main where
 
 import Database (userDatabaseFile, getLastUpdatedDatabase)
@@ -6,36 +8,45 @@ import Message (updateSchedule)
 import Update (isDatasetUpToDate, printWarningForNewDataset, isCurrent)
 import CSV.Import (createNewDatabase)
 
-import Data.Functor ((<$>))
-import Control.Applicative ((<*>))
+import Control.Applicative ((<$>), (<*>), (<|>), pure, some)
+import Data.List (findIndex)
+import Data.Monoid ((<>))
+
+import Control.Monad.Reader (ask, local)
 
 import qualified Options.Applicative.Builder as Builder
-import Options.Applicative.Builder (long
-                                   , help
-                                   , (<>)
-                                   , option
-                                   , flag
-                                   , str
-                                   , info
-                                   , short
-                                   , auto)
-import Options.Applicative (optional)
-import Options.Applicative.Types (Parser)
+import Options.Applicative.Builder (
+  long, help, argument, metavar, flag, str, info, short, auto)
+import Options.Applicative.Types (Parser, ReadM(..))
 import Options.Applicative.Extra ( execParser
                                  , helper)
 import Data.Version (showVersion)
 import Paths_gtfsschedule (version)
-import Data.Maybe (fromMaybe)
 import Network.HTTP.Conduit (simpleHttp)
 
 import Text.ProtocolBuffers (messageGet)
 import qualified Data.Text as T
 
 
+type StopWithWalktime = (String, Integer)
+
+-- | optparse-applicative reader for stop/walktime pair
+--
+stopWithWalktime :: ReadM StopWithWalktime
+stopWithWalktime = ReadM $ do
+  s <- ask
+  let
+    i = findIndex (== '+') s
+    stopId = maybe s (`take` s) i
+    walktime = maybe "" ((`drop` s) . (+1)) i
+  (,)
+    <$> local (const stopId) (unReadM str)
+    <*> (local (const walktime) (unReadM auto) <|> pure 0)
+
+
 -- | Command line options
 data Command
-    = Monitor { stationID :: String
-              , walktime :: Maybe Integer
+    = Monitor { stopsWithWalktime :: [StopWithWalktime]
               , realtime :: Bool
               }
     | Setup { logging :: Bool}
@@ -64,29 +75,20 @@ setupOptions = Setup
   (Builder.long "logging"
     <> help "Enable logging")
 
+
 monitorOptions ::
   Parser Command
 monitorOptions =
-    Monitor <$>
-    Builder.argument
-        str
-        (Builder.metavar "STATION" <>
-         help "Station id to show the schedule for") <*>
-    optional
-        (option
-             auto
-             (long "walktime" <>
-              help
-                  "Time to reach the stop. Will be added to the current time to allow arriving at the station just in time for departure.")) <*>
-    flag
-        False
-        True
-        (long "realtime" <> short 'r' <> help "Enable realtime updates")
+  Monitor
+  <$> some (
+    argument stopWithWalktime
+      ( metavar "STATION-ID[:MINUTES]"
+      <> help "Station id to show the schedule for, and optional walktime in minutes to that station (default: 0))"
+      )
+    )
+  <*> flag False True
+    (long "realtime" <> short 'r' <> help "Enable realtime updates")
 
-delayFromMaybe ::
-  Maybe Integer
-  -> Integer
-delayFromMaybe = fromMaybe 0
 
 datasetURL :: String
 datasetURL = "https://gtfsrt.api.translink.com.au/GTFS/SEQ_GTFS.zip"
@@ -98,24 +100,26 @@ programHeader =
 
 runSchedule :: Command -> IO ()
 runSchedule (Setup _) = userDatabaseFile >>= createNewDatabase datasetURL
-runSchedule (Monitor sID delay False) = do
-  fp <- userDatabaseFile
-  timespec <- getTimeSpecFromNow $ delayFromMaybe delay
-  getSchedule fp sID timespec >>= printSchedule (delayFromMaybe delay)
-runSchedule (Monitor sID delay True) = do
-  let walkDelay = delayFromMaybe delay
-  fp <- userDatabaseFile
-  d <- getLastUpdatedDatabase (T.pack fp)
-  isDatasetUpToDate datasetURL d isCurrent >>= printWarningForNewDataset
+runSchedule (Monitor{..}) = do
+  let (sID, walkDelay) = head stopsWithWalktime
   timespec <- getTimeSpecFromNow walkDelay
+  fp <- userDatabaseFile
   schedule <- getSchedule fp sID timespec
-  bytes <- simpleHttp "http://gtfsrt.api.translink.com.au/Feed/SEQ"
-  case messageGet bytes of
-    Left err -> do
-      print $ "Error occurred decoding feed: " ++ err
-      printSchedule walkDelay schedule
-    Right (fm, _) -> do
-      printSchedule walkDelay $ updateSchedule schedule fm
+  schedule' <- if realtime
+    then do
+      d <- getLastUpdatedDatabase (T.pack fp)
+      isDatasetUpToDate datasetURL d isCurrent >>= printWarningForNewDataset
+      bytes <- simpleHttp "http://gtfsrt.api.translink.com.au/Feed/SEQ"
+      case messageGet bytes of
+        Left err -> do
+          print $ "Error occurred decoding feed: " ++ err
+          pure schedule
+        Right (fm, _) -> do
+          pure $ updateSchedule schedule fm
+    else
+      pure schedule
+  printSchedule walkDelay schedule'
+
 
 main :: IO ()
 main = execParser opts >>= runSchedule
