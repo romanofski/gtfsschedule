@@ -60,17 +60,25 @@ As an example this is Brisbane's Roma St, platform 8 stop code:
 Once you have your stop code, invoke the command to show next departing services:
 
     # Transport leaves in 11 minutes
-    gtfsschedule monitor 600248 --walktime 0
+    gtfsschedule monitor 600248
     Desitnation 11 min (13:17:00)
 
-The example invokes the command with an explicit `--walktime` option. The option
-is used to indicate how long it takes to get to the stop. For example:
+### Using a count down
+
+If you want to know when to leave your position in order to reach the service
+upon departure time, you can specify a delay:
 
     # Transport leaves in 11 minutes, factor in a walk time to the stop/station of 7 minutes
-    gtfsschedule monitor 600248 --walktime 7
+    gtfsschedule monitor 600248+7
 
-    # Factor in realtime updates
-    gtfsschedule monitor 600248 --walktime 7 -r
+    # Include in realtime updates with possible delays
+    gtfsschedule monitor 600248+7 -r
+    
+### Monitoring multiple stops
+
+You can specify multiple stops with different delays to reach them:
+
+    gtfsschedule monitor 600248+7 600249+5
 
 ### Schedule change indicators
 
@@ -97,8 +105,8 @@ to update download a new dataset and update your database.
 
 Xmobar:
 
-    Run Com "gtfsschedule" ["monitor", "600248", "-r", "--walktime", "7"] "gtfs" 600
+    Run Com "gtfsschedule" ["monitor", "600248", "-r"] "gtfs" 600
 
 Poor mans statusbar with `watch`. Use a terminal window and:
 
-    watch -n 60 "gtfsschedule monitor 600248 --walktime 7"
+    watch -n 60 "gtfsschedule monitor 600248+7"
