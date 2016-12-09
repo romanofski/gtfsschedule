@@ -1,14 +1,19 @@
+{-# LANGUAGE TupleSections #-}
+
 {- | This module provides schedule information. The information is primarily retrieved from the static schedule (e.g. from the database), but is updated with realtime information.
 -}
 module Schedule
        (ScheduleState(..), ScheduleItem(..), TimeSpec(..), getSchedule,
         getTimeSpecFromNow, printSchedule, formatScheduleItem,
-        minutesToDeparture, secondsToDeparture)
+        minutesToDeparture, secondsToDeparture,
+        sortSchedules)
        where
 
 import qualified Database as DB
 
 import Data.Functor ((<$>))
+import Data.List (sortBy)
+import Data.Ord (comparing)
 
 import Data.Time.LocalTime ( utcToLocalTime
                            , LocalTime(..)
@@ -56,6 +61,15 @@ getSchedule ::
   -> IO [ScheduleItem]
 getSchedule sqliteDBFilepath sCode timespec = nextDepartures (T.pack sqliteDBFilepath) sCode timespec
 
+-- | Given a list of schedules paired with an associated walk delay,
+-- sort the schedule items by bum-off-seat time.
+--
+sortSchedules :: [(Integer, [ScheduleItem])] -> [(Integer, ScheduleItem)]
+sortSchedules xxs =
+  sortBy (comparing f) $ xxs >>= (\(d,xs) -> fmap (d,) xs)
+  where
+    f (d, item) = timeOfDayToTime (departureTime item) - secondsToDiffTime (d * 60)
+
 -- | Create a specific point in time from the current time/date
 getTimeSpecFromNow ::
   Integer
@@ -69,15 +83,14 @@ getTimeSpecFromNow delay = do
 
 -- | prints list the Schedule to stdout
 --
-printSchedule ::
-  Integer
-  -> [ScheduleItem]
+printSchedule
+  :: [(Integer, ScheduleItem)]
   -> IO ()
-printSchedule walkDelay xs = do
+printSchedule xs = do
   t <- getCurrentTime
   tz <- getCurrentTimeZone
   let lTimeOfDay = localTimeOfDay $ utcToLocalTime tz t
-  putStr $ concat $ formatScheduleItem lTimeOfDay walkDelay <$> xs
+  putStr $ concat $ (\(d, x) -> formatScheduleItem lTimeOfDay d x) <$> xs
 
 -- | Format a schedule item in a user friendly way for printing
 formatScheduleItem ::
