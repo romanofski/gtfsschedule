@@ -3,14 +3,16 @@
 module Main where
 
 import Database (userDatabaseFile, getLastUpdatedDatabase)
-import Schedule (printSchedule, getSchedule, getTimeSpecFromNow)
+import Schedule (printSchedule, getSchedule, sortSchedules, getTimeSpecFromNow)
 import Message (updateSchedule)
 import Update (isDatasetUpToDate, printWarningForNewDataset, isCurrent)
 import CSV.Import (createNewDatabase)
 
 import Control.Applicative ((<$>), (<*>), (<|>), pure, some)
+import Data.Bifunctor (second)
 import Data.List (findIndex)
 import Data.Monoid ((<>))
+import Data.Traversable (traverse)
 
 import Control.Monad.Reader (ask, local)
 
@@ -101,11 +103,9 @@ programHeader =
 runSchedule :: Command -> IO ()
 runSchedule (Setup _) = userDatabaseFile >>= createNewDatabase datasetURL
 runSchedule (Monitor{..}) = do
-  let (sID, walkDelay) = head stopsWithWalktime
-  timespec <- getTimeSpecFromNow walkDelay
   fp <- userDatabaseFile
-  schedule <- getSchedule fp sID timespec
-  schedule' <- if realtime
+  schedules <- traverse (go fp) stopsWithWalktime
+  schedules' <- if realtime
     then do
       d <- getLastUpdatedDatabase (T.pack fp)
       isDatasetUpToDate datasetURL d isCurrent >>= printWarningForNewDataset
@@ -113,12 +113,18 @@ runSchedule (Monitor{..}) = do
       case messageGet bytes of
         Left err -> do
           print $ "Error occurred decoding feed: " ++ err
-          pure schedule
+          pure schedules
         Right (fm, _) -> do
-          pure $ updateSchedule schedule fm
+          pure $ fmap (second (`updateSchedule` fm)) schedules
     else
-      pure schedule
-  printSchedule walkDelay schedule'
+      pure schedules
+  let schedule = take 3 $ sortSchedules schedules'
+  printSchedule schedule
+  where
+    go fp (sID, walkDelay) = do
+      timespec <- getTimeSpecFromNow walkDelay
+      schedule <- getSchedule fp sID timespec
+      pure (walkDelay, schedule)
 
 
 main :: IO ()
