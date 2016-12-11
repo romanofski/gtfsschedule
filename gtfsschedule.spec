@@ -6,7 +6,7 @@
 
 Name:           %{pkg_name}
 Version:        0.4.0.0
-Release:        1.20161204%{?dist}
+Release:        1.20161212%{?dist}
 Summary:        Be on time for your next public transport service
 
 License:        GPLv3+
@@ -43,6 +43,11 @@ BuildRequires:  ghc-transformers-devel
 BuildRequires:  ghc-utf8-string-devel
 BuildRequires:  ghc-xdg-basedir-devel
 BuildRequires:  ghc-zip-archive-devel
+
+%if 0%{?fedora} <= 24
+BuildRequires:  ghc-bifunctors-devel
+%endif
+
 %if %{with tests}
 BuildRequires:  ghc-lifted-base-devel
 BuildRequires:  ghc-network-devel
@@ -121,6 +126,9 @@ rm %{buildroot}/%{?_defaultlicensedir}%{!?_defaultlicensedir:%_docdir}/%{name}/L
 
 
 %changelog
+* Mon Dec 12 2016 Róman Joost <roman@bromeco.de> - 0.4.0.0-1.20161212
+- nightly build with fix for #1
+
 * Sun Dec 04 2016 Róman Joost <roman@bromeco.de> - 0.4.0.0-1.20161204
 - use a different macro to remove the license from the buildroot during
   build
