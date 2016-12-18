@@ -3,7 +3,7 @@
 module Main where
 
 import Database (userDatabaseFile, getLastUpdatedDatabase)
-import Schedule (printSchedule, getSchedule, sortSchedules, getTimeSpecFromNow)
+import Schedule
 import Message (updateSchedule)
 import Update (isDatasetUpToDate, printWarningForNewDataset, isCurrent)
 import CSV.Import (createNewDatabase)
@@ -119,7 +119,7 @@ runSchedule (Monitor{..}) = do
     else
       pure schedules
   let schedule = take 3 $ sortSchedules schedules'
-  printSchedule schedule
+  printSchedule schedule =<< getCurrentTimeOfDay
   where
     go fp (sID, walkDelay) = do
       timespec <- getTimeSpecFromNow walkDelay
