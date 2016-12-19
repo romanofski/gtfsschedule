@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE TupleSections #-}
 
 {- | This module provides schedule information. The information is primarily retrieved from the static schedule (e.g. from the database), but is updated with realtime information.
@@ -91,8 +92,11 @@ getCurrentTimeOfDay = do
   return $ localTimeOfDay $ utcToLocalTime tz t
 
 printSchedule :: [(Integer, ScheduleItem)] -> TimeOfDay -> IO ()
+printSchedule [] _ =
+    let timespanInMin = show $ round (DB.queryTimeWindowLatest DB.nextServicesTimeWindow / 60)
+    in putStr $ "No services for the next " ++ timespanInMin ++ "min"
 printSchedule xs tod = do
-    print $
+    putStr $
         concat $
         (\(d,x) ->
               formatScheduleItem tod d x) <$>

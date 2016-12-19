@@ -18,16 +18,17 @@ module Database
        (ImportStarted(..), ImportStartedId, ImportFinished(..),
         ImportFinishedId, StopTime(..), StopTimeId, Trip(..), TripId,
         Calendar(..), CalendarId, Stop(..), StopId, Route(..), RouteId,
-        UpdateType(..), migrateAll, userDatabaseFile, getStopID,
-        getNextDepartures, getLastUpdatedDatabase,
+        UpdateType(..), QueryTimeWindow(..), migrateAll, userDatabaseFile,
+        getStopID, getNextDepartures, getLastUpdatedDatabase,
         prepareDatabaseForUpdate, addDatabaseIndices, prepareStmt,
-        rawInsert, runDBWithLogging, runDBWithoutLogging)
+        rawInsert, runDBWithLogging, runDBWithoutLogging,
+        nextServicesTimeWindow)
        where
 
 import Data.Time.LocalTime ( TimeOfDay(..)
                            , timeOfDayToTime
                            , timeToTimeOfDay)
-import Data.Time.Clock (secondsToDiffTime, getCurrentTime, UTCTime(..))
+import Data.Time.Clock (secondsToDiffTime, getCurrentTime, UTCTime(..), DiffTime)
 import Data.Time.Calendar ( Day(..))
 #if MIN_VERSION_time(1, 5, 0)
 import Data.Time.Format (defaultTimeLocale)
@@ -142,6 +143,16 @@ getStopID stopC = select $ from $ \s -> do
   where_ (s ^. StopCode ==. val (Just stopC))
   return (s ^. StopStopId)
 
+-- | A window in between services are queried
+--
+data QueryTimeWindow = QueryTimeWindow
+    { queryTimeWindowEarliest :: DiffTime
+    , queryTimeWindowLatest :: DiffTime
+    } deriving (Show)
+
+nextServicesTimeWindow :: QueryTimeWindow
+nextServicesTimeWindow = QueryTimeWindow (secondsToDiffTime 60) (secondsToDiffTime 60 * 30)
+
 -- | Returns next possible departures
 --
 -- TODO: limit is currently hard coded
@@ -168,8 +179,8 @@ getNextDepartures stopID now nowDate = select $ from $ \(st, t, c, s, r) -> do
   orderBy [asc (st ^. StopTimeDepartureTime)]
   limit 3
   return (st, t, r)
-  where earliest = timeToTimeOfDay $ timeOfDayToTime now - secondsToDiffTime 60
-        latest = timeToTimeOfDay $ timeOfDayToTime now + secondsToDiffTime 60 * 30
+  where earliest = timeToTimeOfDay $ timeOfDayToTime now - queryTimeWindowEarliest nextServicesTimeWindow
+        latest = timeToTimeOfDay $ timeOfDayToTime now + queryTimeWindowLatest nextServicesTimeWindow
         weekday = formatTime defaultTimeLocale "%A" nowDate
         weekdaySqlExp = weekdayToSQLExp weekday
 
