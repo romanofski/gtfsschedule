@@ -2,10 +2,10 @@
 
 module Main where
 
-import Database (userDatabaseFile, getLastUpdatedDatabase)
-import Schedule
-import Message (updateSchedule)
-import Update (isDatasetUpToDate, printWarningForNewDataset, isCurrent)
+import GTFS.Database (userDatabaseFile, getLastUpdatedDatabase)
+import GTFS.Schedule
+import GTFS.Realtime.Message (updateSchedule)
+import GTFS.Realtime.Update (isDatasetUpToDate, printWarningForNewDataset, isCurrent)
 import CSV.Import (createNewDatabase)
 
 import Control.Applicative ((<$>), (<*>), (<|>), pure, some)

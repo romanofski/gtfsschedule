@@ -5,8 +5,8 @@
 module CSVImport (importTests) where
 
 import qualified CSV.Import as CSV
-import qualified Database as DB
-import Schedule (getSchedule, TimeSpec(..), ScheduleItem(..), ScheduleState(..))
+import qualified GTFS.Database as DB
+import GTFS.Schedule (getSchedule, TimeSpec(..), ScheduleItem(..), ScheduleState(..))
 
 import Fixtures (withConcurrentTCPServer, serverHost)
 

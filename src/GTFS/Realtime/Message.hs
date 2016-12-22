@@ -7,9 +7,9 @@ the schedule data.
 
 See also: https://developers.google.com/transit/gtfs-realtime/reference/
 -}
-module Message (updateSchedule, departureTimeWithDelay, FM.FeedMessage) where
+module GTFS.Realtime.Message (updateSchedule, departureTimeWithDelay, FM.FeedMessage) where
 
-import Schedule (ScheduleItem(..), ScheduleState(..), secondsToDeparture)
+import GTFS.Schedule (ScheduleItem(..), ScheduleState(..), secondsToDeparture)
 
 import Data.Functor ((<$>))
 import Prelude hiding (mapM)

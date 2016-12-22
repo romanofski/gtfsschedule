@@ -3,14 +3,14 @@
 
 {- | This module provides schedule information. The information is primarily retrieved from the static schedule (e.g. from the database), but is updated with realtime information.
 -}
-module Schedule
+module GTFS.Schedule
        (ScheduleState(..), ScheduleItem(..), TimeSpec(..), getSchedule,
         getTimeSpecFromNow, printSchedule, formatScheduleItem,
         minutesToDeparture, secondsToDeparture, sortSchedules,
         getCurrentTimeOfDay)
        where
 
-import qualified Database as DB
+import qualified GTFS.Database as DB
 
 import Data.Functor ((<$>))
 import Data.List (sortBy)

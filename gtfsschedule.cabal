@@ -16,10 +16,10 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Message
-                     , Schedule
-                     , Database
-                     , Update
+  exposed-modules:     GTFS.Realtime.Message
+                     , GTFS.Realtime.Update
+                     , GTFS.Schedule
+                     , GTFS.Database
                      , CSV.Import
   other-modules:       Com.Google.Transit.Realtime.Alert
                      , Com.Google.Transit.Realtime.Alert.Cause

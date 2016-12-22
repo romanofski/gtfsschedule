@@ -1,14 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
-import Schedule ( ScheduleItem(..)
+import GTFS.Schedule ( ScheduleItem(..)
                 , ScheduleState(..)
                 , TimeSpec(..)
                 , minutesToDeparture
                 , formatScheduleItem
                 , printSchedule
                 , getSchedule)
-import qualified Database as DB
+import qualified GTFS.Database as DB
 import qualified CSV.Import as CSV
 
 import Realtime (feedTests)

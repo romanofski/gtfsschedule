@@ -14,6 +14,8 @@ import qualified CSV.Import.Calendar as CSVCalendar
 import qualified CSV.Import.Stop as CSVStop
 import qualified CSV.Import.StopTime as CSVStopTime
 
+import qualified GTFS.Database as DB
+
 import qualified Data.ByteString.Lazy as B
 import Data.Csv.Streaming (decodeByName)
 import Data.Csv (FromNamedRecord)
@@ -34,7 +36,6 @@ import Control.Monad.Trans.Resource (MonadResource, runResourceT)
 import Database.Esqueleto (PersistValue(..))
 import System.Directory (createDirectoryIfMissing)
 import qualified Filesystem.Path.CurrentOS as Path
-import qualified Database as DB
 import qualified Database.Persist.Sqlite as Sqlite
 import qualified Data.Text as T
 import qualified Codec.Archive.Zip as Zip

@@ -5,7 +5,7 @@
 module TestUpdate (updateTests) where
 
 import Fixtures (withConcurrentTCPServer)
-import Update (isDatasetUpToDate, isCurrent, Error(..))
+import GTFS.Realtime.Update (isDatasetUpToDate, isCurrent, Error(..))
 
 import Data.Time.Calendar (fromGregorian)
 import Test.Tasty.HUnit (testCase, (@?=))

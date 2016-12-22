@@ -14,7 +14,7 @@
 This module provides basic functions to interact with the static database imported in Sqlite.
 
 -}
-module Database
+module GTFS.Database
        (ImportStarted(..), ImportStartedId, ImportFinished(..),
         ImportFinishedId, StopTime(..), StopTimeId, Trip(..), TripId,
         Calendar(..), CalendarId, Stop(..), StopId, Route(..), RouteId,

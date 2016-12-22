@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {- |  Update functionality: We determine if the static dataset is outdated.
 -}
-module Update
+module GTFS.Realtime.Update
        (isDatasetUpToDate, printWarningForNewDataset, isCurrent,
         Error(..))
        where
