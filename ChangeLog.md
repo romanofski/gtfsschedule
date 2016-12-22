@@ -1,5 +1,17 @@
 # ChangeLog
 
+## 0.5.0.0 (unreleased)
+
+Major changes:
+
+* Supports to specify multiple stops via positional args. (Contributed
+  by Fraser Tweedale)
+
+Bugfixes:
+
+* Shows message if no services are leaving a stop for the next couple of
+  minutes.
+
 ## 0.4.0.0 (17-11-2016)
 
 Major changes:

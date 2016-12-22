@@ -15,6 +15,12 @@ one particular stop.
 The command shows remaining minutes in order to leave the current spot (e.g.
 office) to minimize the waiting time at the bus or train stop.
 
+### Non Goals
+
+This programs main goal isn't a:
+
+* a route planner
+
 
 ## Installation
 
@@ -73,7 +79,7 @@ upon departure time, you can specify a delay:
 
     # Include in realtime updates with possible delays
     gtfsschedule monitor 600248+7 -r
-    
+
 ### Monitoring multiple stops
 
 You can specify multiple stops with different delays to reach them:
