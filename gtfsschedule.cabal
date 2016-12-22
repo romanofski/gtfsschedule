@@ -16,7 +16,6 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N -Wall -O2
   exposed-modules:     Message
                      , Schedule
                      , Database
@@ -82,7 +81,6 @@ library
 executable gtfsschedule
   hs-source-dirs:      app
   main-is:             Main.hs
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N -Wall -O2
   default-language:    Haskell2010
   build-depends:       base
                      , mtl
@@ -104,7 +102,6 @@ test-suite unit-tests
                        Realtime
                        Fixtures
                        TestUpdate
-  -- ghc-options:         -fprof-auto -fprof-cafs
   build-depends:       base
                      , gtfsschedule
                      , tasty-hunit
@@ -126,7 +123,7 @@ test-suite unit-tests
                      , protocol-buffers
                      , temporary
                      , directory
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N -Wall
+                     , silently
   default-language:    Haskell2010
 
 source-repository head

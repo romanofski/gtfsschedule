@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE TupleSections #-}
 
 {- | This module provides schedule information. The information is primarily retrieved from the static schedule (e.g. from the database), but is updated with realtime information.
@@ -5,8 +6,8 @@
 module Schedule
        (ScheduleState(..), ScheduleItem(..), TimeSpec(..), getSchedule,
         getTimeSpecFromNow, printSchedule, formatScheduleItem,
-        minutesToDeparture, secondsToDeparture,
-        sortSchedules)
+        minutesToDeparture, secondsToDeparture, sortSchedules,
+        getCurrentTimeOfDay)
        where
 
 import qualified Database as DB
@@ -81,16 +82,25 @@ getTimeSpecFromNow delay = do
       let earliestTime = calculateEarliestDepartureTime t tz (delayAsDiffTime delay)
       return $ TimeSpec earliestTime lday
 
--- | prints list the Schedule to stdout
+
+-- | Returns current time of day
 --
-printSchedule
-  :: [(Integer, ScheduleItem)]
-  -> IO ()
-printSchedule xs = do
+getCurrentTimeOfDay :: IO TimeOfDay
+getCurrentTimeOfDay = do
   t <- getCurrentTime
   tz <- getCurrentTimeZone
-  let lTimeOfDay = localTimeOfDay $ utcToLocalTime tz t
-  putStr $ concat $ (\(d, x) -> formatScheduleItem lTimeOfDay d x) <$> xs
+  return $ localTimeOfDay $ utcToLocalTime tz t
+
+printSchedule :: [(Integer, ScheduleItem)] -> TimeOfDay -> IO ()
+printSchedule [] _ =
+    let timespanInMin = show $ round (DB.queryTimeWindowLatest DB.nextServicesTimeWindow / 60)
+    in putStr $ "No services for the next " ++ timespanInMin ++ "min"
+printSchedule xs tod = do
+    putStr $
+        concat $
+        (\(d,x) ->
+              formatScheduleItem tod d x) <$>
+        xs
 
 -- | Format a schedule item in a user friendly way for printing
 formatScheduleItem ::

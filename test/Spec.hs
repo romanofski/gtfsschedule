@@ -6,6 +6,7 @@ import Schedule ( ScheduleItem(..)
                 , TimeSpec(..)
                 , minutesToDeparture
                 , formatScheduleItem
+                , printSchedule
                 , getSchedule)
 import qualified Database as DB
 import qualified CSV.Import as CSV
@@ -25,6 +26,7 @@ import Control.Monad.Trans.Reader (ReaderT)
 import Control.Monad.Trans.Resource (ResourceT)
 import Control.Monad.Logger (NoLoggingT(..))
 import System.IO.Temp (withSystemTempFile)
+import System.IO.Silently (capture)
 import System.Directory (getCurrentDirectory)
 
 import qualified Database.Persist.Sqlite as Sqlite
@@ -37,7 +39,14 @@ tests = testGroup "unit tests" [ feedTests
                                , testMinutesToDeparture
                                , testFormatScheduleItem
                                , testDepartures
+                               , testPrintSchedule
                                ]
+
+testPrintSchedule ::
+  TestTree
+testPrintSchedule = testCase "prints empty schedule" $ do
+  (output, _) <- capture $ printSchedule [] (TimeOfDay 7 7 7)
+  output @?= "No services for the next 30min"
 
 makeTest ::
   (Eq a, Show a)
