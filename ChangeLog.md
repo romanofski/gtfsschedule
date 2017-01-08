@@ -4,6 +4,8 @@
 
 Major changes:
 
+* Consistently formatted if service is delayed or running ahead
+* Easier to read service delays (issue #6)
 * Supports to specify multiple stops via positional args. (Contributed
   by Fraser Tweedale)
 

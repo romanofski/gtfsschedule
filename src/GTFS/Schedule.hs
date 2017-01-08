@@ -1,5 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE CPP #-}
 
 {- | This module provides schedule information. The information is primarily retrieved from the static schedule (e.g. from the database), but is updated with realtime information.
 -}
@@ -7,7 +8,7 @@ module GTFS.Schedule
        (ScheduleState(..), ScheduleItem(..), TimeSpec(..), getSchedule,
         getTimeSpecFromNow, printSchedule, formatScheduleItem,
         minutesToDeparture, secondsToDeparture, sortSchedules,
-        getCurrentTimeOfDay)
+        getCurrentTimeOfDay, humanReadableDelay)
        where
 
 import qualified GTFS.Database as DB
@@ -23,6 +24,12 @@ import Data.Time.LocalTime ( utcToLocalTime
                            , timeToTimeOfDay
                            , TimeZone)
 import Data.Time.Calendar (Day)
+#if MIN_VERSION_time(1, 5, 0)
+import Data.Time.Format (defaultTimeLocale)
+#else
+import System.Locale (defaultTimeLocale)
+#endif
+import Data.Time.Format (formatTime)
 import Data.Time (getCurrentTime, getCurrentTimeZone)
 import Data.Time.Clock (secondsToDiffTime, DiffTime, UTCTime)
 import Data.Maybe (fromMaybe)
@@ -113,10 +120,29 @@ formatScheduleItem _ _ ScheduleItem { serviceName = sn, departureTime = dt, sche
 formatScheduleItem nowLT walkDelay item =
   delayIndicator ++ serviceName item ++ " " ++ show (minutesToDeparture item nowLT - walkDelay) ++ "min (" ++ show (departureTime item) ++ schedDepTime ++ ") "
     where
-      delayIndicator = if departureDelay item > 0 then "!" else ""
-      schedDepTime = if departureDelay item > 0
-                     then " (" ++ show (departureDelay item) ++ "s)"
-                     else ""
+      delayIndicator = if departureDelay item /= 0 then "!" else ""
+      schedDepTime = if departureDelay item /= 0 then " (" ++ humanReadableDelay item ++ ")" else ""
+
+-- | Converts the delay to a more readable format
+--
+-- We convert the delay to a current time from midnight and then use the common
+-- formatTime function to produce the user friendly format. That doesn't work
+-- for negative values (in cases the service is running ahead of it's schedule).
+-- To work with negative values, we use the absolute value instead of a prefixed
+-- value which always produces the right time from midnight.
+--
+humanReadableDelay :: ScheduleItem -> String
+humanReadableDelay x
+  | depDelay < 60 = formatTime defaultTimeLocale (prefix ++ "%Ss") t
+  | depDelay < 60 * 60 = formatTime defaultTimeLocale (prefix ++ "%M:%S") t
+  | otherwise = formatTime defaultTimeLocale (prefix ++ "%k:%M:%S") t
+  where
+    t = timeToTimeOfDay $ secondsToDiffTime $ depDelay
+    depDelay = abs $ departureDelay x
+    prefix =
+        if departureDelay x <= 0
+            then "+"
+            else "-"
 
 -- | calculates how many minutes we have before the service departs
 minutesToDeparture ::

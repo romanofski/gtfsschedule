@@ -1,13 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
-import GTFS.Schedule ( ScheduleItem(..)
-                , ScheduleState(..)
-                , TimeSpec(..)
-                , minutesToDeparture
-                , formatScheduleItem
-                , printSchedule
-                , getSchedule)
+import GTFS.Schedule
+       (ScheduleItem(..), ScheduleState(..), TimeSpec(..),
+        minutesToDeparture, formatScheduleItem, printSchedule,
+        humanReadableDelay, getSchedule)
 import qualified GTFS.Database as DB
 import qualified CSV.Import as CSV
 
@@ -40,6 +37,7 @@ tests = testGroup "unit tests" [ feedTests
                                , testFormatScheduleItem
                                , testDepartures
                                , testPrintSchedule
+                               , testHumanReadableDelay
                                ]
 
 testPrintSchedule ::
@@ -59,10 +57,10 @@ testFormatScheduleItem ::
 testFormatScheduleItem = testGroup "formates schedule item" $ makeTest <$>
   [ ("punctual", formatScheduleItem (TimeOfDay 7 45 0) 0 punctual, "Punctual 5min (07:50:00) ")
   , ("punctual with walking delay", formatScheduleItem (TimeOfDay 7 45 0) 2 punctual, "Punctual 3min (07:50:00) ")
-  , ("running late", formatScheduleItem (TimeOfDay 7 45 0) 0 runningLate, "!Running Late 6min (07:51:00 (60s)) ")
-  , ("running late + walking delay", formatScheduleItem (TimeOfDay 7 45 0) 2 runningLate, "!Running Late 4min (07:51:00 (60s)) ")
-  , ("running ahead", formatScheduleItem (TimeOfDay 7 45 0) 0 runningAhead, "Running Ahead 4min (07:49:00) ")
-  , ("running ahead + walk delay", formatScheduleItem (TimeOfDay 7 45 0) 2 runningAhead, "Running Ahead 2min (07:49:00) ")
+  , ("running late", formatScheduleItem (TimeOfDay 7 45 0) 0 runningLate, "!Running Late 6min (07:51:00 (-04:40)) ")
+  , ("running late + walking delay", formatScheduleItem (TimeOfDay 7 45 0) 2 runningLate, "!Running Late 4min (07:51:00 (-04:40)) ")
+  , ("running ahead", formatScheduleItem (TimeOfDay 7 45 0) 0 runningAhead, "!Running Ahead 5min (07:50:00 (+04:20)) ")
+  , ("running ahead + walk delay", formatScheduleItem (TimeOfDay 7 45 0) 2 runningAhead, "!Running Ahead 3min (07:50:00 (+04:20)) ")
   ]
     where
       punctual = ScheduleItem { tripId = "."
@@ -77,15 +75,15 @@ testFormatScheduleItem = testGroup "formates schedule item" $ makeTest <$>
                                   , stopId = "."
                                   , serviceName = "Running Ahead"
                                   , scheduledDepartureTime = TimeOfDay 7 50 00
-                                  , departureDelay = -60
-                                  , departureTime = TimeOfDay 7 49 00
+                                  , departureDelay = -260
+                                  , departureTime = TimeOfDay 7 50 00  -- not consistent with delay
                                   , scheduleType = SCHEDULED
                                   }
       runningLate = ScheduleItem { tripId = "."
                                   , stopId = "."
                                   , serviceName = "Running Late"
                                   , scheduledDepartureTime = TimeOfDay 7 50 00
-                                  , departureDelay = 60
+                                  , departureDelay = 280
                                   , departureTime = TimeOfDay 7 51 00
                                   , scheduleType = SCHEDULED
                                   }
@@ -105,6 +103,76 @@ testMinutesToDeparture = testGroup "calculates right delay" $ map makeTest
                           , departureTime = TimeOfDay 7 51 00
                           , scheduleType = SCHEDULED
                           }
+
+
+testHumanReadableDelay ::
+  TestTree
+testHumanReadableDelay =
+    testGroup "shows user friendly delay" $
+    map
+        hrTest
+        [ ( "seconds delayed"
+          , (humanReadableDelay
+                 ScheduleItem
+                 { tripId = "_"
+                 , stopId = "_"
+                 , serviceName = "_"
+                 , scheduledDepartureTime = TimeOfDay 0 0 0
+                 , departureDelay = 40
+                 , departureTime = TimeOfDay 0 0 0
+                 , scheduleType = SCHEDULED
+                 })
+          , "-40s")
+        , ( "minute late"
+          , (humanReadableDelay
+                 ScheduleItem
+                 { tripId = "_"
+                 , stopId = "_"
+                 , serviceName = "_"
+                 , scheduledDepartureTime = TimeOfDay 0 0 0
+                 , departureDelay = 60
+                 , departureTime = TimeOfDay 0 0 0
+                 , scheduleType = SCHEDULED
+                 })
+          , "-01:00")
+        , ( "minutes late"
+          , (humanReadableDelay
+                 ScheduleItem
+                 { tripId = "_"
+                 , stopId = "_"
+                 , serviceName = "_"
+                 , scheduledDepartureTime = TimeOfDay 0 0 0
+                 , departureDelay = 455
+                 , departureTime = TimeOfDay 0 0 0
+                 , scheduleType = SCHEDULED
+                 })
+          , "-07:35")
+        , ( "seconds ahead"
+          , (humanReadableDelay
+                 ScheduleItem
+                 { tripId = "_"
+                 , stopId = "_"
+                 , serviceName = "_"
+                 , scheduledDepartureTime = TimeOfDay 0 0 0
+                 , departureDelay = -20
+                 , departureTime = TimeOfDay 0 0 0
+                 , scheduleType = SCHEDULED
+                 })
+          , "+20s")
+        , ( "minutes ahead"
+          , (humanReadableDelay
+                 ScheduleItem
+                 { tripId = "_"
+                 , stopId = "_"
+                 , serviceName = "_"
+                 , scheduledDepartureTime = TimeOfDay 0 0 0
+                 , departureDelay = -230
+                 , departureTime = TimeOfDay 0 0 0
+                 , scheduleType = SCHEDULED
+                 })
+          , "+03:50")]
+  where
+    hrTest (title,actual,expected) = testCase title (actual @?= expected)
 
 makeDatabaseImportTest ::
   TestInput

@@ -91,7 +91,7 @@ You can specify multiple stops with different delays to reach them:
 When you run the program with realtime updates, the following changes are indicated as follows:
 
     # Delayed service
-    !GTPB Destination 11 min (13:17:06) (66s)  <-- delay
+    !GTPB Destination 11 min (13:17:06 (46s)) <-- delay
                               ^ departure time including delay
 
     # Canceled service
