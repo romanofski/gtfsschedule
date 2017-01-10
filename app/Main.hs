@@ -5,7 +5,7 @@ module Main where
 import GTFS.Database (userDatabaseFile, getLastUpdatedDatabase)
 import GTFS.Schedule
 import GTFS.Realtime.Message (updateSchedule)
-import GTFS.Realtime.Update (isDatasetUpToDate, printWarningForNewDataset, isCurrent)
+import GTFS.Realtime.Update (isDatasetUpToDate, printWarningForNewDataset, isCurrent, Error)
 import CSV.Import (createNewDatabase)
 
 import Control.Applicative ((<$>), (<*>), (<|>), pure, some)
@@ -50,6 +50,7 @@ stopWithWalktime = ReadM $ do
 data Command
     = Monitor { stopsWithWalktime :: [StopWithWalktime]
               , realtime :: Bool
+              , autoUpdate :: Bool
               }
     | Setup { logging :: Bool}
 
@@ -90,11 +91,28 @@ monitorOptions =
     )
   <*> flag False True
     (long "realtime" <> short 'r' <> help "Enable realtime updates")
+  <*> flag False True
+    (long "autoupdate" <> short 'u' <> help "Automatically update the static GTFS dataset")
 
 
 datasetURL :: String
 datasetURL = "https://gtfsrt.api.translink.com.au/GTFS/SEQ_GTFS.zip"
 
+printOrUpdateDataset :: Bool -> IO ()
+printOrUpdateDataset False = dbIsOutOfDate >>= printWarningForNewDataset
+printOrUpdateDataset True = do
+  result <- dbIsOutOfDate
+  case result of
+    Right True -> return () -- database is up to date, nothing to do
+    Right False -> userDatabaseFile >>= createNewDatabase datasetURL
+    Left err -> print err
+
+dbIsOutOfDate :: IO (Either Error Bool)
+dbIsOutOfDate = do
+  fp <- userDatabaseFile
+  d <- getLastUpdatedDatabase (T.pack fp)
+  result <- isDatasetUpToDate datasetURL d isCurrent
+  return result
 
 programHeader :: String
 programHeader =
@@ -104,11 +122,10 @@ runSchedule :: Command -> IO ()
 runSchedule (Setup _) = userDatabaseFile >>= createNewDatabase datasetURL
 runSchedule (Monitor{..}) = do
   fp <- userDatabaseFile
+  printOrUpdateDataset autoUpdate
   schedules <- traverse (go fp) stopsWithWalktime
   schedules' <- if realtime
     then do
-      d <- getLastUpdatedDatabase (T.pack fp)
-      isDatasetUpToDate datasetURL d isCurrent >>= printWarningForNewDataset
       bytes <- simpleHttp "http://gtfsrt.api.translink.com.au/Feed/SEQ"
       case messageGet bytes of
         Left err -> do

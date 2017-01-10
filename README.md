@@ -107,6 +107,12 @@ The command checks if the dataset can be updated in which it prints a
 
 to update download a new dataset and update your database.
 
+### Automatically keeping the database up-to-date
+
+You can invoke `gtfsschedule monitor` with `-u` to keep your static dataset up-to-date:
+
+    gtfsschedule monitor -u 600029
+
 ### Config examples for status monitors
 
 Xmobar:
