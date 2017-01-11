@@ -21,7 +21,13 @@ updateTests = testGroup "update tests"
             , testDatabaseOutdated
             , testNoModifiedHeaders
             , testGarbledHeaders
+            , testOnlyErrorOnUnavailableServer
             ]
+
+testOnlyErrorOnUnavailableServer :: TestTree
+testOnlyErrorOnUnavailableServer = testCase "only error on unavailable server" $ do
+      result <- isDatasetUpToDate ("http://127.0.0.1:39299") (fromGregorian 2016 10 26) isCurrent
+      result @?= Left (Error "Problem communicating with server. Received empty headers.")
 
 testDatabaseUpToDate :: TestTree
 testDatabaseUpToDate =
