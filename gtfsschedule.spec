@@ -5,7 +5,7 @@
 %bcond_with tests
 
 Name:           %{pkg_name}
-Version:        0.4.0.0
+Version:        0.5.0.0
 Release:        1.20161212%{?dist}
 Summary:        Be on time for your next public transport service
 
@@ -126,6 +126,9 @@ rm %{buildroot}/%{?_defaultlicensedir}%{!?_defaultlicensedir:%_docdir}/%{name}/L
 
 
 %changelog
+* Wed Jan 11 2017 Róman Joost <roman@bromeco.de> - 0.5.0.0-1
+* 0.5 release
+
 * Mon Dec 12 2016 Róman Joost <roman@bromeco.de> - 0.4.0.0-1.20161212
 - nightly build with fix for #1
 
