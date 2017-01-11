@@ -6,7 +6,7 @@
 
 Name:           %{pkg_name}
 Version:        0.5.0.0
-Release:        1.20161212%{?dist}
+Release:        1%{?dist}
 Summary:        Be on time for your next public transport service
 
 License:        GPLv3+
