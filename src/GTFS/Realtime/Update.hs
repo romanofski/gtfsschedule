@@ -19,6 +19,7 @@ import System.Locale (defaultTimeLocale)
 import Data.Time.Format (parseTime)
 import Data.List (find)
 import System.IO (hPrint, stderr)
+import Control.Monad (join)
 import qualified Control.Exception as E
 import qualified Data.ByteString.Char8 as B
 
@@ -49,8 +50,13 @@ isDatasetUpToDate url dbmodified f = do
                       "Problem communicating with server. Received empty headers.")
         else do
             case getLastModified headers of
-                Left err -> return $ Left err
-                Right d -> return $ Right (f d dbmodified)
+                Nothing ->
+                    return $
+                    Left
+                        (Error $
+                         "Couldn't determine last modification date from server headers: " ++
+                         show headers)
+                Just d -> return $ Right (f d dbmodified)
 
 -- | Prints an additional line to let the user know an updated static dataset is available
 printWarningForNewDataset ::
@@ -85,19 +91,5 @@ getHeadersForDataset url = do
 
 getLastModified ::
   ResponseHeaders
-  -> Either Error Day
-getLastModified h =
-    case (find (\(n,_) -> n == hLastModified) h) of
-        Nothing ->
-            Left (Error ("Couldn't find last-modified headers in: " ++ show h))
-        Just (_,modifiedHeader) ->
-            case parseTime
-                     defaultTimeLocale
-                     "%a, %d %b %Y %T %Z"
-                     (B.unpack modifiedHeader) of
-                Just datasetModified -> Right datasetModified
-                Nothing ->
-                    Left
-                        (Error
-                             ("Couldn't parse last modified header: " ++
-                              show modifiedHeader))
+  -> Maybe Day
+getLastModified h = join $ (\x -> parseTime defaultTimeLocale "%a, %d %b %Y %T %Z" $ B.unpack $ snd x) <$> find (\(n,_) -> n == hLastModified) h

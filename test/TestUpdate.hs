@@ -20,7 +20,6 @@ updateTests = testGroup "update tests"
             [ testDatabaseUpToDate
             , testDatabaseOutdated
             , testNoModifiedHeaders
-            , testGarbledHeaders
             , testOnlyErrorOnUnavailableServer
             ]
 
@@ -53,28 +52,9 @@ testNoModifiedHeaders =
     testCase "no modified headers results in error" $
     withConcurrentTCPServer withHTTPDataNoModifiedHeader $ \port -> do
       result <- isDatasetUpToDate ("http://127.0.0.1:" ++ show port) (fromGregorian 2016 10 23) isCurrent
-      result @?= Left (Error "Couldn't find last-modified headers in: [(\"Content-Type\",\"text/plain\")]")
+      result @?= Left (Error "Couldn't determine last modification date from server headers: [(\"Content-Type\",\"text/plain\")]")
 
 withHTTPDataNoModifiedHeader :: AppData -> IO ()
 withHTTPDataNoModifiedHeader appData = src $$ appSink appData
   where
     src = yield "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nTest"
-
-testGarbledHeaders :: TestTree
-testGarbledHeaders =
-    testCase "garbled modified headers results in error" $
-    withConcurrentTCPServer withHTTPData $
-    \port ->
-         do result <-
-                isDatasetUpToDate
-                    ("http://127.0.0.1:" ++ show port)
-                    (fromGregorian 2016 10 23)
-                    isCurrent
-            result @?=
-                Left
-                    (Error
-                         "Couldn't parse last modified header: \"text/plain\"")
-  where
-    withHTTPData appData =
-        yield "HTTP/1.1 200 OK\r\nLast-Modified: text/plain\r\n\r\nTest" $$
-        appSink appData
