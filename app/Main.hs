@@ -2,19 +2,22 @@
 
 module Main where
 
-import GTFS.Database (userDatabaseFile, getLastUpdatedDatabase)
+import Config (loadGTFSConfig, withConfigfile, Command(..))
+
 import GTFS.Schedule
-import GTFS.Realtime.Message (updateSchedule)
-import GTFS.Realtime.Update (isDatasetUpToDate, printWarningForNewDataset, isCurrent, Error)
+import GTFS.Database (userDatabaseFile)
+import GTFS.Realtime.Message (updateSchedulesWithRealtimeData)
+import GTFS.Realtime.Update (isDatasetUpToDate, printOrUpdateDataset, isCurrent, Error)
 import CSV.Import (createNewDatabase)
 
-import Control.Applicative ((<$>), (<*>), (<|>), pure, some)
-import Data.Bifunctor (second)
+import Control.Applicative ((<$>), (<*>), (<|>), pure, some, optional)
 import Data.List (findIndex)
 import Data.Monoid ((<>))
-import Data.Traversable (traverse)
+import Data.Maybe (fromMaybe)
 
 import Control.Monad.Reader (ask, local)
+
+import Data.Ini (Ini)
 
 import qualified Options.Applicative.Builder as Builder
 import Options.Applicative.Builder (
@@ -24,13 +27,9 @@ import Options.Applicative.Extra ( execParser
                                  , helper)
 import Data.Version (showVersion)
 import Paths_gtfsschedule (version)
-import Network.HTTP.Conduit (simpleHttp)
 
-import Text.ProtocolBuffers (messageGet)
 import qualified Data.Text as T
 
-
-type StopWithWalktime = (String, Integer)
 
 -- | optparse-applicative reader for stop/walktime pair
 --
@@ -46,42 +45,34 @@ stopWithWalktime = ReadM $ do
     <*> (local (const walktime) (unReadM auto) <|> pure 0)
 
 
--- | Command line options
-data Command
-    = Monitor { stopsWithWalktime :: [StopWithWalktime]
-              , realtime :: Bool
-              , autoUpdate :: Bool
-              }
-    | Setup { logging :: Bool}
-
-
 optionParser ::
-  Parser Command
-optionParser =
+  Ini -> Parser Command
+optionParser conf =
     Builder.subparser
         (Builder.command
              "monitor"
              (info
-                  monitorOptions
+                  (monitorOptions conf)
                   (Builder.progDesc
                        "Monitor a stop/station and print next departing services")) <>
          Builder.command
              "setup"
              (info
-                  setupOptions
+                  (setupOptions conf)
                   (Builder.progDesc "Setup the gtfsschedule database")))
 
 setupOptions ::
-  Parser Command
-setupOptions = Setup
-  <$> Builder.flag False True
-  (Builder.long "logging"
-    <> help "Enable logging")
+  Ini -> Parser Command
+setupOptions conf = Setup
+  <$> (optional $ Builder.option txtReader ( long "static-url" <> withConfigfile conf (T.pack "static-url") <> metavar "URL" <> short 's' <> help "URL to the static dataset zip archive" ))
 
+txtReader :: ReadM T.Text
+txtReader = ReadM $ do
+  s <- ask
+  return $ T.pack s
 
-monitorOptions ::
-  Parser Command
-monitorOptions =
+monitorOptions :: Ini -> Parser Command
+monitorOptions conf =
   Monitor
   <$> some (
     argument stopWithWalktime
@@ -93,60 +84,32 @@ monitorOptions =
     (long "realtime" <> short 'r' <> help "Enable realtime updates")
   <*> flag False True
     (long "autoupdate" <> short 'u' <> help "Automatically update the static GTFS dataset")
+  <*> (optional $ Builder.option txtReader ( long "static-url" <> withConfigfile conf (T.pack "static-url") <> metavar "URL" <> short 's' <> help "URL to the static dataset zip archive" ))
+  <*> (optional $ Builder.option txtReader ( long "realtime-url" <> withConfigfile conf (T.pack "realtime-url") <> metavar "URL" <> short 'f' <> help "URL to the realtime GTFS feed" ))
 
-
-datasetURL :: String
-datasetURL = "https://gtfsrt.api.translink.com.au/GTFS/SEQ_GTFS.zip"
-
-printOrUpdateDataset :: Bool -> IO ()
-printOrUpdateDataset False = dbIsOutOfDate >>= printWarningForNewDataset
-printOrUpdateDataset True = do
-  result <- dbIsOutOfDate
-  case result of
-    Right True -> return () -- database is up to date, nothing to do
-    Right False -> userDatabaseFile >>= createNewDatabase datasetURL
-    Left err -> print err
-
-dbIsOutOfDate :: IO (Either Error Bool)
-dbIsOutOfDate = do
-  fp <- userDatabaseFile
-  d <- getLastUpdatedDatabase (T.pack fp)
-  result <- isDatasetUpToDate datasetURL d isCurrent
-  return result
 
 programHeader :: String
 programHeader =
   "gtfsschedule - Be on time for your next public transport service (v. " ++ showVersion version ++ ")"
 
-runSchedule :: Command -> IO ()
-runSchedule (Setup _) = userDatabaseFile >>= createNewDatabase datasetURL
-runSchedule (Monitor{..}) = do
-  fp <- userDatabaseFile
-  printOrUpdateDataset autoUpdate
-  schedules <- traverse (go fp) stopsWithWalktime
-  schedules' <- if realtime
-    then do
-      bytes <- simpleHttp "http://gtfsrt.api.translink.com.au/Feed/SEQ"
-      case messageGet bytes of
-        Left err -> do
-          print $ "Error occurred decoding feed: " ++ err
-          pure schedules
-        Right (fm, _) -> do
-          pure $ fmap (second (`updateSchedule` fm)) schedules
-    else
-      pure schedules
-  let schedule = take 3 $ sortSchedules schedules'
-  printSchedule schedule =<< getCurrentTimeOfDay
-  where
-    go fp (sID, walkDelay) = do
-      timespec <- getTimeSpecFromNow walkDelay
-      schedule <- getSchedule fp sID timespec
-      pure (walkDelay, schedule)
 
+runSchedule :: String -> Command -> IO ()
+runSchedule dbfile (Setup (Just url)) = createNewDatabase (T.unpack url) dbfile
+runSchedule _ (Setup Nothing) = error "The static-url must be set either by command line argument or configuration file."
+runSchedule dbfile (Monitor {..}) = do
+    printOrUpdateDataset autoUpdate staticDatasetURL
+    schedules <-
+        getSchedulesByWalktime dbfile stopsWithWalktime >>=
+        updateSchedulesWithRealtimeData realtimeFeedURL
+    let schedule = take 3 $ sortSchedules schedules
+    printSchedule schedule =<< getCurrentTimeOfDay
 
 main :: IO ()
-main = execParser opts >>= runSchedule
-  where opts = info (helper <*> optionParser)
+main = do
+  fp <- userDatabaseFile
+  conf <- loadGTFSConfig
+  execParser (opts conf) >>= runSchedule fp
+    where opts c = info (helper <*> optionParser c)
                ( Builder.fullDesc
                  <> Builder.progDesc "Shows schedule of departing vehicles based on static GTFS data."
                  <> Builder.header programHeader)

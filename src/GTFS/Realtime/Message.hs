@@ -7,13 +7,22 @@ the schedule data.
 
 See also: https://developers.google.com/transit/gtfs-realtime/reference/
 -}
-module GTFS.Realtime.Message (updateSchedule, departureTimeWithDelay, FM.FeedMessage) where
+module GTFS.Realtime.Message
+       (updateSchedule, updateSchedulesWithRealtimeData,
+        departureTimeWithDelay, FM.FeedMessage)
+       where
 
 import GTFS.Schedule (ScheduleItem(..), ScheduleState(..), secondsToDeparture)
 
 import Data.Functor ((<$>))
+import Control.Applicative (pure)
 import Prelude hiding (mapM)
 import Data.Traversable (mapM)
+
+import Network.HTTP.Conduit (simpleHttp)
+import Text.ProtocolBuffers (messageGet)
+import Data.Bifunctor (second)
+import qualified Data.Text as T
 
 import Com.Google.Transit.Realtime.TripUpdate.StopTimeEvent (StopTimeEvent(..), delay)
 import Com.Google.Transit.Realtime.TripDescriptor (trip_id, TripDescriptor(..))
@@ -35,6 +44,22 @@ import qualified Data.Map.Lazy as Map
 import Control.Monad (mfilter)
 import Control.Monad.State (State, execState, get, put)
 
+
+-- | Updates the schedule with realtime information from the GTFS feed
+--
+updateSchedulesWithRealtimeData ::
+  Maybe T.Text
+  -> [(Integer, [ScheduleItem])]
+  -> IO [(Integer, [ScheduleItem])]
+updateSchedulesWithRealtimeData Nothing schedules = pure schedules
+updateSchedulesWithRealtimeData (Just url) schedules = do
+    bytes <- simpleHttp (T.unpack url)
+    case messageGet bytes of
+        Left err -> do
+            print $ "Error occurred decoding feed: " ++ err
+            pure schedules
+        Right (fm,_) -> do
+            pure $ fmap (second (`updateSchedule` fm)) schedules
 
 -- | Updates schedule with trip updates given by feed
 --

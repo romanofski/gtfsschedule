@@ -14,6 +14,8 @@ import Test.Tasty (TestTree, testGroup)
 import Data.Conduit (($$), yield)
 import Data.Conduit.Network (AppData, appSink)
 
+import qualified Data.Text as T
+
 updateTests ::
   TestTree
 updateTests = testGroup "update tests"
@@ -33,14 +35,14 @@ testDatabaseUpToDate :: TestTree
 testDatabaseUpToDate =
     testCase "database is up to date" $
     withConcurrentTCPServer withHTTPDataHeadersOnly $ \port -> do
-      result <- isDatasetUpToDate ("http://127.0.0.1:" ++ show port) (fromGregorian 2016 10 26) isCurrent
+      result <- isDatasetUpToDate (T.pack $ "http://127.0.0.1:" ++ show port) (fromGregorian 2016 10 26) isCurrent
       result @?= Right True
 
 testDatabaseOutdated :: TestTree
 testDatabaseOutdated =
     testCase "database is outdated" $
     withConcurrentTCPServer withHTTPDataHeadersOnly $ \port -> do
-      result <- isDatasetUpToDate ("http://127.0.0.1:" ++ show port) (fromGregorian 2016 10 23) isCurrent
+      result <- isDatasetUpToDate (T.pack $ "http://127.0.0.1:" ++ show port) (fromGregorian 2016 10 23) isCurrent
       result @?= Right False
 
 withHTTPDataHeadersOnly :: AppData -> IO ()
@@ -52,7 +54,7 @@ testNoModifiedHeaders :: TestTree
 testNoModifiedHeaders =
     testCase "no modified headers results in error" $
     withConcurrentTCPServer withHTTPDataNoModifiedHeader $ \port -> do
-      result <- isDatasetUpToDate ("http://127.0.0.1:" ++ show port) (fromGregorian 2016 10 23) isCurrent
+      result <- isDatasetUpToDate (T.pack $ "http://127.0.0.1:" ++ show port) (fromGregorian 2016 10 23) isCurrent
       result @?= Left (Error "Couldn't find last-modified headers in: [(\"Content-Type\",\"text/plain\")]")
 
 withHTTPDataNoModifiedHeader :: AppData -> IO ()
@@ -67,7 +69,7 @@ testGarbledHeaders =
     \port ->
          do result <-
                 isDatasetUpToDate
-                    ("http://127.0.0.1:" ++ show port)
+                    (T.pack $ "http://127.0.0.1:" ++ show port)
                     (fromGregorian 2016 10 23)
                     isCurrent
             result @?=
