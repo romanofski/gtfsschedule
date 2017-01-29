@@ -9,7 +9,7 @@ module GTFS.Schedule
         StopWithWalktime, getSchedule, getSchedulesByWalktime,
         getTimeSpecFromNow, printSchedule, formatScheduleItem,
         minutesToDeparture, secondsToDeparture, sortSchedules,
-        getCurrentTimeOfDay, humanReadableDelay)
+        bumOffSeatTime, getCurrentTimeOfDay, humanReadableDelay)
        where
 
 import qualified GTFS.Database as DB
@@ -65,7 +65,6 @@ data ScheduleItem = ScheduleItem
 --   services
 data TimeSpec = TimeSpec TimeOfDay Day
 
-
 -- | Returns several schedules for given stops with walk time
 getSchedulesByWalktime ::
   String  -- ^ database file path
@@ -92,9 +91,10 @@ getSchedule sqliteDBFilepath sCode timespec = nextDepartures (T.pack sqliteDBFil
 --
 sortSchedules :: [(Integer, [ScheduleItem])] -> [(Integer, ScheduleItem)]
 sortSchedules xxs =
-  sortBy (comparing f) $ xxs >>= (\(d,xs) -> fmap (d,) xs)
-  where
-    f (d, item) = timeOfDayToTime (departureTime item) - secondsToDiffTime (d * 60)
+  sortBy (comparing bumOffSeatTime) $ xxs >>= (\(d,xs) -> fmap (d,) xs)
+
+bumOffSeatTime :: (Integer, ScheduleItem) -> DiffTime
+bumOffSeatTime (d, item) = timeOfDayToTime (departureTime item) - secondsToDiffTime (d * 60)
 
 -- | Create a specific point in time from the current time/date
 getTimeSpecFromNow ::

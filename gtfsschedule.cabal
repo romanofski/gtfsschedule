@@ -109,6 +109,8 @@ test-suite unit-tests
   build-depends:       base
                      , gtfsschedule
                      , tasty-hunit
+                     , tasty-quickcheck >= 0.8
+                     , QuickCheck
                      , tasty
                      , bytestring
                      , time
