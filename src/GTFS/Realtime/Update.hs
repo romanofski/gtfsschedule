@@ -5,8 +5,11 @@
 -}
 module GTFS.Realtime.Update
        (isDatasetUpToDate, printWarningForNewDataset, isCurrent,
-        Error(..))
+        printOrUpdateDataset, Error(..))
        where
+
+import GTFS.Database (userDatabaseFile, getLastUpdatedDatabase)
+import CSV.Import (createNewDatabase)
 
 import Network.HTTP.Conduit
 import Network.HTTP.Types.Header (ResponseHeaders, Header, hLastModified)
@@ -18,10 +21,11 @@ import System.Locale (defaultTimeLocale)
 #endif
 import Data.Time.Format (parseTime)
 import Data.List (find)
-import System.IO (hPrint, stderr)
+import System.IO (hPrint, hPutStr, stderr)
 import Control.Monad (join)
 import qualified Control.Exception as E
 import qualified Data.ByteString.Char8 as B
+import qualified Data.Text as T
 
 
 data Error = Error String
@@ -33,14 +37,14 @@ data Error = Error String
 -- Note: uses last modified header to determine if it has recently been updated
 --
 isDatasetUpToDate ::
-  String  -- ^ URL to perform a HEAD against (typically the static dataset zip file)
+  T.Text -- ^ URL to perform a HEAD against (typically the static dataset zip file)
   -> Day  -- ^ modified date from the database
   -> (Day -> Day -> Bool)
   -> IO (Either Error Bool)
 isDatasetUpToDate url dbmodified f = do
     headers <-
         catchHTTPError
-            (getHeadersForDataset url)
+            (getHeadersForDataset $ T.unpack url)
             (\e ->
                   hPrint stderr (show e) >> return [])
     if null headers
@@ -58,13 +62,32 @@ isDatasetUpToDate url dbmodified f = do
                          show headers)
                 Just d -> return $ Right (f d dbmodified)
 
--- | Prints an additional line to let the user know an updated static dataset is available
 printWarningForNewDataset ::
   Either Error Bool
   -> IO ()
 printWarningForNewDataset (Right False) = print "Note: New dataset available!"
 printWarningForNewDataset (Right _) = return ()
-printWarningForNewDataset (Left _) = hPrint stderr "Warning: Couldn't determine if dataset is outdated."
+printWarningForNewDataset (Left _) = hPutStr stderr "Warning: Couldn't determine if dataset is outdated."
+
+-- | Prints an additional line to let the user know an updated static dataset is
+-- available or updates the dataset automatically
+--
+printOrUpdateDataset :: Bool -> Maybe T.Text -> IO ()
+printOrUpdateDataset False (Just url) = dbIsOutOfDate url >>= printWarningForNewDataset
+printOrUpdateDataset True (Just url) = do
+  result <- dbIsOutOfDate url
+  case result of
+    Right True -> return () -- database is up to date, nothing to do
+    Right False -> userDatabaseFile >>= createNewDatabase (T.unpack url)
+    Left err -> print err
+printOrUpdateDataset _ _ = return ()  -- automatically update, but don't specify a URL, fail silently??
+
+dbIsOutOfDate :: T.Text -> IO (Either Error Bool)
+dbIsOutOfDate url = do
+  fp <- userDatabaseFile
+  d <- getLastUpdatedDatabase (T.pack fp)
+  result <- isDatasetUpToDate url d isCurrent
+  return result
 
 -- | Returns True if the last-modified from the server is less or equal than what we have in our database
 isCurrent ::
