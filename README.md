@@ -52,7 +52,7 @@ Experimental packages are available for Fedora 24 via
 
 Run the setup command like:
 
-    gtfsschedule setup
+    gtfsschedule setup --static-url https://gtfsrt.api.translink.com.au/GTFS/SEQ_GTFS.zip
 
 The database is created by default in: `$HOME/.local/share/gtfs/`
 
@@ -78,7 +78,7 @@ upon departure time, you can specify a delay:
     gtfsschedule monitor 600248+7
 
     # Include in realtime updates with possible delays
-    gtfsschedule monitor 600248+7 -r
+    gtfsschedule monitor 600248+7 --realtime-url http://gtfsrt.api.translink.com.au/Feed/SEQ
 
 ### Monitoring multiple stops
 
@@ -86,7 +86,7 @@ You can specify multiple stops with different delays to reach them:
 
     gtfsschedule monitor 600248+7 600249+5
 
-### Schedule change indicators
+### Schedule change indicators format
 
 When you run the program with realtime updates, the following changes are indicated as follows:
 
@@ -100,10 +100,9 @@ When you run the program with realtime updates, the following changes are indica
 
 ### Updating the database
 
-The command checks if the dataset can be updated in which it prints a
-"New dataset available" to stderr. Simply run:
+If you run the gtfsschedule tool with the `static-url` option, it automatically checks if the local dataset is up to date and prints a warning if it isn't. Simply run:
 
-    gtfsschedule setup
+    gtfsschedule setup --static-url https://gtfsrt.api.translink.com.au/GTFS/SEQ_GTFS.zip
 
 to update download a new dataset and update your database.
 
@@ -111,13 +110,33 @@ to update download a new dataset and update your database.
 
 You can invoke `gtfsschedule monitor` with `-u` to keep your static dataset up-to-date:
 
-    gtfsschedule monitor -u 600029
+    gtfsschedule monitor -u --static-url https://gtfsrt.api.translink.com.au/GTFS/SEQ_GTFS.zip 600029
+
+## Configuration file
+
+A configuration file helps with making the use of the command line tool easier,
+especially if you're always receiving updates from the same API and the dataset
+from the same URL. The command line options and arguments have precedence over
+the configuration file however.
+
+The configuration file should be placed in `~/.conf/gtfs/config.cfg` and
+supports setting the URLs to the realtime API and the static dataset. For
+example, for Brisbane the config file would look:
+
+    [default]
+    static-url = https://gtfsrt.api.translink.com.au/GTFS/SEQ_GTFS.zip
+    realtime-url = http://gtfsrt.api.translink.com.au/Feed/SEQ
+
+The format of the configuration file is documented here: [https://hackage.haskell.org/package/ini/docs/Data-Ini.html]
+
+Note: I have not tested how well the support works with other GTFS feed APIs
+than Translink (QR) provides. Feedback is very welcome.
 
 ### Config examples for status monitors
 
 Xmobar:
 
-    Run Com "gtfsschedule" ["monitor", "600248", "-r"] "gtfs" 600
+    Run Com "gtfsschedule" ["monitor", "600248"] "gtfs" 600
 
 Poor mans statusbar with `watch`. Use a terminal window and:
 

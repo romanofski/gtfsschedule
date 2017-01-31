@@ -84,8 +84,8 @@ monitorOptions conf =
     (long "realtime" <> short 'r' <> help "Enable realtime updates")
   <*> flag False True
     (long "autoupdate" <> short 'u' <> help "Automatically update the static GTFS dataset")
-  <*> (optional $ Builder.option txtReader ( long "static-url" <> withConfigfile conf (T.pack "static-url") <> metavar "URL" <> short 's' <> help "URL to the static dataset zip archive" ))
-  <*> (optional $ Builder.option txtReader ( long "realtime-url" <> withConfigfile conf (T.pack "realtime-url") <> metavar "URL" <> short 'f' <> help "URL to the realtime GTFS feed" ))
+  <*> (optional $ Builder.option txtReader ( long "static-url" <> withConfigfile conf (T.pack "static-url") <> metavar "URL" <> help "URL to the static dataset zip archive" ))
+  <*> (optional $ Builder.option txtReader ( long "realtime-url" <> withConfigfile conf (T.pack "realtime-url") <> metavar "URL" <> help "URL to the realtime GTFS feed" ))
 
 
 programHeader :: String
