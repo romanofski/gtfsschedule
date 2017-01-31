@@ -11,6 +11,8 @@ module GTFS.Realtime.Update
 import GTFS.Database (userDatabaseFile, getLastUpdatedDatabase)
 import CSV.Import (createNewDatabase)
 
+import Data.Functor ((<$>))
+
 import Network.HTTP.Conduit
 import Network.HTTP.Types.Header (ResponseHeaders, Header, hLastModified)
 import Data.Time.Calendar (Day)
