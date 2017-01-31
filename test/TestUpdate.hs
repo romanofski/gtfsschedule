@@ -54,7 +54,7 @@ testNoModifiedHeaders =
     testCase "no modified headers results in error" $
     withConcurrentTCPServer withHTTPDataNoModifiedHeader $ \port -> do
       result <- isDatasetUpToDate (T.pack $ "http://127.0.0.1:" ++ show port) (fromGregorian 2016 10 23) isCurrent
-      result @?= Left (Error "Couldn't find last-modified headers in: [(\"Content-Type\",\"text/plain\")]")
+      result @?= Left (Error "Couldn't determine last modification date from server headers: [(\"Content-Type\",\"text/plain\")]")
 
 withHTTPDataNoModifiedHeader :: AppData -> IO ()
 withHTTPDataNoModifiedHeader appData = src $$ appSink appData
