@@ -4,7 +4,8 @@ module Main where
 import GTFS.Schedule
        (ScheduleItem(..), ScheduleState(..), TimeSpec(..),
         minutesToDeparture, formatScheduleItem, printSchedule,
-        humanReadableDelay, getSchedule)
+        humanReadableDelay, getSchedule, sortSchedules, bumOffSeatTime)
+import GTFS.Realtime.Message (departureTimeWithDelay)
 import qualified GTFS.Database as DB
 import qualified CSV.Import as CSV
 
@@ -14,8 +15,13 @@ import TestUpdate (updateTests)
 
 import Data.Functor ((<$>))
 
+import Data.List (sort)
+
 import Test.Tasty (defaultMain, TestTree, TestName, testGroup)
 import Test.Tasty.HUnit (testCase, (@?=))
+import Test.Tasty.QuickCheck
+       (testProperty, elements, getPositive, choose, Arbitrary(..))
+
 import Data.Time.LocalTime (TimeOfDay(..))
 import Data.Time.Calendar (fromGregorian)
 import Database.Persist (insert)
@@ -30,7 +36,52 @@ import qualified Database.Persist.Sqlite as Sqlite
 
 tests ::
   TestTree
-tests = testGroup "unit tests" [ feedTests
+tests = testGroup "tests" [proptests, unittests]
+
+proptests :: TestTree
+proptests = testGroup "property tests" [ testSortSchedules ]
+
+instance Arbitrary TimeOfDay where
+    arbitrary =
+        TimeOfDay <$> choose (0, 23) <*> choose (0, 59) <*>
+        (fromRational . toRational <$> choose (0 :: Double, 60))
+
+instance Arbitrary ScheduleState where
+  arbitrary = elements [CANCELED, ADDED, SCHEDULED]
+
+instance Arbitrary ScheduleItem where
+    arbitrary = do
+        schedDepTime <- arbitrary
+        delay <- arbitrary
+        trip <- arbitrary
+        stop <- arbitrary
+        name <- arbitrary
+        stype <- arbitrary
+        return $ ScheduleItem { tripId = trip
+                              , stopId = stop
+                              , serviceName = name
+                              , scheduledDepartureTime = schedDepTime
+                              , departureDelay = delay
+                              , departureTime = departureTimeWithDelay schedDepTime delay
+                              , scheduleType = stype
+                              }
+
+testSortSchedules :: TestTree
+testSortSchedules =
+    testProperty
+        "schedules are sorted by bum-off-seat-time"
+        (\schedule ->
+              propOrderedSchedule (sortSchedules schedule))
+
+propOrderedSchedule :: [(Integer, ScheduleItem)] -> Bool
+propOrderedSchedule [] = True
+propOrderedSchedule [(x, i)] = True
+propOrderedSchedule (x:y:rest) = (bumOffSeatTime x) <= (bumOffSeatTime y) && propOrderedSchedule rest
+
+-- unit tests
+--
+unittests :: TestTree
+unittests = testGroup "unit tests" [ feedTests
                                , importTests
                                , updateTests
                                , testMinutesToDeparture
