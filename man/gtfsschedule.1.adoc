@@ -1,0 +1,180 @@
+= GTFSSchedule(1)
+:doctype: manpage
+:author: Róman Joost
+:email: roman@bromeco.de
+
+== NAME
+
+gtfsschedule - Be on time for your next public transport service.
+
+== SYNOPSIS
+
+gtfsschedule setup [-s|--static-url URL]
+
+gtfsschedule monitor STATION-ID[:MINUTES]
+             [-u|--autoupdate]
+             [--static-url URL]
+             [--realtime-url URL]
+
+== DESCRIPTION
+
+gtfsschedule is a command line utility providing public transport schedule
+information following the GTFS specification from Google.
+
+== OPTIONS
+
+*setup --static-url='URL'*:: Populates a local database with static schedule
+information downloaded from the URL given with *--static-url*. The database is
+created by default in: `$HOME/.local/share/gtfs/` The schedule information is
+typically a zip archive offered by the public transport authority containing CSV
+files following the GTFS Static Reference.
+
+*monitor STATION-ID[:MINUTES]*:: Print next departing services for a given stop.
+ You can specify more than one station-id deliminted by spaces. Additionally the
+ time to reach the station can be added to the station id using an integer
+ separated by a *+*.
+
+*u, --autoupdate*:: Automatically update the static dataset if it becomes out of
+ date. The gtfsschedule tool performs a check every run by performing a HEAD
+ request against the URL given by the *--static-url* option. *Note:* Be careful
+ using this flag, since there is no verification of the downloaded zip archive
+ not containing malicious contents.
+
+*--static-url*='URL':: Providing this option will let the gtfsschedule tool
+   performing a HEAD request to determine if the local dataset is outdated. If a
+   new version is available online a message is message is printed to STDERR.
+
+*--realtime-url*='URL':: URL to retrieve realtime information from. The tool
+   will always retrieve the schedule first from the local database and update
+   these services with realtime information if available.
+
+== Examples
+
+=== Setting up the local database
+
+Run the setup command like:
+
+----
+gtfsschedule setup --static-url https://gtfsrt.api.translink.com.au/GTFS/SEQ_GTFS.zip
+----
+
+=== Finding out your stop code
+
+There is no general advice to give on how to retrieve the stop code. It is typically a 6 digit number and public transport agencies provide them next to the online schedule information of certain stops.
+
+As an example this is Brisbane's Roma St, platform 8 stop code:
+https://jp.translink.com.au/plan-your-journey/stops/600029[600029].
+
+=== Retrieve next departing services
+
+Once you have your stop code, invoke the command to show next departing
+services:
+
+[source, bash]
+----
+# Transport leaves in 11 minutes
+gtfsschedule monitor 600248
+Desitnation 11 min (13:17:00)
+----
+
+=== Using a count down
+
+If you want to know when to leave your position in order to reach the
+service upon departure time, you can specify a delay:
+
+[source, bash]
+----
+# Transport leaves in 11 minutes, factor in a walk time to the stop/station of 7 minutes
+gtfsschedule monitor 600248+7
+
+# Include in realtime updates with possible delays
+gtfsschedule monitor 600248+7 --realtime-url http://gtfsrt.api.translink.com.au/Feed/SEQ
+----
+
+=== Monitoring multiple stops
+
+You can specify multiple stops with different delays to reach them:
+
+[source, bash]
+----
+gtfsschedule monitor 600248+7 600249+5
+----
+
+=== Schedule change indicators format
+
+When you run the program with realtime updates, the following changes are
+indicated as follows:
+
+[source, bash]
+----
+# Delayed service
+!GTPB Destination 11 min (13:17:06 (46s)) <-- delay
+                          ^ departure time including delay
+
+# Canceled service
+GTPB Destination 11 min (13:17:00 !CANC!)
+----
+
+=== Updating the database
+
+If you run the gtfsschedule tool with the `static-url` option, it
+automatically checks if the local dataset is up to date and prints a
+warning if it isn't. Simply run:
+
+----
+gtfsschedule setup --static-url https://gtfsrt.api.translink.com.au/GTFS/SEQ_GTFS.zip
+----
+
+to update download a new dataset and update your database.
+
+=== Automatically keeping the database up-to-date
+
+You can invoke `gtfsschedule monitor` with `-u` to keep your static
+dataset up-to-date automatically:
+
+----
+gtfsschedule monitor -u --static-url https://gtfsrt.api.translink.com.au/GTFS/SEQ_GTFS.zip 600029
+----
+
+== Configuration
+
+A configuration file helps with making the use of the command line tool easier,
+especially if you're always receiving updates from the same API and the dataset
+from the same URL. The command line options and arguments have precedence over
+the configuration file however.
+
+The configuration file should be placed in `~/.conf/gtfs/config.cfg`
+and supports setting the URLs to the realtime API and the static dataset.
+For example, for Brisbane the config file would look:
+
+[source, ini]
+----
+[default]
+static-url = https://gtfsrt.api.translink.com.au/GTFS/SEQ_GTFS.zip
+realtime-url = http://gtfsrt.api.translink.com.au/Feed/SEQ
+----
+
+The format of the configuration file is documented here:
+https://hackage.haskell.org/package/ini/docs/Data-Ini.html
+
+Note: I have not tested how well the support works with other GTFS feed APIs
+than Translink (QR) provides. Feedback is very welcome.
+
+== Status monitor examples
+
+Xmobar:
+
+----
+Run Com "gtfsschedule" ["monitor", "600248"] "gtfs" 600
+----
+
+Poor mans statusbar with `watch`. Use a terminal window and:
+
+----
+watch -n 60 "gtfsschedule monitor 600248+7"
+----
+
+== Resources
+
+Github: https://github.com/romanofski/gtfsschedule
+GTFS specification: https://developers.google.com/transit/
