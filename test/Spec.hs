@@ -13,7 +13,7 @@ import Realtime (feedTests)
 import CSVImport (importTests)
 import TestUpdate (updateTests)
 
-import Data.Functor ((<$>))
+import Control.Applicative ((<$>), (<*>))
 
 import Data.List (sort)
 
