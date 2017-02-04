@@ -5,6 +5,7 @@
 Major changes:
 
 * URLs from which gtfsschedule reads the static dataset (schedule) and realtime feed from now need to be explicitly given as command line options
+* The *-r* or *--realtime* option has been deprecated. It is given by providing the *--realtime-url* option
 * Now supports a configuration file which supports setting URLs
 * Provides a man page
 

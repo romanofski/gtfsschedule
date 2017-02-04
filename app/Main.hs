@@ -81,7 +81,7 @@ monitorOptions conf =
       )
     )
   <*> flag False True
-    (long "realtime" <> short 'r' <> help "Enable realtime updates")
+    (long "realtime" <> short 'r' <> help "Enable realtime updates - DEPRECATED")
   <*> flag False True
     (long "autoupdate" <> short 'u' <> help "Automatically update the static GTFS dataset")
   <*> (optional $ Builder.option txtReader ( long "static-url" <> withConfigfile conf (T.pack "static-url") <> metavar "URL" <> help "URL to the static dataset zip archive" ))
