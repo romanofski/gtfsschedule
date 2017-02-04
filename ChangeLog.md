@@ -1,6 +1,12 @@
 # ChangeLog
 
-## 0.5.0.0 (unreleased)
+## 0.6.0.0 (unreleased)
+
+* URLs from which gtfsschedule reads the static dataset (schedule) and realtime feed from now need to be explicitly given as command line options
+* Now supports a configuration file which supports setting URLs
+* Provides a man page
+
+## 0.5.0.0 (11-01-2017)
 
 Major changes:
 
