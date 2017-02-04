@@ -41,6 +41,8 @@ in your local folder (`~/.local`). Make sure it is in your `$PATH`.
 Experimental packages are available for Fedora 24 via
 https://copr.fedorainfracloud.org/coprs/romanofski/gtfsschedule/[copr].
 
+include::ChangeLog.adoc[]
+
 == Man Page
 
 :leveloffset: +2

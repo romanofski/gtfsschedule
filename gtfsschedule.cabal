@@ -11,7 +11,7 @@ copyright:           2015 Róman Joost
 category:            Web
 build-type:          Simple
 extra-source-files:  README.adoc
-                     ChangeLog.md
+                     ChangeLog.adoc
 cabal-version:       >=1.10
 
 library
