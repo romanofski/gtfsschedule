@@ -159,8 +159,8 @@ humanReadableDelay x
     depDelay = abs $ departureDelay x
     prefix =
         if departureDelay x <= 0
-            then "+"
-            else "-"
+            then "-"
+            else "+"
 
 -- | calculates how many minutes we have before the service departs
 minutesToDeparture ::

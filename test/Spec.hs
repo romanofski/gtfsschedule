@@ -108,10 +108,10 @@ testFormatScheduleItem ::
 testFormatScheduleItem = testGroup "formates schedule item" $ makeTest <$>
   [ ("punctual", formatScheduleItem (TimeOfDay 7 45 0) 0 punctual, "Punctual 5min (07:50:00) ")
   , ("punctual with walking delay", formatScheduleItem (TimeOfDay 7 45 0) 2 punctual, "Punctual 3min (07:50:00) ")
-  , ("running late", formatScheduleItem (TimeOfDay 7 45 0) 0 runningLate, "!Running Late 6min (07:51:00 (-04:40)) ")
-  , ("running late + walking delay", formatScheduleItem (TimeOfDay 7 45 0) 2 runningLate, "!Running Late 4min (07:51:00 (-04:40)) ")
-  , ("running ahead", formatScheduleItem (TimeOfDay 7 45 0) 0 runningAhead, "!Running Ahead 5min (07:50:00 (+04:20)) ")
-  , ("running ahead + walk delay", formatScheduleItem (TimeOfDay 7 45 0) 2 runningAhead, "!Running Ahead 3min (07:50:00 (+04:20)) ")
+  , ("running late", formatScheduleItem (TimeOfDay 7 45 0) 0 runningLate, "!Running Late 6min (07:51:00 (+04:40)) ")
+  , ("running late + walking delay", formatScheduleItem (TimeOfDay 7 45 0) 2 runningLate, "!Running Late 4min (07:51:00 (+04:40)) ")
+  , ("running ahead", formatScheduleItem (TimeOfDay 7 45 0) 0 runningAhead, "!Running Ahead 5min (07:50:00 (-04:20)) ")
+  , ("running ahead + walk delay", formatScheduleItem (TimeOfDay 7 45 0) 2 runningAhead, "!Running Ahead 3min (07:50:00 (-04:20)) ")
   ]
     where
       punctual = ScheduleItem { tripId = "."
@@ -173,7 +173,7 @@ testHumanReadableDelay =
                  , departureTime = TimeOfDay 0 0 0
                  , scheduleType = SCHEDULED
                  })
-          , "-40s")
+          , "+40s")
         , ( "minute late"
           , (humanReadableDelay
                  ScheduleItem
@@ -185,7 +185,7 @@ testHumanReadableDelay =
                  , departureTime = TimeOfDay 0 0 0
                  , scheduleType = SCHEDULED
                  })
-          , "-01:00")
+          , "+01:00")
         , ( "minutes late"
           , (humanReadableDelay
                  ScheduleItem
@@ -197,7 +197,7 @@ testHumanReadableDelay =
                  , departureTime = TimeOfDay 0 0 0
                  , scheduleType = SCHEDULED
                  })
-          , "-07:35")
+          , "+07:35")
         , ( "seconds ahead"
           , (humanReadableDelay
                  ScheduleItem
@@ -209,7 +209,7 @@ testHumanReadableDelay =
                  , departureTime = TimeOfDay 0 0 0
                  , scheduleType = SCHEDULED
                  })
-          , "+20s")
+          , "-20s")
         , ( "minutes ahead"
           , (humanReadableDelay
                  ScheduleItem
@@ -221,7 +221,7 @@ testHumanReadableDelay =
                  , departureTime = TimeOfDay 0 0 0
                  , scheduleType = SCHEDULED
                  })
-          , "+03:50")]
+          , "-03:50")]
   where
     hrTest (title,actual,expected) = testCase title (actual @?= expected)
 

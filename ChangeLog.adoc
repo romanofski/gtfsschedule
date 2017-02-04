@@ -2,9 +2,18 @@
 
 === 0.6.0.0 (unreleased)
 
+Major changes:
+
 * URLs from which gtfsschedule reads the static dataset (schedule) and realtime feed from now need to be explicitly given as command line options
 * Now supports a configuration file which supports setting URLs
 * Provides a man page
+
+Bugfixes:
+
+* Changed prefix for delay indicator. Now a delay of is indicated by a *+*
+  prefix and running ahead by *-*. Reason being that it is easier to understand,
+  since the delay is because the service is running additional seconds or
+  minutes from the scheduled time.
 
 === 0.5.0.0 (11-01-2017)
 
