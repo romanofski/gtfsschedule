@@ -143,9 +143,9 @@ especially if you're always receiving updates from the same API and the dataset
 from the same URL. The command line options and arguments have precedence over
 the configuration file however.
 
-The configuration file should be placed in `~/.conf/gtfs/config.cfg`
-and supports setting the URLs to the realtime API and the static dataset.
-For example, for Brisbane the config file would look:
+The configuration file should be placed in `~/.conf/gtfs/config.cfg`, should
+define one section *default* and supports setting the URLs to the realtime API
+and the static dataset. For example, for Brisbane the config file would look:
 
 [source, ini]
 ----
