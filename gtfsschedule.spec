@@ -5,7 +5,7 @@
 %bcond_with tests
 
 Name:           %{pkg_name}
-Version:        0.5.0.0
+Version:        0.6.0.0
 Release:        1%{?dist}
 Summary:        Be on time for your next public transport service
 
@@ -43,6 +43,8 @@ BuildRequires:  ghc-transformers-devel
 BuildRequires:  ghc-utf8-string-devel
 BuildRequires:  ghc-xdg-basedir-devel
 BuildRequires:  ghc-zip-archive-devel
+BuildRequires:  ghc-ini-devel
+BuildRequires:  asciidoc
 
 %if 0%{?fedora} <= 24
 BuildRequires:  ghc-bifunctors-devel
@@ -59,7 +61,7 @@ BuildRequires:  ghc-transformers-base-devel
 # End cabal-rpm deps
 
 %description
-Please see README.md.
+Please see README.adoc.
 
 
 %package -n ghc-%{name}
@@ -87,6 +89,7 @@ This package provides the Haskell %{name} library development files.
 
 %build
 %ghc_lib_build
+make man/gtfsschedule.1
 
 
 %install
@@ -95,6 +98,8 @@ This package provides the Haskell %{name} library development files.
 %ghc_fix_dynamic_rpath %{pkg_name}
 
 rm %{buildroot}/%{?_defaultlicensedir}%{!?_defaultlicensedir:%_docdir}/%{name}/LICENSE
+
+install -m 0644 -p -D man/gtfsschedule.1 %{buildroot}%{_mandir}/man1/gtfsschedule.1
 
 
 %check
@@ -113,8 +118,9 @@ rm %{buildroot}/%{?_defaultlicensedir}%{!?_defaultlicensedir:%_docdir}/%{name}/L
 
 %files
 %license LICENSE
-%doc ChangeLog.md README.md
+%doc ChangeLog.adoc README.adoc
 %{_bindir}/%{name}
+%{_mandir}/man1/gtfsschedule.1*
 
 
 %files -n ghc-%{name} -f ghc-%{name}.files
@@ -122,12 +128,15 @@ rm %{buildroot}/%{?_defaultlicensedir}%{!?_defaultlicensedir:%_docdir}/%{name}/L
 
 
 %files -n ghc-%{name}-devel -f ghc-%{name}-devel.files
-%doc README.md
+%doc README.adoc
 
 
 %changelog
+* Sun Feb 05 2017 Róman Joost <roman@bromeco.de> - 0.6.0.0-1
+- 0.6 release
+
 * Wed Jan 11 2017 Róman Joost <roman@bromeco.de> - 0.5.0.0-1
-* 0.5 release
+- 0.5 release
 
 * Mon Dec 12 2016 Róman Joost <roman@bromeco.de> - 0.4.0.0-1.20161212
 - nightly build with fix for #1
