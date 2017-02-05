@@ -25,6 +25,7 @@ data Command
               , staticDatasetURL :: Maybe T.Text
               , realtimeFeedURL :: Maybe T.Text}
     | Setup { staticDatasetURL :: Maybe T.Text }
+    | Search { searchString :: String }
     deriving (Show)
 
 loadGTFSConfig :: IO Ini

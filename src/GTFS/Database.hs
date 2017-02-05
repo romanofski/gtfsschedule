@@ -18,11 +18,11 @@ module GTFS.Database
        (ImportStarted(..), ImportStartedId, ImportFinished(..),
         ImportFinishedId, StopTime(..), StopTimeId, Trip(..), TripId,
         Calendar(..), CalendarId, Stop(..), StopId, Route(..), RouteId,
-        UpdateType(..), QueryTimeWindow(..), migrateAll, userDatabaseFile,
-        getStopID, getNextDepartures, getLastUpdatedDatabase,
-        prepareDatabaseForUpdate, addDatabaseIndices, prepareStmt,
-        rawInsert, runDBWithLogging, runDBWithoutLogging,
-        nextServicesTimeWindow)
+        UpdateType(..), QueryTimeWindow(..), StopSearchResult(..),
+        migrateAll, userDatabaseFile, getStopID, getNextDepartures,
+        getLastUpdatedDatabase, prepareDatabaseForUpdate,
+        addDatabaseIndices, prepareStmt, rawInsert, runDBWithLogging,
+        runDBWithoutLogging, nextServicesTimeWindow, searchStopCode)
        where
 
 import Data.Time.LocalTime ( TimeOfDay(..)
@@ -38,6 +38,7 @@ import System.Locale (defaultTimeLocale)
 import Data.Time.Format (formatTime)
 import Data.Functor ((<$>))
 
+import Data.Maybe (fromMaybe)
 import Data.Int (Int64)
 import Control.Monad (liftM)
 import Control.Monad.IO.Class (liftIO, MonadIO)
@@ -120,6 +121,38 @@ Route
 userDatabaseFile ::
   IO String
 userDatabaseFile = getUserDataFile "gtfs" "gtfs.sqlite"
+
+-- | Returns possible stop codes matching
+--
+data StopSearchResult = StopSearchResult
+    { resultStopName :: String
+    , resultStopcode :: String
+    , resultStopURL :: Maybe String
+    } deriving (Show)
+
+searchStopCode :: T.Text -> String -> IO [StopSearchResult]
+searchStopCode dbfile s =
+    runDBWithoutLogging dbfile $
+    do records <- searchStopCodeByName s
+       return $
+           (\e ->
+                 StopSearchResult
+                 { resultStopName = stopName e
+                 , resultStopcode = fromMaybe (stopStopId e) (stopCode e)
+                 , resultStopURL = stopUrl e
+                 }) .
+           entityVal <$>
+           records
+
+searchStopCodeByName
+    :: (MonadLoggerIO m, MonadResource m)
+    => String -> ReaderT Sqlite.SqlBackend m [Sqlite.Entity Stop]
+searchStopCodeByName str =
+    select $
+    from $
+    \s ->
+         do where_ (s ^. StopName `like` (%) ++. val str ++. (%))
+            return s
 
 weekdayToSQLExp ::
   String

@@ -5,7 +5,7 @@ module Main where
 import Config (loadGTFSConfig, withConfigfile, Command(..))
 
 import GTFS.Schedule
-import GTFS.Database (userDatabaseFile)
+import GTFS.Database (userDatabaseFile, runDBWithoutLogging, searchStopCode, StopSearchResult(..))
 import GTFS.Realtime.Message (updateSchedulesWithRealtimeData)
 import GTFS.Realtime.Update (isDatasetUpToDate, printOrUpdateDataset, isCurrent, Error)
 import CSV.Import (createNewDatabase)
@@ -59,7 +59,13 @@ optionParser conf =
              "setup"
              (info
                   (setupOptions conf)
-                  (Builder.progDesc "Setup the gtfsschedule database")))
+                  (Builder.progDesc "Setup the gtfsschedule database")) <>
+        Builder.command
+        "search"
+        (info (searchOptions) (Builder.progDesc "Search for a stop/station ID")))
+
+searchOptions :: Parser Command
+searchOptions = Search <$> Builder.argument Builder.str ( metavar "NAME" <> help "Stop name to search the id for")
 
 setupOptions ::
   Ini -> Parser Command
@@ -95,6 +101,10 @@ programHeader =
 
 
 runSchedule :: String -> Command -> IO ()
+runSchedule dbfile (Search str) = do
+  results <- searchStopCode (T.pack dbfile) str
+  mapM_ (\r -> putStrLn $ "" ++ resultStopcode r ++ " " ++ resultStopName r) results
+  putStrLn $ "Found " ++ show (length results) ++ " matches"
 runSchedule dbfile (Setup (Just url)) = createNewDatabase (T.unpack url) dbfile
 runSchedule _ (Setup Nothing) = error "The static-url must be set either by command line argument or configuration file."
 runSchedule dbfile (Monitor{..}) = do

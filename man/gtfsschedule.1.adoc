@@ -52,6 +52,11 @@ files following the GTFS Static Reference.
    will always retrieve the schedule first from the local database and update
    these services with realtime information if available.
 
+*search NAME*:: Search for a stop id by giving the name of a possible stop. The
+ search conducted is a sub-string search against the stop names in the database.
+ Result is ordered by stopid in descending order. Regular expressions or
+ wildcards are not supported.
+
 == Examples
 
 === Setting up the local database
@@ -64,10 +69,18 @@ gtfsschedule setup --static-url https://gtfsrt.api.translink.com.au/GTFS/SEQ_GTF
 
 === Finding out your stop code
 
-There is no general advice to give on how to retrieve the stop code. It is typically a 6 digit number and public transport agencies provide them next to the online schedule information of certain stops.
+You can search for a stop by typing in the street name or landmark:
 
-As an example this is Brisbane's Roma St, platform 8 stop code:
-https://jp.translink.com.au/plan-your-journey/stops/600029[600029].
+[source, bash]
+----
+# Show all results like "Roma Street"
+gtfsschedule search Roma
+
+# Whitespace need to be quoted
+$ gtfsschedule search "Roma St"
+000138 Roma Street Stop 138 near Ann St
+----
+The printed stop id is the id you use to monitor for departures.
 
 === Retrieve next departing services
 
