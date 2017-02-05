@@ -55,6 +55,7 @@ testImportWithExistingDBFile =
                                  (TimeSpec
                                       (TimeOfDay 8 5 0)
                                       (fromGregorian 2015 1 28))
+                                 3
                          schedule @?=
                              [ ScheduleItem
                                { tripId = "QF0815-00"

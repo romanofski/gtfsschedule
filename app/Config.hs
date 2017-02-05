@@ -21,6 +21,7 @@ data Command
     = Monitor { stopsWithWalktime :: [StopWithWalktime]
               , realtime :: Bool
               , autoUpdate :: Bool
+              , limit :: Maybe Integer
               , staticDatasetURL :: Maybe T.Text
               , realtimeFeedURL :: Maybe T.Text}
     | Setup { staticDatasetURL :: Maybe T.Text }

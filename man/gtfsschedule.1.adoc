@@ -13,6 +13,7 @@ gtfsschedule setup [-s|--static-url URL]
 
 gtfsschedule monitor STATION-ID[:MINUTES]
              [-u|--autoupdate]
+             [-l|--limit]
              [--static-url URL]
              [--realtime-url URL]
 
@@ -39,6 +40,9 @@ files following the GTFS Static Reference.
  request against the URL given by the *--static-url* option. *Note:* Be careful
  using this flag, since there is no verification of the downloaded zip archive
  not containing malicious contents.
+
+*l, --limit*:: Set an upper limit as to how many schedule items are shown.
+ Defaults to 3 items. The program enforces a maximum of 20 items.
 
 *--static-url*='URL':: Providing this option will let the gtfsschedule tool
    performing a HEAD request to determine if the local dataset is outdated. If a

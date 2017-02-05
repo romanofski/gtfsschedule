@@ -68,14 +68,15 @@ data TimeSpec = TimeSpec TimeOfDay Day
 -- | Returns several schedules for given stops with walk time
 getSchedulesByWalktime ::
   String  -- ^ database file path
+  -> Integer  -- ^ limit
   -> [StopWithWalktime]
   -> IO [(Integer, [ScheduleItem])]
-getSchedulesByWalktime fp stops = do
+getSchedulesByWalktime fp l stops = do
   schedules <- traverse (go fp) stops
   pure schedules
     where go fp (sID, walkDelay) = do
             timespec <- getTimeSpecFromNow walkDelay
-            schedule <- getSchedule fp sID timespec
+            schedule <- getSchedule fp sID timespec l
             pure (walkDelay, schedule)
 
 -- | Return the next services which are due in the next couple of minutes
@@ -83,8 +84,9 @@ getSchedule ::
   String  -- ^ database file path
   -> String  -- ^ stop code
   -> TimeSpec
+  -> Integer  -- ^ limit
   -> IO [ScheduleItem]
-getSchedule sqliteDBFilepath sCode timespec = nextDepartures (T.pack sqliteDBFilepath) sCode timespec
+getSchedule sqliteDBFilepath sCode timespec l = nextDepartures (T.pack sqliteDBFilepath) sCode timespec l
 
 -- | Given a list of schedules paired with an associated walk delay,
 -- sort the schedule items by bum-off-seat time.
@@ -198,10 +200,11 @@ nextDepartures ::
   T.Text
   -> String
   -> TimeSpec
+  -> Integer  -- ^ limit
   -> IO [ScheduleItem]
-nextDepartures connstr sCode (TimeSpec earliest day) = DB.runDBWithoutLogging connstr $ do
+nextDepartures connstr sCode (TimeSpec earliest day) l = DB.runDBWithoutLogging connstr $ do
   sID <- DB.getStopID sCode
-  stops <- DB.getNextDepartures (firstStopID sID) earliest day
+  stops <- DB.getNextDepartures (firstStopID sID) earliest day l
   return $ makeSchedule stops
     where
       firstStopID xs = fromMaybe sCode (safeHead $ unValue <$> xs)

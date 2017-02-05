@@ -155,15 +155,19 @@ nextServicesTimeWindow = QueryTimeWindow (secondsToDiffTime 60) (secondsToDiffTi
 
 -- | Returns next possible departures
 --
--- TODO: limit is currently hard coded
+-- Note: Even tho the limit is variable, the query enforces a hard ceiling of 20
+-- records per query. Reason being from the current user cases, there shouldn't
+-- be a need for querying more than 20. This provides the benefit that users
+-- can't query too many records by mistake.
 --
 getNextDepartures ::
   (MonadLoggerIO m, MonadResource m)
   => String  -- ^ stop id
   -> TimeOfDay  -- ^ current time
   -> Day  -- ^ current date
+  -> Integer  -- ^ limit
   -> ReaderT Sqlite.SqlBackend m [(Sqlite.Entity StopTime, Sqlite.Entity Trip, Sqlite.Entity Route)]
-getNextDepartures stopID now nowDate = select $ from $ \(st, t, c, s, r) -> do
+getNextDepartures stopID now nowDate l = select $ from $ \(st, t, c, s, r) -> do
   where_ (
     st ^. StopTimeTripId ==. t ^. TripTripId &&.
     t ^. TripRouteId ==. r ^. RouteRouteId &&.
@@ -171,16 +175,14 @@ getNextDepartures stopID now nowDate = select $ from $ \(st, t, c, s, r) -> do
     st ^. StopTimeStopId ==. s ^. StopStopId &&.
     s ^. StopStopId ==. val stopID &&.
     st ^. StopTimeDepartureTime >. val earliest &&.
-    st ^. StopTimeDepartureTime <. val latest &&.
     c ^. weekdaySqlExp &&.
     c ^. CalendarEndDate >=. val nowDate &&.
     c ^. CalendarStartDate <=. val nowDate
     )
   orderBy [asc (st ^. StopTimeDepartureTime)]
-  limit 3
+  limit (fromInteger (min l 20))
   return (st, t, r)
   where earliest = timeToTimeOfDay $ timeOfDayToTime now - queryTimeWindowEarliest nextServicesTimeWindow
-        latest = timeToTimeOfDay $ timeOfDayToTime now + queryTimeWindowLatest nextServicesTimeWindow
         weekday = formatTime defaultTimeLocale "%A" nowDate
         weekdaySqlExp = weekdayToSQLExp weekday
 

@@ -236,7 +236,7 @@ makeDatabaseImportTest (TestInput name csvdatadir scode timespec expected) =
           do
              cwd <- getCurrentDirectory
              CSV.runImport tmpfile $ concat [cwd, "/", "test", "/", "data", "/", csvdatadir]
-             schedule <- getSchedule tmpfile scode timespec
+             schedule <- getSchedule tmpfile scode timespec 3
              schedule @?= expected)
 
 
@@ -278,6 +278,15 @@ testDepartures =
                                  , scheduledDepartureTime = TimeOfDay 1 1 0
                                  , departureDelay = 0
                                  , departureTime = TimeOfDay 1 1 0
+                                 , scheduleType = SCHEDULED
+                                 }
+                               , ScheduleItem
+                                 { tripId = "2"
+                                 , stopId = "600029"
+                                 , serviceName = "66 Graveyard Express"
+                                 , scheduledDepartureTime = TimeOfDay 2 1 0
+                                 , departureDelay = 0
+                                 , departureTime = TimeOfDay 2 1 0
                                  , scheduleType = SCHEDULED
                                  }]
       }

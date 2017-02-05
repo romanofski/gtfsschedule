@@ -84,6 +84,7 @@ monitorOptions conf =
     (long "realtime" <> short 'r' <> help "Enable realtime updates - DEPRECATED")
   <*> flag False True
     (long "autoupdate" <> short 'u' <> help "Automatically update the static GTFS dataset")
+  <*> (optional $ Builder.option Builder.auto ( short 'l' <> long "limit" <> help "How many schedule items to show"))
   <*> (optional $ Builder.option txtReader ( long "static-url" <> withConfigfile conf (T.pack "static-url") <> metavar "URL" <> help "URL to the static dataset zip archive" ))
   <*> (optional $ Builder.option txtReader ( long "realtime-url" <> withConfigfile conf (T.pack "realtime-url") <> metavar "URL" <> help "URL to the realtime GTFS feed" ))
 
@@ -96,12 +97,13 @@ programHeader =
 runSchedule :: String -> Command -> IO ()
 runSchedule dbfile (Setup (Just url)) = createNewDatabase (T.unpack url) dbfile
 runSchedule _ (Setup Nothing) = error "The static-url must be set either by command line argument or configuration file."
-runSchedule dbfile (Monitor {..}) = do
+runSchedule dbfile (Monitor{..}) = do
+    let l = fromMaybe 3 limit
     printOrUpdateDataset autoUpdate staticDatasetURL
     schedules <-
-        getSchedulesByWalktime dbfile stopsWithWalktime >>=
+        getSchedulesByWalktime dbfile l stopsWithWalktime >>=
         updateSchedulesWithRealtimeData realtimeFeedURL
-    let schedule = take 3 $ sortSchedules schedules
+    let schedule = take (fromInteger l) $ sortSchedules schedules
     printSchedule schedule =<< getCurrentTimeOfDay
 
 main :: IO ()

@@ -8,6 +8,7 @@ Major changes:
 * The *-r* or *--realtime* option has been deprecated. It is given by providing the *--realtime-url* option
 * Now supports a configuration file which supports setting URLs
 * Provides a man page
+* Allows to adjust how many schedule items are shown using the *-l* or **--limit** options
 
 Bugfixes:
 
