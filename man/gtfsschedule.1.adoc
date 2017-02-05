@@ -140,6 +140,12 @@ dataset up-to-date automatically:
 gtfsschedule monitor -u --static-url https://gtfsrt.api.translink.com.au/GTFS/SEQ_GTFS.zip 600029
 ----
 
+== Notes
+
+Even though the *gtfsschedule* program supports to receive feed updates or
+download the GTFS dataset from any arbitrary URL it is currently not tested and
+might not work. Feedback is welcome.
+
 == Configuration
 
 A configuration file helps with making the use of the command line tool easier,
