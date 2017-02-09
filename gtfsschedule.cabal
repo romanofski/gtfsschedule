@@ -22,6 +22,8 @@ library
                      , GTFS.Schedule
                      , GTFS.Database
                      , CSV.Import
+                     , CLI.Config
+                     , CLI.Main
   other-modules:       Com.Google.Transit.Realtime.Alert
                      , Com.Google.Transit.Realtime.Alert.Cause
                      , Com.Google.Transit.Realtime.Alert.Effect
@@ -77,6 +79,8 @@ library
                      , temporary
                      , directory >= 1.2
                      , system-filepath
+                     , ini
+                     , optparse-applicative
   if impl(ghc < 7.10)
     build-depends:
       bifunctors >= 4.0
@@ -85,7 +89,6 @@ library
 executable gtfsschedule
   hs-source-dirs:      app
   main-is:             Main.hs
-  other-modules:       Config
   default-language:    Haskell2010
   build-depends:       base
                      , mtl
@@ -96,8 +99,6 @@ executable gtfsschedule
                      , http-conduit
                      , text
                      , ini
-                     , xdg-basedir
-                     , directory >= 1.2
 
 test-suite unit-tests
   type:                exitcode-stdio-1.0
