@@ -6,10 +6,11 @@
 -}
 module GTFS.Schedule
        (ScheduleState(..), ScheduleItem(..), TimeSpec(..),
-        StopWithWalktime, getSchedule, getSchedulesByWalktime,
-        getTimeSpecFromNow, printSchedule, formatScheduleItem,
+        StopWithWalktime, ScheduleConfig(..), getSchedule, getSchedulesByWalktime,
+        getTimeSpecFromNow, printSchedule,
         minutesToDeparture, secondsToDeparture, sortSchedules,
-        bumOffSeatTime, getCurrentTimeOfDay, humanReadableDelay)
+        bumOffSeatTime, getCurrentTimeOfDay, humanReadableDelay,
+        defaultScheduleConfig)
        where
 
 import qualified GTFS.Database as DB
@@ -39,6 +40,7 @@ import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import Database.Esqueleto (unValue)
 import qualified Database.Persist.Sqlite as Sqlite
+import Text.StringTemplate (newSTMP, render, setManyAttrib, StringTemplate)
 
 
 type StopWithWalktime = (String, Integer)
@@ -118,30 +120,58 @@ getCurrentTimeOfDay = do
   tz <- getCurrentTimeZone
   return $ localTimeOfDay $ utcToLocalTime tz t
 
-printSchedule :: [(Integer, ScheduleItem)] -> TimeOfDay -> IO ()
+printSchedule
+    :: [(Integer, ScheduleItem)]
+    -> ScheduleConfig
+    -> IO ()
 printSchedule [] _ =
     let timespanInMin = show $ round (DB.queryTimeWindowLatest DB.nextServicesTimeWindow / 60)
     in putStr $ "No services for the next " ++ timespanInMin ++ "min"
-printSchedule xs tod = do
+printSchedule xs cfg =
     putStr $
-        concat $
-        (\(d,x) ->
-              formatScheduleItem tod d x) <$>
-        xs
+    concat $
+    (\(d,x) ->
+          defaultScheduleItemFormatter cfg d x) <$>
+    xs
 
--- | Format a schedule item in a user friendly way for printing
-formatScheduleItem ::
-  TimeOfDay  -- ^ current time (typically invokation of the program)
-  -> Integer  -- ^ delay in seconds which is subtracted from current time
-  -> ScheduleItem  -- ^ item to format
-  -> String
-formatScheduleItem _ _ ScheduleItem { serviceName = sn, departureTime = dt, scheduleType = CANCELED } =
-  sn ++ " (" ++ show dt ++ " !CANC!) "
-formatScheduleItem nowLT walkDelay item =
-  delayIndicator ++ serviceName item ++ " " ++ show (minutesToDeparture item nowLT - walkDelay) ++ "min (" ++ show (departureTime item) ++ schedDepTime ++ ") "
-    where
-      delayIndicator = if departureDelay item /= 0 then "!" else ""
-      schedDepTime = if departureDelay item /= 0 then " (" ++ humanReadableDelay item ++ ")" else ""
+data ScheduleConfig = ScheduleConfig
+    { scheduleTimeOfDay :: TimeOfDay
+    , scheduleItemTemplate :: String
+    }
+
+defaultScheduleConfig :: TimeOfDay -> ScheduleConfig
+defaultScheduleConfig tod =
+  ScheduleConfig
+    { scheduleTimeOfDay = tod
+    , scheduleItemTemplate = "$delayIndicator$$serviceName$ $minutesToDeparture$min $departureTime$ $scheduledDepartureTime$ $scheduleTypeDiff$"
+    }
+
+defaultScheduleItemFormatter :: ScheduleConfig
+                             -> Integer
+                             -> ScheduleItem
+                             -> String
+defaultScheduleItemFormatter cfg walkDelay si = render attributesToTemplate
+  where
+    attributesToTemplate =
+        setManyAttrib
+            [ ( "delayIndicator"
+              , if departureDelay si /= 0
+                    then Just "!"
+                    else Just "")
+            , ("serviceName", Just $ serviceName si)
+            , ( "minutesToDeparture"
+              , Just $ show
+                    (minutesToDeparture si (scheduleTimeOfDay cfg) - walkDelay))
+            , ("departureTime", Just $ show (departureTime si))
+            , ("scheduledDepartureTime", humanReadableDelay si)
+            , ("scheduleType", Just $ show $ scheduleType si)
+            , ("scheduleTypeDiff", scheduleTypeWithoutDefault si)
+            ]
+            (newSTMP (scheduleItemTemplate cfg))
+
+scheduleTypeWithoutDefault :: ScheduleItem -> Maybe String
+scheduleTypeWithoutDefault (ScheduleItem { scheduleType = SCHEDULED }) = Nothing
+scheduleTypeWithoutDefault s = Just $ show $ scheduleType s
 
 -- | Converts the delay to a more readable format
 --
@@ -151,11 +181,12 @@ formatScheduleItem nowLT walkDelay item =
 -- To work with negative values, we use the absolute value instead of a prefixed
 -- value which always produces the right time from midnight.
 --
-humanReadableDelay :: ScheduleItem -> String
+humanReadableDelay :: ScheduleItem -> Maybe String
 humanReadableDelay x
-  | depDelay < 60 = formatTime defaultTimeLocale (prefix ++ "%Ss") t
-  | depDelay < 60 * 60 = formatTime defaultTimeLocale (prefix ++ "%M:%S") t
-  | otherwise = formatTime defaultTimeLocale (prefix ++ "%k:%M:%S") t
+  | depDelay == 0 = Nothing
+  | depDelay < 60 = Just $ formatTime defaultTimeLocale (prefix ++ "%Ss") t
+  | depDelay < 60 * 60 = Just $ formatTime defaultTimeLocale (prefix ++ "%M:%S") t
+  | otherwise = Just $ formatTime defaultTimeLocale (prefix ++ "%k:%M:%S") t
   where
     t = timeToTimeOfDay $ secondsToDiffTime $ depDelay
     depDelay = abs $ departureDelay x

@@ -2,9 +2,10 @@
 module Main where
 
 import GTFS.Schedule
-       (ScheduleItem(..), ScheduleState(..), TimeSpec(..),
-        minutesToDeparture, formatScheduleItem, printSchedule,
-        humanReadableDelay, getSchedule, sortSchedules, bumOffSeatTime)
+       (ScheduleItem(..), ScheduleState(..), TimeSpec(..), ScheduleConfig,
+        minutesToDeparture, printSchedule,
+        humanReadableDelay, getSchedule, sortSchedules, bumOffSeatTime,
+        defaultScheduleConfig)
 import GTFS.Realtime.Message (departureTimeWithDelay)
 import qualified GTFS.Database as DB
 import qualified CSV.Import as CSV
@@ -29,7 +30,7 @@ import Control.Monad.Trans.Reader (ReaderT)
 import Control.Monad.Trans.Resource (ResourceT)
 import Control.Monad.Logger (NoLoggingT(..))
 import System.IO.Temp (withSystemTempFile)
-import System.IO.Silently (capture)
+import System.IO.Silently (capture, capture_)
 import System.Directory (getCurrentDirectory)
 
 import qualified Database.Persist.Sqlite as Sqlite
@@ -94,54 +95,80 @@ unittests = testGroup "unit tests" [ feedTests
 testPrintSchedule ::
   TestTree
 testPrintSchedule = testCase "prints empty schedule" $ do
-  (output, _) <- capture $ printSchedule [] (TimeOfDay 7 7 7)
+  output <- capture_ $ printSchedule [] (defaultScheduleConfig $ TimeOfDay 7 7 7)
   output @?= "No services for the next 30min"
 
 makeTest ::
-  (Eq a, Show a)
-  => (TestName, a, a)
+  (TestName, [(Integer, ScheduleItem)], ScheduleConfig, String)
   -> TestTree
-makeTest (name, input, expected) = testCase name $ input @?= expected
+makeTest (name, input, cfg, expected) = testCase name $ do
+  output <- capture_ $ printSchedule input cfg
+  output @?= expected
 
 testFormatScheduleItem ::
   TestTree
-testFormatScheduleItem = testGroup "formates schedule item" $ makeTest <$>
-  [ ("punctual", formatScheduleItem (TimeOfDay 7 45 0) 0 punctual, "Punctual 5min (07:50:00) ")
-  , ("punctual with walking delay", formatScheduleItem (TimeOfDay 7 45 0) 2 punctual, "Punctual 3min (07:50:00) ")
-  , ("running late", formatScheduleItem (TimeOfDay 7 45 0) 0 runningLate, "!Running Late 6min (07:51:00 (+04:40)) ")
-  , ("running late + walking delay", formatScheduleItem (TimeOfDay 7 45 0) 2 runningLate, "!Running Late 4min (07:51:00 (+04:40)) ")
-  , ("running ahead", formatScheduleItem (TimeOfDay 7 45 0) 0 runningAhead, "!Running Ahead 5min (07:50:00 (-04:20)) ")
-  , ("running ahead + walk delay", formatScheduleItem (TimeOfDay 7 45 0) 2 runningAhead, "!Running Ahead 3min (07:50:00 (-04:20)) ")
-  ]
-    where
-      punctual = ScheduleItem { tripId = "."
-                              , stopId = "."
-                              , serviceName = "Punctual"
-                              , scheduledDepartureTime = TimeOfDay 7 50 00
-                              , departureDelay = 0
-                              , departureTime = TimeOfDay 7 50 00
-                              , scheduleType = SCHEDULED
-                              }
-      runningAhead = ScheduleItem { tripId = "."
-                                  , stopId = "."
-                                  , serviceName = "Running Ahead"
-                                  , scheduledDepartureTime = TimeOfDay 7 50 00
-                                  , departureDelay = -260
-                                  , departureTime = TimeOfDay 7 50 00  -- not consistent with delay
-                                  , scheduleType = SCHEDULED
-                                  }
-      runningLate = ScheduleItem { tripId = "."
-                                  , stopId = "."
-                                  , serviceName = "Running Late"
-                                  , scheduledDepartureTime = TimeOfDay 7 50 00
-                                  , departureDelay = 280
-                                  , departureTime = TimeOfDay 7 51 00
-                                  , scheduleType = SCHEDULED
-                                  }
+testFormatScheduleItem =
+    testGroup "formates schedule item" $
+    makeTest <$>
+    [ ( "punctual"
+      , [(0, punctual)]
+      , (defaultScheduleConfig $ TimeOfDay 7 45 0)
+      , "Punctual 5min 07:50:00  ")
+    , ( "punctual with walking delay"
+      , [(2, punctual)]
+      , (defaultScheduleConfig $ TimeOfDay 7 45 0)
+      , "Punctual 3min 07:50:00  ")
+    , ( "running late"
+      , [(0, runningLate)]
+      , (defaultScheduleConfig $ TimeOfDay 7 45 0)
+      , "!Running Late 6min 07:51:00 +04:40 ")
+    , ( "running late + walking delay"
+      , [(2, runningLate)]
+      , (defaultScheduleConfig $ TimeOfDay 7 45 0)
+      , "!Running Late 4min 07:51:00 +04:40 ")
+    , ( "running ahead"
+      , [(0, runningAhead)]
+      , (defaultScheduleConfig $ TimeOfDay 7 45 0)
+      , "!Running Ahead 5min 07:50:00 -04:20 ")
+    , ( "running ahead + walk delay"
+      , [(2, runningAhead)]
+      , (defaultScheduleConfig $ TimeOfDay 7 45 0)
+      , "!Running Ahead 3min 07:50:00 -04:20 ")]
+  where
+    punctual =
+        ScheduleItem
+        { tripId = "."
+        , stopId = "."
+        , serviceName = "Punctual"
+        , scheduledDepartureTime = TimeOfDay 7 50 0
+        , departureDelay = 0
+        , departureTime = TimeOfDay 7 50 0
+        , scheduleType = SCHEDULED
+        }
+    runningAhead =
+        ScheduleItem
+        { tripId = "."
+        , stopId = "."
+        , serviceName = "Running Ahead"
+        , scheduledDepartureTime = TimeOfDay 7 50 0
+        , departureDelay = -260
+        , departureTime = TimeOfDay 7 50 0  -- not consistent with delay
+        , scheduleType = SCHEDULED
+        }
+    runningLate =
+        ScheduleItem
+        { tripId = "."
+        , stopId = "."
+        , serviceName = "Running Late"
+        , scheduledDepartureTime = TimeOfDay 7 50 0
+        , departureDelay = 280
+        , departureTime = TimeOfDay 7 51 0
+        , scheduleType = SCHEDULED
+        }
 
 testMinutesToDeparture ::
   TestTree
-testMinutesToDeparture = testGroup "calculates right delay" $ map makeTest
+testMinutesToDeparture = testGroup "calculates right delay" $ (\(n, min, exp) -> testCase n (min @?= exp)) <$>
   [ ("simple", minutesToDeparture item (TimeOfDay 7 45 00), 6)
   , ("departure in past", minutesToDeparture item (TimeOfDay 7 52 00), -1)
   ]
@@ -173,7 +200,7 @@ testHumanReadableDelay =
                  , departureTime = TimeOfDay 0 0 0
                  , scheduleType = SCHEDULED
                  })
-          , "+40s")
+          , Just "+40s")
         , ( "minute late"
           , (humanReadableDelay
                  ScheduleItem
@@ -185,7 +212,7 @@ testHumanReadableDelay =
                  , departureTime = TimeOfDay 0 0 0
                  , scheduleType = SCHEDULED
                  })
-          , "+01:00")
+          , Just "+01:00")
         , ( "minutes late"
           , (humanReadableDelay
                  ScheduleItem
@@ -197,7 +224,7 @@ testHumanReadableDelay =
                  , departureTime = TimeOfDay 0 0 0
                  , scheduleType = SCHEDULED
                  })
-          , "+07:35")
+          , Just "+07:35")
         , ( "seconds ahead"
           , (humanReadableDelay
                  ScheduleItem
@@ -209,7 +236,7 @@ testHumanReadableDelay =
                  , departureTime = TimeOfDay 0 0 0
                  , scheduleType = SCHEDULED
                  })
-          , "-20s")
+          , Just "-20s")
         , ( "minutes ahead"
           , (humanReadableDelay
                  ScheduleItem
@@ -221,7 +248,7 @@ testHumanReadableDelay =
                  , departureTime = TimeOfDay 0 0 0
                  , scheduleType = SCHEDULED
                  })
-          , "-03:50")]
+          , Just "-03:50")]
   where
     hrTest (title,actual,expected) = testCase title (actual @?= expected)
 

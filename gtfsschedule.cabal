@@ -81,6 +81,7 @@ library
                      , system-filepath
                      , ini
                      , optparse-applicative
+                     , HStringTemplate
   if impl(ghc < 7.10)
     build-depends:
       bifunctors >= 4.0
