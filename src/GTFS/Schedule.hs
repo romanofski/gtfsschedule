@@ -2,7 +2,9 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE CPP #-}
 
-{- | This module provides schedule information. The information is primarily retrieved from the static schedule (e.g. from the database), but is updated with realtime information.
+{- | This module provides schedule information. The information is primarily
+retrieved from the static schedule (e.g. from the database), but is updated with
+realtime information.
 -}
 module GTFS.Schedule
        (ScheduleState(..), ScheduleItem(..), TimeSpec(..),
@@ -15,11 +17,10 @@ module GTFS.Schedule
 
 import qualified GTFS.Database as DB
 
-import Data.Functor ((<$>))
-import Control.Applicative (pure)
+import Control.Applicative ((<$>), pure)
+import Data.Traversable (traverse)
 import Data.List (sortBy)
 import Data.Ord (comparing)
-import Data.Traversable (traverse)
 
 import Data.Time.LocalTime ( utcToLocalTime
                            , LocalTime(..)
@@ -40,7 +41,7 @@ import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import Database.Esqueleto (unValue)
 import qualified Database.Persist.Sqlite as Sqlite
-import Text.StringTemplate (newSTMP, render, setManyAttrib, StringTemplate)
+import Text.StringTemplate (newSTMP, render, setManyAttrib)
 
 
 type StopWithWalktime = (String, Integer)
@@ -76,9 +77,9 @@ getSchedulesByWalktime ::
 getSchedulesByWalktime fp l stops = do
   schedules <- traverse (go fp) stops
   pure schedules
-    where go fp (sID, walkDelay) = do
+    where go filep (sID, walkDelay) = do
             timespec <- getTimeSpecFromNow walkDelay
-            schedule <- getSchedule fp sID timespec l
+            schedule <- getSchedule filep sID timespec l
             pure (walkDelay, schedule)
 
 -- | Return the next services which are due in the next couple of minutes
