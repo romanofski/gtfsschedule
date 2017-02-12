@@ -17,6 +17,7 @@ import qualified Options.Applicative.Builder as Builder
 
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
+import Control.Applicative ((<*>))
 import qualified Data.Text as T
 
 

@@ -14,7 +14,7 @@ import CSV.Import (createNewDatabase)
 import Data.Functor ((<$>))
 
 import Network.HTTP.Conduit
-import Network.HTTP.Types.Header (ResponseHeaders, Header, hLastModified)
+import Network.HTTP.Types.Header (ResponseHeaders, hLastModified)
 import Data.Time.Calendar (Day)
 #if MIN_VERSION_time(1, 5, 0)
 import Data.Time.Format (defaultTimeLocale)

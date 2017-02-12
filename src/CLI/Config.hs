@@ -3,7 +3,7 @@
 {- | This module holds configuration types and functions to read from a configuration file. -}
 module CLI.Config where
 
-import GTFS.Schedule (StopWithWalktime, ScheduleItem(..), defaultScheduleItemTemplate)
+import GTFS.Schedule (StopWithWalktime, defaultScheduleItemTemplate)
 
 import Data.Ini (readIniFile, parseIni, lookupValue, Ini)
 
