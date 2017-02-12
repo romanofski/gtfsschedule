@@ -104,6 +104,7 @@ executable gtfsschedule
 test-suite unit-tests
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
+  ghc-options:         -Wall
   main-is:             Spec.hs
   other-modules:       CSVImport
                        Realtime

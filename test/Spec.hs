@@ -7,7 +7,6 @@ import GTFS.Schedule
         humanReadableDelay, getSchedule, sortSchedules, bumOffSeatTime,
         defaultScheduleConfig)
 import GTFS.Realtime.Message (departureTimeWithDelay)
-import qualified GTFS.Database as DB
 import qualified CSV.Import as CSV
 
 import Realtime (feedTests)
@@ -16,24 +15,17 @@ import TestUpdate (updateTests)
 
 import Control.Applicative ((<$>), (<*>))
 
-import Data.List (sort)
-
 import Test.Tasty (defaultMain, TestTree, TestName, testGroup)
 import Test.Tasty.HUnit (testCase, (@?=))
 import Test.Tasty.QuickCheck
-       (testProperty, elements, getPositive, choose, Arbitrary(..))
+       (testProperty, elements, choose, Arbitrary(..), Gen)
 
 import Data.Time.LocalTime (TimeOfDay(..))
 import Data.Time.Calendar (fromGregorian)
-import Database.Persist (insert)
-import Control.Monad.Trans.Reader (ReaderT)
-import Control.Monad.Trans.Resource (ResourceT)
-import Control.Monad.Logger (NoLoggingT(..))
 import System.IO.Temp (withSystemTempFile)
-import System.IO.Silently (capture, capture_)
+import System.IO.Silently (capture_)
 import System.Directory (getCurrentDirectory)
 
-import qualified Database.Persist.Sqlite as Sqlite
 
 tests ::
   TestTree
@@ -42,22 +34,26 @@ tests = testGroup "tests" [proptests, unittests]
 proptests :: TestTree
 proptests = testGroup "property tests" [ testSortSchedules ]
 
-instance Arbitrary TimeOfDay where
-    arbitrary =
-        TimeOfDay <$> choose (0, 23) <*> choose (0, 59) <*>
+arbitraryTimeOfDay :: Gen TimeOfDay
+arbitraryTimeOfDay = TimeOfDay <$> choose (0, 23) <*> choose (0, 59) <*>
         (fromRational . toRational <$> choose (0 :: Double, 60))
 
-instance Arbitrary ScheduleState where
-  arbitrary = elements [CANCELED, ADDED, SCHEDULED]
+-- | newtype declaration which wraps the schedule item to avoid orphaned
+-- instances warning if we'd just implement the Arbitrary instance for
+-- ScheduleItems here
+--
+newtype ArbitraryScheduleItem = ArbitraryScheduleItem
+    { unArbitrary :: ScheduleItem
+    } deriving (Show)
 
-instance Arbitrary ScheduleItem where
-    arbitrary = do
-        schedDepTime <- arbitrary
+instance Arbitrary ArbitraryScheduleItem where
+    arbitrary = ArbitraryScheduleItem <$> do
+        schedDepTime <- arbitraryTimeOfDay
         delay <- arbitrary
         trip <- arbitrary
         stop <- arbitrary
         name <- arbitrary
-        stype <- arbitrary
+        stype <- elements [CANCELED, ADDED, SCHEDULED]
         return $ ScheduleItem { tripId = trip
                               , stopId = stop
                               , serviceName = name
@@ -71,12 +67,15 @@ testSortSchedules :: TestTree
 testSortSchedules =
     testProperty
         "schedules are sorted by bum-off-seat-time"
-        (\schedule ->
-              propOrderedSchedule (sortSchedules schedule))
+        (\schedule -> propOrderedSchedule $ sortSchedules  $ unwrapScheduleItems schedule)
+
+unwrapScheduleItems :: [(Integer, [ArbitraryScheduleItem])] -> [(Integer, [ScheduleItem])]
+unwrapScheduleItems [] = []
+unwrapScheduleItems ((i, xs):xxs) = (i, unArbitrary <$> xs) : unwrapScheduleItems xxs
 
 propOrderedSchedule :: [(Integer, ScheduleItem)] -> Bool
 propOrderedSchedule [] = True
-propOrderedSchedule [(x, i)] = True
+propOrderedSchedule [_] = True
 propOrderedSchedule (x:y:rest) = (bumOffSeatTime x) <= (bumOffSeatTime y) && propOrderedSchedule rest
 
 -- unit tests
@@ -168,19 +167,23 @@ testFormatScheduleItem =
 
 testMinutesToDeparture ::
   TestTree
-testMinutesToDeparture = testGroup "calculates right delay" $ (\(n, min, exp) -> testCase n (min @?= exp)) <$>
-  [ ("simple", minutesToDeparture item (TimeOfDay 7 45 00), 6)
-  , ("departure in past", minutesToDeparture item (TimeOfDay 7 52 00), -1)
-  ]
-    where
-      item = ScheduleItem { tripId = "7136402-BT2015-04_FUL-Weekday-00"
-                          , stopId = "10795"
-                          , serviceName = "Test Service"
-                          , scheduledDepartureTime = TimeOfDay 7 50 00
-                          , departureDelay = 60
-                          , departureTime = TimeOfDay 7 51 00
-                          , scheduleType = SCHEDULED
-                          }
+testMinutesToDeparture =
+    testGroup "calculates right delay" $
+    (\(n,minutes,expected) ->
+          testCase n (minutes @?= expected)) <$>
+    [ ("simple", minutesToDeparture item (TimeOfDay 7 45 0), 6)
+    , ("departure in past", minutesToDeparture item (TimeOfDay 7 52 0), -1)]
+  where
+    item =
+        ScheduleItem
+        { tripId = "7136402-BT2015-04_FUL-Weekday-00"
+        , stopId = "10795"
+        , serviceName = "Test Service"
+        , scheduledDepartureTime = TimeOfDay 7 50 0
+        , departureDelay = 60
+        , departureTime = TimeOfDay 7 51 0
+        , scheduleType = SCHEDULED
+        }
 
 
 testHumanReadableDelay ::
