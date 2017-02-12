@@ -3,7 +3,7 @@
 {- | This module holds configuration types and functions to read from a configuration file. -}
 module CLI.Config where
 
-import GTFS.Schedule (StopWithWalktime, ScheduleItem(..))
+import GTFS.Schedule (StopWithWalktime, ScheduleItem(..), defaultScheduleItemTemplate)
 
 import Data.Ini (readIniFile, parseIni, lookupValue, Ini)
 
@@ -31,7 +31,8 @@ data Command
               , autoUpdate :: Bool
               , limit :: Maybe Integer
               , staticDatasetURL :: Maybe T.Text
-              , realtimeFeedURL :: Maybe T.Text}
+              , realtimeFeedURL :: Maybe T.Text
+              , scheduleItemTemplate :: Maybe T.Text}
     | Setup { staticDatasetURL :: Maybe T.Text }
     | Search { searchString :: String }
     deriving (Show)
@@ -64,10 +65,10 @@ stopWithWalktime = ReadM $ do
   s <- ask
   let
     i = findIndex (== '+') s
-    stopId = maybe s (`take` s) i
+    stopId' = maybe s (`take` s) i
     walktime = maybe "" ((`drop` s) . (+1)) i
   (,)
-    <$> local (const stopId) (unReadM str)
+    <$> local (const stopId') (unReadM str)
     <*> (local (const walktime) (unReadM auto) <|> pure 0)
 
 
@@ -105,17 +106,44 @@ txtReader = ReadM $ do
 
 monitorOptions :: Ini -> Parser Command
 monitorOptions conf =
-  Monitor
-  <$> some (
-    argument stopWithWalktime
-      ( metavar "STATION-ID[:MINUTES]"
-      <> help "Station id to show the schedule for, and optional walktime in minutes to that station (default: 0))"
-      )
-    )
-  <*> flag False True
-    (long "realtime" <> short 'r' <> help "Enable realtime updates - DEPRECATED")
-  <*> flag False True
-    (long "autoupdate" <> short 'u' <> help "Automatically update the static GTFS dataset")
-  <*> (optional $ Builder.option Builder.auto ( short 'l' <> long "limit" <> help "How many schedule items to show"))
-  <*> (optional $ Builder.option txtReader ( long "static-url" <> withConfigfile conf (T.pack "static-url") <> metavar "URL" <> help "URL to the static dataset zip archive" ))
-  <*> (optional $ Builder.option txtReader ( long "realtime-url" <> withConfigfile conf (T.pack "realtime-url") <> metavar "URL" <> help "URL to the realtime GTFS feed" ))
+    Monitor <$>
+    some
+        (argument
+             stopWithWalktime
+             (metavar "STATION-ID[:MINUTES]" <>
+              help
+                  "Station id to show the schedule for, and optional walktime in minutes to that station (default: 0))")) <*>
+    flag
+        False
+        True
+        (long "realtime" <> short 'r' <>
+         help "Enable realtime updates - DEPRECATED") <*>
+    flag
+        False
+        True
+        (long "autoupdate" <> short 'u' <>
+         help "Automatically update the static GTFS dataset") <*>
+    (optional $
+     Builder.option
+         Builder.auto
+         (short 'l' <> long "limit" <> help "How many schedule items to show")) <*>
+    (optional $
+     Builder.option
+         txtReader
+         (long "static-url" <> withConfigfile conf "static-url" <>
+          metavar "URL" <>
+          help "URL to the static dataset zip archive")) <*>
+    (optional $
+     Builder.option
+         txtReader
+         (long "realtime-url" <> withConfigfile conf "realtime-url" <>
+          metavar "URL" <>
+          help "URL to the realtime GTFS feed")) <*>
+    (optional $
+     Builder.option
+         txtReader
+         (long "schedule-item-template" <>
+          withConfigfile conf "schedule-item-template" <>
+          help
+              ("Template to format a schedule item. Default: " ++
+               T.unpack defaultScheduleItemTemplate)))

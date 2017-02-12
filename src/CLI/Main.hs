@@ -5,7 +5,8 @@ module CLI.Main where
 import CLI.Config
 import GTFS.Schedule
        (getSchedulesByWalktime, printSchedule, getCurrentTimeOfDay,
-        sortSchedules, defaultScheduleConfig)
+        sortSchedules, defaultScheduleConfig, ScheduleConfig(..),
+        defaultScheduleItemTemplate)
 import GTFS.Database (userDatabaseFile, searchStopCode, StopSearchResult(..))
 import GTFS.Realtime.Update (printOrUpdateDataset)
 import GTFS.Realtime.Message (updateSchedulesWithRealtimeData)
@@ -34,7 +35,7 @@ runSchedule dbfile (Monitor{..}) = do
         updateSchedulesWithRealtimeData realtimeFeedURL
     let schedule = take (fromInteger l) $ sortSchedules schedules
     tod <- getCurrentTimeOfDay
-    printSchedule schedule (defaultScheduleConfig tod)
+    printSchedule schedule (ScheduleConfig tod $ fromMaybe defaultScheduleItemTemplate scheduleItemTemplate)
 
 -- | Wrapper which uses the configuration files to configure, parse the command
 -- line options and finally run the application

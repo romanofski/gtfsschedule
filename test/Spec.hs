@@ -2,7 +2,7 @@
 module Main where
 
 import GTFS.Schedule
-       (ScheduleItem(..), ScheduleState(..), TimeSpec(..), ScheduleConfig,
+       (ScheduleItem(..), ScheduleState(..), TimeSpec(..), ScheduleConfig(..),
         minutesToDeparture, printSchedule,
         humanReadableDelay, getSchedule, sortSchedules, bumOffSeatTime,
         defaultScheduleConfig)
@@ -132,7 +132,12 @@ testFormatScheduleItem =
     , ( "running ahead + walk delay"
       , [(2, runningAhead)]
       , (defaultScheduleConfig $ TimeOfDay 7 45 0)
-      , "!Running Ahead 3min 07:50:00 -04:20 ")]
+      , "!Running Ahead 3min 07:50:00 -04:20 ")
+    , ( "running ahead custom template"
+      , [(2, runningAhead)]
+      , (ScheduleConfig (TimeOfDay 7 45 0) "$serviceName$")
+      , "Running Ahead")
+    ]
   where
     punctual =
         ScheduleItem

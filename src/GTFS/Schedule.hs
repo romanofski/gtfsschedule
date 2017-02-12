@@ -1,6 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 {- | This module provides schedule information. The information is primarily
 retrieved from the static schedule (e.g. from the database), but is updated with
@@ -12,7 +13,7 @@ module GTFS.Schedule
         getTimeSpecFromNow, printSchedule,
         minutesToDeparture, secondsToDeparture, sortSchedules,
         bumOffSeatTime, getCurrentTimeOfDay, humanReadableDelay,
-        defaultScheduleConfig)
+        defaultScheduleConfig, defaultScheduleItemTemplate)
        where
 
 import qualified GTFS.Database as DB
@@ -137,14 +138,17 @@ printSchedule xs cfg =
 
 data ScheduleConfig = ScheduleConfig
     { scheduleTimeOfDay :: TimeOfDay
-    , scheduleItemTemplate :: String
+    , scheduleItemTemplate :: T.Text
     }
+
+defaultScheduleItemTemplate :: T.Text
+defaultScheduleItemTemplate = "$delayIndicator$$serviceName$ $minutesToDeparture$min $departureTime$ $scheduledDepartureTime$ $scheduleTypeDiff$"
 
 defaultScheduleConfig :: TimeOfDay -> ScheduleConfig
 defaultScheduleConfig tod =
   ScheduleConfig
     { scheduleTimeOfDay = tod
-    , scheduleItemTemplate = "$delayIndicator$$serviceName$ $minutesToDeparture$min $departureTime$ $scheduledDepartureTime$ $scheduleTypeDiff$"
+    , scheduleItemTemplate = defaultScheduleItemTemplate
     }
 
 defaultScheduleItemFormatter :: ScheduleConfig
@@ -168,7 +172,7 @@ defaultScheduleItemFormatter cfg walkDelay si = render attributesToTemplate
             , ("scheduleType", Just $ show $ scheduleType si)
             , ("scheduleTypeDiff", scheduleTypeWithoutDefault si)
             ]
-            (newSTMP (scheduleItemTemplate cfg))
+            (newSTMP (T.unpack $ scheduleItemTemplate cfg))
 
 scheduleTypeWithoutDefault :: ScheduleItem -> Maybe String
 scheduleTypeWithoutDefault (ScheduleItem { scheduleType = SCHEDULED }) = Nothing
