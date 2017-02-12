@@ -1,5 +1,11 @@
 == ChangeLog
 
+=== 0.7.0.0 (unreleased)
+
+Major changes:
+
+* Stop id can now be looked up locally from the imported dataset (#23)
+
 === 0.6.0.0 (05-02-2017)
 
 Major changes:

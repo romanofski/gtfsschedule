@@ -9,6 +9,8 @@ gtfsschedule - Be on time for your next public transport service.
 
 == SYNOPSIS
 
+gtfsschedule search STRING
+
 gtfsschedule setup [-s|--static-url URL]
 
 gtfsschedule monitor STATION-ID[:MINUTES]
