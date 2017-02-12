@@ -5,6 +5,7 @@
 Major changes:
 
 * Stop id can now be looked up locally from the imported dataset (#23)
+* Now supports templating the formatting of the schedule item (#21)
 
 === 0.6.0.0 (05-02-2017)
 

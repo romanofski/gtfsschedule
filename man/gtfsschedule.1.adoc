@@ -18,6 +18,7 @@ gtfsschedule monitor STATION-ID[:MINUTES]
              [-l|--limit]
              [--static-url URL]
              [--realtime-url URL]
+             [--schedule-item-template STRING]
 
 == DESCRIPTION
 
@@ -53,6 +54,26 @@ files following the GTFS Static Reference.
 *--realtime-url*='URL':: URL to retrieve realtime information from. The tool
    will always retrieve the schedule first from the local database and update
    these services with realtime information if available.
+
+*--schedule-item-template*='STRING':: Template which formats one single schedule
+   item. Be mindful that the characters in the template can be interpreted by
+   the shell. Default template used:
+
+       *$delayIndicator$$serviceName$ $minutesToDeparture$min $departureTime$ $scheduledDepartureTime$ $scheduleTypeDiff$*
+
+
+       Available fields:
+
+         * $delayIndicator$ - Prints an exclamation mark if the delay is not 0.
+         * $serviceName$ - The service name which uses the short route name and
+           the head sign of the service if available. If the head sign of the
+           service is not available, the long route name is used.
+         * $minutesToDeparture$ - Remaining minutes from now to departure time,
+           including the delay it takes to walk to the station.
+         * $departureTime$ - Departure time including any delays retrieved by the realtime feed.
+         * $scheduledDepartureTime$ - Official departure time retrieved from the static data set.
+         * $scheduleTypeDiff$* - status of the trip, which can be one of ADDED
+           or CANCELED. The default is SCHEDULED and is not displayed.
 
 *search NAME*:: Search for a stop id by giving the name of a possible stop. The
  search conducted is a sub-string search against the stop names in the database.
@@ -177,6 +198,7 @@ and the static dataset. For example, for Brisbane the config file would look:
 [default]
 static-url = https://gtfsrt.api.translink.com.au/GTFS/SEQ_GTFS.zip
 realtime-url = http://gtfsrt.api.translink.com.au/Feed/SEQ
+schedule-item-template = $delayIndicator$$serviceName$ $minutesToDeparture$min $departureTime$ $scheduledDepartureTime$ $scheduleTypeDiff$
 ----
 
 The format of the configuration file is documented here:
