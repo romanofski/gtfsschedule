@@ -3,7 +3,7 @@
 {- | This module holds configuration types and functions to read from a configuration file. -}
 module CLI.Config where
 
-import GTFS.Schedule (StopWithWalktime, defaultScheduleItemTemplate)
+import GTFS.Schedule (Stop(..), defaultScheduleItemTemplate)
 
 import Data.Ini (readIniFile, parseIni, lookupValue, Ini)
 
@@ -26,7 +26,7 @@ import qualified Data.Text as T
 
 -- | Command line options
 data Command
-    = Monitor { stopsWithWalktime :: [StopWithWalktime]
+    = Monitor { stops :: [Stop]
               , realtime :: Bool
               , autoUpdate :: Bool
               , limit :: Maybe Integer
@@ -60,15 +60,15 @@ withConfigfile conf k = either (const Builder.idm) Builder.value  $ lookupValue 
 
 -- | optparse-applicative reader for stop/walktime pair
 --
-stopWithWalktime :: ReadM StopWithWalktime
+stopWithWalktime :: ReadM Stop
 stopWithWalktime = ReadM $ do
   s <- ask
   let
     i = findIndex (== '+') s
-    stopId' = maybe s (`take` s) i
+    sCode = maybe s (`take` s) i
     walktime = maybe "" ((`drop` s) . (+1)) i
-  (,)
-    <$> local (const stopId') (unReadM str)
+  Stop
+    <$> local (const sCode) (unReadM str)
     <*> (local (const walktime) (unReadM auto) <|> pure 0)
 
 

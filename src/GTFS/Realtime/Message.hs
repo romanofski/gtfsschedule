@@ -12,7 +12,7 @@ module GTFS.Realtime.Message
         departureTimeWithDelay, FM.FeedMessage)
        where
 
-import GTFS.Schedule (ScheduleItem(..), ScheduleState(..), secondsToDeparture)
+import GTFS.Schedule (ScheduleItem(..), ScheduleState(..), Stop(..), secondsToDeparture)
 
 import Data.Functor ((<$>))
 import Control.Applicative (pure)
@@ -49,8 +49,8 @@ import Control.Monad.State (State, execState, get, put)
 --
 updateSchedulesWithRealtimeData ::
   Maybe T.Text
-  -> [(Integer, [ScheduleItem])]
-  -> IO [(Integer, [ScheduleItem])]
+  -> [ScheduleItem]
+  -> IO [ScheduleItem]
 updateSchedulesWithRealtimeData Nothing schedules = pure schedules
 updateSchedulesWithRealtimeData (Just url) schedules = do
     bytes <- simpleHttp (T.unpack url)
@@ -59,7 +59,7 @@ updateSchedulesWithRealtimeData (Just url) schedules = do
             print $ "Error occurred decoding feed: " ++ err
             pure schedules
         Right (fm,_) -> do
-            pure $ fmap (second (`updateSchedule` fm)) schedules
+            pure $ updateSchedule schedules fm
 
 -- | Updates schedule with trip updates given by feed
 --
@@ -116,7 +116,7 @@ updateForTrip tu = do
   where
     f TU.TripUpdate { TU.trip = TripDescriptor { schedule_relationship = Just TripSR.CANCELED }} k item =
       Just ScheduleItem { tripId = k
-                        , stopId = stopId item
+                        , stop = stop item
                         , serviceName = serviceName item
                         , scheduledDepartureTime = scheduledDepartureTime item
                         , departureDelay = 0
@@ -124,9 +124,9 @@ updateForTrip tu = do
                         , scheduleType = CANCELED
                         }
     f _ k item = do
-      stu <- findStopTimeUpdate (stopId item) (getStopTimeUpdates tu)
+      stu <- findStopTimeUpdate (stop item) (getStopTimeUpdates tu)
       Just ScheduleItem { tripId = k
-                        , stopId = stopId item
+                        , stop = stop item
                         , serviceName = serviceName item
                         , scheduledDepartureTime = scheduledDepartureTime item
                         , departureDelay = getDepartureDelay stu
@@ -148,10 +148,10 @@ getStopTimeUpdates ::
 getStopTimeUpdates msg = P'.getVal msg TU.stop_time_update
 
 findStopTimeUpdate ::
-  String
+  Stop
   -> P'.Seq STU.StopTimeUpdate
   -> Maybe STU.StopTimeUpdate
-findStopTimeUpdate stopID = find (\x -> stopTimeUpdateStopID x == stopID)
+findStopTimeUpdate s = find (\x -> stopTimeUpdateStopID x == stopIdentifier s)
 
 stopTimeUpdateStopID ::
   STU.StopTimeUpdate

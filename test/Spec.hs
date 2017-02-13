@@ -2,8 +2,8 @@
 module Main where
 
 import GTFS.Schedule
-       (ScheduleItem(..), ScheduleState(..), TimeSpec(..), ScheduleConfig(..),
-        minutesToDeparture, printSchedule,
+       (ScheduleItem(..), ScheduleState(..), TimeSpec(..),
+        ScheduleConfig(..), Stop(..), minutesToDeparture, printSchedule,
         humanReadableDelay, getSchedule, sortSchedules, bumOffSeatTime,
         defaultScheduleConfig)
 import GTFS.Realtime.Message (departureTimeWithDelay)
@@ -18,7 +18,7 @@ import Control.Applicative ((<$>), (<*>))
 import Test.Tasty (defaultMain, TestTree, TestName, testGroup)
 import Test.Tasty.HUnit (testCase, (@?=))
 import Test.Tasty.QuickCheck
-       (testProperty, elements, choose, Arbitrary(..), Gen)
+       (testProperty, elements, choose, Arbitrary(..), Gen, Positive(..))
 
 import Data.Time.LocalTime (TimeOfDay(..))
 import Data.Time.Calendar (fromGregorian)
@@ -38,6 +38,9 @@ arbitraryTimeOfDay :: Gen TimeOfDay
 arbitraryTimeOfDay = TimeOfDay <$> choose (0, 23) <*> choose (0, 59) <*>
         (fromRational . toRational <$> choose (0 :: Double, 60))
 
+arbitraryStop :: Gen Stop
+arbitraryStop = Stop <$> arbitrary <*> arbitrary
+
 -- | newtype declaration which wraps the schedule item to avoid orphaned
 -- instances warning if we'd just implement the Arbitrary instance for
 -- ScheduleItems here
@@ -51,11 +54,11 @@ instance Arbitrary ArbitraryScheduleItem where
         schedDepTime <- arbitraryTimeOfDay
         delay <- arbitrary
         trip <- arbitrary
-        stop <- arbitrary
+        s <- arbitraryStop
         name <- arbitrary
         stype <- elements [CANCELED, ADDED, SCHEDULED]
         return $ ScheduleItem { tripId = trip
-                              , stopId = stop
+                              , stop = s
                               , serviceName = name
                               , scheduledDepartureTime = schedDepTime
                               , departureDelay = delay
@@ -69,11 +72,10 @@ testSortSchedules =
         "schedules are sorted by bum-off-seat-time"
         (\schedule -> propOrderedSchedule $ sortSchedules  $ unwrapScheduleItems schedule)
 
-unwrapScheduleItems :: [(Integer, [ArbitraryScheduleItem])] -> [(Integer, [ScheduleItem])]
-unwrapScheduleItems [] = []
-unwrapScheduleItems ((i, xs):xxs) = (i, unArbitrary <$> xs) : unwrapScheduleItems xxs
+unwrapScheduleItems :: [ArbitraryScheduleItem] -> [ScheduleItem]
+unwrapScheduleItems xs = unArbitrary <$> xs
 
-propOrderedSchedule :: [(Integer, ScheduleItem)] -> Bool
+propOrderedSchedule :: [ScheduleItem] -> Bool
 propOrderedSchedule [] = True
 propOrderedSchedule [_] = True
 propOrderedSchedule (x:y:rest) = (bumOffSeatTime x) <= (bumOffSeatTime y) && propOrderedSchedule rest
@@ -98,7 +100,7 @@ testPrintSchedule = testCase "prints empty schedule" $ do
   output @?= "No services for the next 30min"
 
 makeTest ::
-  (TestName, [(Integer, ScheduleItem)], ScheduleConfig, String)
+  (TestName, [ScheduleItem], ScheduleConfig, String)
   -> TestTree
 makeTest (name, input, cfg, expected) = testCase name $ do
   output <- capture_ $ printSchedule input cfg
@@ -110,39 +112,74 @@ testFormatScheduleItem =
     testGroup "formates schedule item" $
     makeTest <$>
     [ ( "punctual"
-      , [(0, punctual)]
+      , [punctual]
       , (defaultScheduleConfig $ TimeOfDay 7 45 0)
       , "Punctual 5min 07:50:00  ")
     , ( "punctual with walking delay"
-      , [(2, punctual)]
+      , [ ScheduleItem
+          { tripId = "."
+          , stop = Stop
+            { stopIdentifier = "."
+            , stopWalktime = 2
+            }
+          , serviceName = "Punctual"
+          , scheduledDepartureTime = TimeOfDay 7 50 0
+          , departureDelay = 0
+          , departureTime = TimeOfDay 7 50 0
+          , scheduleType = SCHEDULED
+          }]
       , (defaultScheduleConfig $ TimeOfDay 7 45 0)
       , "Punctual 3min 07:50:00  ")
     , ( "running late"
-      , [(0, runningLate)]
+      , [runningLate]
       , (defaultScheduleConfig $ TimeOfDay 7 45 0)
       , "!Running Late 6min 07:51:00 +04:40 ")
     , ( "running late + walking delay"
-      , [(2, runningLate)]
+      , [ ScheduleItem
+          { tripId = "."
+          , stop = Stop
+            { stopIdentifier = "."
+            , stopWalktime = 2
+            }
+          , serviceName = "Running Late"
+          , scheduledDepartureTime = TimeOfDay 7 50 0
+          , departureDelay = 280
+          , departureTime = TimeOfDay 7 51 0
+          , scheduleType = SCHEDULED
+          }]
       , (defaultScheduleConfig $ TimeOfDay 7 45 0)
       , "!Running Late 4min 07:51:00 +04:40 ")
     , ( "running ahead"
-      , [(0, runningAhead)]
+      , [runningAhead]
       , (defaultScheduleConfig $ TimeOfDay 7 45 0)
       , "!Running Ahead 5min 07:50:00 -04:20 ")
     , ( "running ahead + walk delay"
-      , [(2, runningAhead)]
+      , [ ScheduleItem
+          { tripId = "."
+          , stop = Stop
+            { stopIdentifier = "."
+            , stopWalktime = 2
+            }
+          , serviceName = "Running Ahead"
+          , scheduledDepartureTime = TimeOfDay 7 50 0
+          , departureDelay = -260
+          , departureTime = TimeOfDay 7 50 0  -- not consistent with delay
+          , scheduleType = SCHEDULED
+          }]
       , (defaultScheduleConfig $ TimeOfDay 7 45 0)
       , "!Running Ahead 3min 07:50:00 -04:20 ")
-    , ( "running ahead custom template"
-      , [(2, runningAhead)]
+    , ( "custom template"
+      , [runningAhead]
       , (ScheduleConfig (TimeOfDay 7 45 0) "$serviceName$")
-      , "Running Ahead")
-    ]
+      , "Running Ahead")]
   where
     punctual =
         ScheduleItem
         { tripId = "."
-        , stopId = "."
+        , stop = Stop
+          { stopIdentifier = "."
+          , stopWalktime = 0
+          }
         , serviceName = "Punctual"
         , scheduledDepartureTime = TimeOfDay 7 50 0
         , departureDelay = 0
@@ -152,7 +189,10 @@ testFormatScheduleItem =
     runningAhead =
         ScheduleItem
         { tripId = "."
-        , stopId = "."
+        , stop = Stop
+          { stopIdentifier = "."
+          , stopWalktime = 0
+          }
         , serviceName = "Running Ahead"
         , scheduledDepartureTime = TimeOfDay 7 50 0
         , departureDelay = -260
@@ -162,7 +202,10 @@ testFormatScheduleItem =
     runningLate =
         ScheduleItem
         { tripId = "."
-        , stopId = "."
+        , stop = Stop
+          { stopIdentifier = "."
+          , stopWalktime = 0
+          }
         , serviceName = "Running Late"
         , scheduledDepartureTime = TimeOfDay 7 50 0
         , departureDelay = 280
@@ -182,7 +225,10 @@ testMinutesToDeparture =
     item =
         ScheduleItem
         { tripId = "7136402-BT2015-04_FUL-Weekday-00"
-        , stopId = "10795"
+        , stop = Stop
+          { stopIdentifier = "10795"
+          , stopWalktime = 0
+          }
         , serviceName = "Test Service"
         , scheduledDepartureTime = TimeOfDay 7 50 0
         , departureDelay = 60
@@ -201,7 +247,10 @@ testHumanReadableDelay =
           , (humanReadableDelay
                  ScheduleItem
                  { tripId = "_"
-                 , stopId = "_"
+                 , stop = Stop
+                   { stopIdentifier = "_"
+                   , stopWalktime = 0
+                   }
                  , serviceName = "_"
                  , scheduledDepartureTime = TimeOfDay 0 0 0
                  , departureDelay = 40
@@ -213,7 +262,10 @@ testHumanReadableDelay =
           , (humanReadableDelay
                  ScheduleItem
                  { tripId = "_"
-                 , stopId = "_"
+                 , stop = Stop
+                   { stopIdentifier = "_"
+                   , stopWalktime = 0
+                   }
                  , serviceName = "_"
                  , scheduledDepartureTime = TimeOfDay 0 0 0
                  , departureDelay = 60
@@ -225,7 +277,10 @@ testHumanReadableDelay =
           , (humanReadableDelay
                  ScheduleItem
                  { tripId = "_"
-                 , stopId = "_"
+                 , stop = Stop
+                   { stopIdentifier = "_"
+                   , stopWalktime = 0
+                   }
                  , serviceName = "_"
                  , scheduledDepartureTime = TimeOfDay 0 0 0
                  , departureDelay = 455
@@ -237,7 +292,10 @@ testHumanReadableDelay =
           , (humanReadableDelay
                  ScheduleItem
                  { tripId = "_"
-                 , stopId = "_"
+                 , stop = Stop
+                   { stopIdentifier = "_"
+                   , stopWalktime = 0
+                   }
                  , serviceName = "_"
                  , scheduledDepartureTime = TimeOfDay 0 0 0
                  , departureDelay = -20
@@ -249,7 +307,10 @@ testHumanReadableDelay =
           , (humanReadableDelay
                  ScheduleItem
                  { tripId = "_"
-                 , stopId = "_"
+                 , stop = Stop
+                   { stopIdentifier = "_"
+                   , stopWalktime = 0
+                   }
                  , serviceName = "_"
                  , scheduledDepartureTime = TimeOfDay 0 0 0
                  , departureDelay = -230
@@ -277,7 +338,7 @@ makeDatabaseImportTest (TestInput name csvdatadir scode timespec expected) =
 
 data TestInput = TestInput { testName :: String
                            , csvdatadirectory :: String
-                           , stopcode :: String
+                           , stop' :: Stop
                            , now :: TimeSpec
                            , testExpectedSchedule :: [ScheduleItem]
                            }
@@ -290,25 +351,37 @@ testDepartures =
     [ TestInput
       { testName = "no departure because date is past all scheduled services"
       , csvdatadirectory = "regular"
-      , stopcode = "600029"
+      , stop' = Stop
+        { stopIdentifier = "600029"
+        , stopWalktime = 0
+        }
       , now = TimeSpec (TimeOfDay 8 5 0) (fromGregorian 2015 2 7)
       , testExpectedSchedule = []
       }
     , TestInput
       { testName = "no departure because time is past all scheduled services"
       , csvdatadirectory = "regular"
-      , stopcode = "600029"
+      , stop' = Stop
+        { stopIdentifier = "600029"
+        , stopWalktime = 0
+        }
       , now = TimeSpec (TimeOfDay 8 5 0) (fromGregorian 2013 1 7)
       , testExpectedSchedule = []
       }
     , TestInput
       { testName = "imports aftermidnight services"
       , csvdatadirectory = "aftermidnight"
-      , stopcode = "600029"
+      , stop' = Stop
+        { stopIdentifier = "600029"
+        , stopWalktime = 0
+        }
       , now = TimeSpec (TimeOfDay 1 0 0) (fromGregorian 2013 2 4)
       , testExpectedSchedule = [ ScheduleItem
                                  { tripId = "1"
-                                 , stopId = "600029"
+                                 , stop = Stop
+                                   { stopIdentifier = "600029"
+                                   , stopWalktime = 0
+                                   }
                                  , serviceName = "66 Graveyard Express"
                                  , scheduledDepartureTime = TimeOfDay 1 1 0
                                  , departureDelay = 0
@@ -317,7 +390,10 @@ testDepartures =
                                  }
                                , ScheduleItem
                                  { tripId = "2"
-                                 , stopId = "600029"
+                                 , stop = Stop
+                                   { stopIdentifier = "600029"
+                                   , stopWalktime = 0
+                                   }
                                  , serviceName = "66 Graveyard Express"
                                  , scheduledDepartureTime = TimeOfDay 2 1 0
                                  , departureDelay = 0
@@ -328,11 +404,17 @@ testDepartures =
     , TestInput
       { testName = "additional temp scheduled service"
       , csvdatadirectory = "tempservice"
-      , stopcode = "600029"
+      , stop' = Stop
+        { stopIdentifier = "600029"
+        , stopWalktime = 0
+        }
       , now = TimeSpec (TimeOfDay 8 5 0) (fromGregorian 2015 1 28)
       , testExpectedSchedule = [ ScheduleItem
                                  { tripId = "QF0815-00"
-                                 , stopId = "600029"
+                                 , stop = Stop
+                                   { stopIdentifier = "600029"
+                                   , stopWalktime = 0
+                                   }
                                  , serviceName = "66 not relevant"
                                  , scheduledDepartureTime = TimeOfDay 8 5 0
                                  , departureDelay = 0
@@ -341,7 +423,10 @@ testDepartures =
                                  }
                                , ScheduleItem
                                  { tripId = "QF0815-00-Ekka"
-                                 , stopId = "600029"
+                                 , stop = Stop
+                                   { stopIdentifier = "600029"
+                                   , stopWalktime = 0
+                                   }
                                  , serviceName = "66 not relevant"
                                  , scheduledDepartureTime = TimeOfDay 8 5 33
                                  , departureDelay = 0
@@ -350,7 +435,10 @@ testDepartures =
                                  }
                                , ScheduleItem
                                  { tripId = "QF0815-00"
-                                 , stopId = "600029"
+                                 , stop = Stop
+                                   { stopIdentifier = "600029"
+                                   , stopWalktime = 0
+                                   }
                                  , serviceName = "66 not relevant"
                                  , scheduledDepartureTime = TimeOfDay 8 21 33
                                  , departureDelay = 0
@@ -361,11 +449,17 @@ testDepartures =
     , TestInput
       { testName = "includes only temp scheduled service"
       , csvdatadirectory = "tempservice"
-      , stopcode = "600029"
+      , stop' = Stop
+        { stopIdentifier = "600029"
+        , stopWalktime = 0
+        }
       , now = TimeSpec (TimeOfDay 8 5 0) (fromGregorian 2015 2 4)
       , testExpectedSchedule = [ ScheduleItem
                                  { tripId = "QF0815-00-Ekka"
-                                 , stopId = "600029"
+                                 , stop = Stop
+                                   { stopIdentifier = "600029"
+                                   , stopWalktime = 0
+                                   }
                                  , serviceName = "66 not relevant"
                                  , scheduledDepartureTime = TimeOfDay 8 5 33
                                  , departureDelay = 0

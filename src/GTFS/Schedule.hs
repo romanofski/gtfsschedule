@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE CPP #-}
@@ -9,8 +10,8 @@ realtime information.
 -}
 module GTFS.Schedule
        (ScheduleState(..), ScheduleItem(..), TimeSpec(..),
-        StopWithWalktime, ScheduleConfig(..), getSchedule, getSchedulesByWalktime,
-        getTimeSpecFromNow, printSchedule,
+        ScheduleConfig(..), Stop(..), getSchedule,
+        getSchedulesByWalktime, getTimeSpecFromNow, printSchedule,
         minutesToDeparture, secondsToDeparture, sortSchedules,
         bumOffSeatTime, getCurrentTimeOfDay, humanReadableDelay,
         defaultScheduleConfig, defaultScheduleItemTemplate)
@@ -45,7 +46,17 @@ import qualified Database.Persist.Sqlite as Sqlite
 import Text.StringTemplate (newSTMP, render, setManyAttrib)
 
 
-type StopWithWalktime = (String, Integer)
+-- | A stop which takes into account the time it takes to reach it
+-- Note: GTFS distinguishes between stopCode and stopID. While every stop has a
+-- stopId, not every stop has a stopCode. For querying tho, we need to first
+-- check the stopCode and then fall back to the stopId. That's why I'm calling
+-- it stopIdentifier, since in the end, it doesn't really matter what it is
+-- called unless we need to grab it out of the database.
+-- Therefore, internally everything falls back to the stopId.
+data Stop = Stop
+    { stopIdentifier :: String
+    , stopWalktime :: Integer
+    } deriving (Show,Eq,Ord)
 
 -- | A poor mans data type to express the state of the service
 data ScheduleState
@@ -57,7 +68,7 @@ data ScheduleState
 -- | One entity giving information about the departure of a service
 data ScheduleItem = ScheduleItem
     { tripId :: String
-    , stopId :: String
+    , stop :: Stop
     , serviceName :: String  -- ^ short service name
     , scheduledDepartureTime :: TimeOfDay  -- ^ the time this service departure was originally scheduled
     , departureDelay :: Integer  -- ^ delay retrieved from the realtime feed if available
@@ -73,40 +84,42 @@ data TimeSpec = TimeSpec TimeOfDay Day
 getSchedulesByWalktime ::
   String  -- ^ database file path
   -> Integer  -- ^ limit
-  -> [StopWithWalktime]
-  -> IO [(Integer, [ScheduleItem])]
+  -> [Stop]
+  -> IO [ScheduleItem]
 getSchedulesByWalktime fp l stops = do
   schedules <- traverse (go fp) stops
-  pure schedules
-    where go filep (sID, walkDelay) = do
-            timespec <- getTimeSpecFromNow walkDelay
-            schedule <- getSchedule filep sID timespec l
-            pure (walkDelay, schedule)
+  pure $ concat schedules
+    where go filep s = do
+            timespec <- getTimeSpecFromNow s
+            schedule <- getSchedule filep s timespec l
+            pure schedule
 
 -- | Return the next services which are due in the next couple of minutes
 getSchedule ::
   String  -- ^ database file path
-  -> String  -- ^ stop code
+  -> Stop  -- ^ stop code
   -> TimeSpec
   -> Integer  -- ^ limit
   -> IO [ScheduleItem]
-getSchedule sqliteDBFilepath sCode timespec l = nextDepartures (T.pack sqliteDBFilepath) sCode timespec l
+getSchedule sqliteDBFilepath s timespec l = nextDepartures (T.pack sqliteDBFilepath) s timespec l
 
 -- | Given a list of schedules paired with an associated walk delay,
 -- sort the schedule items by bum-off-seat time.
 --
-sortSchedules :: [(Integer, [ScheduleItem])] -> [(Integer, ScheduleItem)]
-sortSchedules xxs =
-  sortBy (comparing bumOffSeatTime) $ xxs >>= (\(d,xs) -> fmap (d,) xs)
+sortSchedules :: [ScheduleItem] -> [ScheduleItem]
+sortSchedules xs =
+  sortBy (comparing bumOffSeatTime) xs
 
-bumOffSeatTime :: (Integer, ScheduleItem) -> DiffTime
-bumOffSeatTime (d, item) = timeOfDayToTime (departureTime item) - secondsToDiffTime (d * 60)
+bumOffSeatTime :: ScheduleItem -> DiffTime
+bumOffSeatTime item =
+    timeOfDayToTime (departureTime item) -
+    secondsToDiffTime ((stopWalktime $ stop item) * 60)
 
 -- | Create a specific point in time from the current time/date
 getTimeSpecFromNow ::
-  Integer
+  Stop
   -> IO TimeSpec
-getTimeSpecFromNow delay = do
+getTimeSpecFromNow (Stop { stopWalktime = delay }) = do
       t <- getCurrentTime
       tz <- getCurrentTimeZone
       let lday = localDay $ utcToLocalTime tz t
@@ -123,7 +136,7 @@ getCurrentTimeOfDay = do
   return $ localTimeOfDay $ utcToLocalTime tz t
 
 printSchedule
-    :: [(Integer, ScheduleItem)]
+    :: [ScheduleItem]
     -> ScheduleConfig
     -> IO ()
 printSchedule [] _ =
@@ -132,8 +145,8 @@ printSchedule [] _ =
 printSchedule xs cfg =
     putStr $
     concat $
-    (\(d,x) ->
-          defaultScheduleItemFormatter cfg d x) <$>
+    (\x ->
+          defaultScheduleItemFormatter cfg x) <$>
     xs
 
 data ScheduleConfig = ScheduleConfig
@@ -152,10 +165,9 @@ defaultScheduleConfig tod =
     }
 
 defaultScheduleItemFormatter :: ScheduleConfig
-                             -> Integer
                              -> ScheduleItem
                              -> String
-defaultScheduleItemFormatter cfg walkDelay si = render attributesToTemplate
+defaultScheduleItemFormatter cfg si = render attributesToTemplate
   where
     attributesToTemplate =
         setManyAttrib
@@ -165,13 +177,14 @@ defaultScheduleItemFormatter cfg walkDelay si = render attributesToTemplate
                     else Just "")
             , ("serviceName", Just $ serviceName si)
             , ( "minutesToDeparture"
-              , Just $ show
-                    (minutesToDeparture si (scheduleTimeOfDay cfg) - walkDelay))
+              , Just $
+                show
+                    (minutesToDeparture si (scheduleTimeOfDay cfg) -
+                     (stopWalktime $ stop si)))
             , ("departureTime", Just $ show (departureTime si))
             , ("scheduledDepartureTime", humanReadableDelay si)
             , ("scheduleType", Just $ show $ scheduleType si)
-            , ("scheduleTypeDiff", scheduleTypeWithoutDefault si)
-            ]
+            , ("scheduleTypeDiff", scheduleTypeWithoutDefault si)]
             (newSTMP (T.unpack $ scheduleItemTemplate cfg))
 
 scheduleTypeWithoutDefault :: ScheduleItem -> Maybe String
@@ -219,31 +232,41 @@ secondsToDeparture now delay = timeOfDayToTime now + delay
 
 
 makeSchedule ::
-  [(Sqlite.Entity DB.StopTime, Sqlite.Entity DB.Trip, Sqlite.Entity DB.Route)]
+  Stop
+  -> [(Sqlite.Entity DB.StopTime, Sqlite.Entity DB.Trip, Sqlite.Entity DB.Route)]
   -> [ScheduleItem]
-makeSchedule stops = (\(x, y, z) -> makeItem (Sqlite.entityVal x, Sqlite.entityVal y, Sqlite.entityVal z)) <$> stops
+makeSchedule s stops =
+    (\(x,y,z) ->
+          makeItem (Sqlite.entityVal x, Sqlite.entityVal y, Sqlite.entityVal z)) <$>
+    stops
   where
-    makeItem (st, t, r) = ScheduleItem { tripId = DB.tripTripId t
-                                       , stopId = DB.stopTimeStopId st
-                                       , serviceName = DB.routeShortName r ++ " " ++ fromMaybe (DB.routeLongName r) (DB.tripHeadsign t)
-                                       , scheduledDepartureTime = DB.stopTimeDepartureTime st
-                                       , departureDelay = 0
-                                       , departureTime = DB.stopTimeDepartureTime st
-                                       , scheduleType = SCHEDULED
-                                       }
+    makeItem (st,t,r) =
+        ScheduleItem
+        { tripId = DB.tripTripId t
+        , stop = Stop
+          { stopIdentifier = DB.stopTimeStopId st
+          , stopWalktime = stopWalktime s
+          }
+        , serviceName = DB.routeShortName r ++
+          " " ++ fromMaybe (DB.routeLongName r) (DB.tripHeadsign t)
+        , scheduledDepartureTime = DB.stopTimeDepartureTime st
+        , departureDelay = 0
+        , departureTime = DB.stopTimeDepartureTime st
+        , scheduleType = SCHEDULED
+        }
 
 nextDepartures ::
   T.Text
-  -> String
+  -> Stop
   -> TimeSpec
   -> Integer  -- ^ limit
   -> IO [ScheduleItem]
-nextDepartures connstr sCode (TimeSpec earliest day) l = DB.runDBWithoutLogging connstr $ do
-  sID <- DB.getStopID sCode
+nextDepartures connstr s (TimeSpec earliest day) l = DB.runDBWithoutLogging connstr $ do
+  sID <- DB.getStopID (stopIdentifier s)
   stops <- DB.getNextDepartures (firstStopID sID) earliest day l
-  return $ makeSchedule stops
+  return $ makeSchedule s stops
     where
-      firstStopID xs = fromMaybe sCode (safeHead $ unValue <$> xs)
+      firstStopID xs = fromMaybe (stopIdentifier s) (safeHead $ unValue <$> xs)
 
 safeHead ::
   [a]

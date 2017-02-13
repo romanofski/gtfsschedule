@@ -6,7 +6,9 @@ module CSVImport (importTests) where
 
 import qualified CSV.Import as CSV
 import qualified GTFS.Database as DB
-import GTFS.Schedule (getSchedule, TimeSpec(..), ScheduleItem(..), ScheduleState(..))
+import GTFS.Schedule
+       (getSchedule, TimeSpec(..), ScheduleItem(..), ScheduleState(..),
+        Stop(..))
 
 import Fixtures (withConcurrentTCPServer, serverHost)
 
@@ -51,7 +53,10 @@ testImportWithExistingDBFile =
                          schedule <-
                              getSchedule
                                  tmpfile
-                                 "600029"
+                                 Stop
+                                 { stopIdentifier = "600029"
+                                 , stopWalktime = 7
+                                 }
                                  (TimeSpec
                                       (TimeOfDay 8 5 0)
                                       (fromGregorian 2015 1 28))
@@ -59,7 +64,10 @@ testImportWithExistingDBFile =
                          schedule @?=
                              [ ScheduleItem
                                { tripId = "QF0815-00"
-                               , stopId = "600029"
+                               , stop = Stop
+                                 { stopIdentifier = "600029"
+                                 , stopWalktime = 7
+                                 }
                                , serviceName = "66 not relevant"
                                , scheduledDepartureTime = (TimeOfDay 8 5 0)
                                , departureDelay = 0
@@ -68,7 +76,10 @@ testImportWithExistingDBFile =
                                }
                              , ScheduleItem
                                { tripId = "QF0815-00"
-                               , stopId = "600029"
+                               , stop = Stop
+                                 { stopIdentifier = "600029"
+                                 , stopWalktime = 7
+                                 }
                                , serviceName = "66 not relevant"
                                , scheduledDepartureTime = (TimeOfDay 8 21 33)
                                , departureDelay = 0

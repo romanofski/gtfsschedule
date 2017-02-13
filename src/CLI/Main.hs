@@ -32,7 +32,7 @@ runSchedule dbfile (Monitor{..}) = do
     let l = fromMaybe 3 limit
     printOrUpdateDataset autoUpdate staticDatasetURL
     schedules <-
-        getSchedulesByWalktime dbfile l stopsWithWalktime >>=
+        getSchedulesByWalktime dbfile l stops >>=
         updateSchedulesWithRealtimeData realtimeFeedURL
     let schedule = take (fromInteger l) $ sortSchedules schedules
     tod <- getCurrentTimeOfDay
