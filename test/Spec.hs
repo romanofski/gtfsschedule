@@ -39,7 +39,7 @@ arbitraryTimeOfDay = TimeOfDay <$> choose (0, 23) <*> choose (0, 59) <*>
         (fromRational . toRational <$> choose (0 :: Double, 60))
 
 arbitraryStop :: Gen Stop
-arbitraryStop = Stop <$> arbitrary <*> arbitrary
+arbitraryStop = Stop <$> arbitrary <*> arbitrary <*> arbitrary
 
 -- | newtype declaration which wraps the schedule item to avoid orphaned
 -- instances warning if we'd just implement the Arbitrary instance for
@@ -121,6 +121,7 @@ testFormatScheduleItem =
           , stop = Stop
             { stopIdentifier = "."
             , stopWalktime = 2
+            , stopName = ""
             }
           , serviceName = "Punctual"
           , scheduledDepartureTime = TimeOfDay 7 50 0
@@ -140,6 +141,7 @@ testFormatScheduleItem =
           , stop = Stop
             { stopIdentifier = "."
             , stopWalktime = 2
+            , stopName = ""
             }
           , serviceName = "Running Late"
           , scheduledDepartureTime = TimeOfDay 7 50 0
@@ -159,6 +161,7 @@ testFormatScheduleItem =
           , stop = Stop
             { stopIdentifier = "."
             , stopWalktime = 2
+            , stopName = ""
             }
           , serviceName = "Running Ahead"
           , scheduledDepartureTime = TimeOfDay 7 50 0
@@ -179,6 +182,7 @@ testFormatScheduleItem =
         , stop = Stop
           { stopIdentifier = "."
           , stopWalktime = 0
+          , stopName = ""
           }
         , serviceName = "Punctual"
         , scheduledDepartureTime = TimeOfDay 7 50 0
@@ -192,6 +196,7 @@ testFormatScheduleItem =
         , stop = Stop
           { stopIdentifier = "."
           , stopWalktime = 0
+          , stopName = ""
           }
         , serviceName = "Running Ahead"
         , scheduledDepartureTime = TimeOfDay 7 50 0
@@ -205,6 +210,7 @@ testFormatScheduleItem =
         , stop = Stop
           { stopIdentifier = "."
           , stopWalktime = 0
+          , stopName = ""
           }
         , serviceName = "Running Late"
         , scheduledDepartureTime = TimeOfDay 7 50 0
@@ -228,6 +234,7 @@ testMinutesToDeparture =
         , stop = Stop
           { stopIdentifier = "10795"
           , stopWalktime = 0
+          , stopName = ""
           }
         , serviceName = "Test Service"
         , scheduledDepartureTime = TimeOfDay 7 50 0
@@ -250,6 +257,7 @@ testHumanReadableDelay =
                  , stop = Stop
                    { stopIdentifier = "_"
                    , stopWalktime = 0
+                   , stopName = ""
                    }
                  , serviceName = "_"
                  , scheduledDepartureTime = TimeOfDay 0 0 0
@@ -265,6 +273,7 @@ testHumanReadableDelay =
                  , stop = Stop
                    { stopIdentifier = "_"
                    , stopWalktime = 0
+                   , stopName = ""
                    }
                  , serviceName = "_"
                  , scheduledDepartureTime = TimeOfDay 0 0 0
@@ -280,6 +289,7 @@ testHumanReadableDelay =
                  , stop = Stop
                    { stopIdentifier = "_"
                    , stopWalktime = 0
+                   , stopName = ""
                    }
                  , serviceName = "_"
                  , scheduledDepartureTime = TimeOfDay 0 0 0
@@ -295,6 +305,7 @@ testHumanReadableDelay =
                  , stop = Stop
                    { stopIdentifier = "_"
                    , stopWalktime = 0
+                   , stopName = ""
                    }
                  , serviceName = "_"
                  , scheduledDepartureTime = TimeOfDay 0 0 0
@@ -310,6 +321,7 @@ testHumanReadableDelay =
                  , stop = Stop
                    { stopIdentifier = "_"
                    , stopWalktime = 0
+                   , stopName = ""
                    }
                  , serviceName = "_"
                  , scheduledDepartureTime = TimeOfDay 0 0 0
@@ -354,6 +366,7 @@ testDepartures =
       , stop' = Stop
         { stopIdentifier = "600029"
         , stopWalktime = 0
+        , stopName = ""
         }
       , now = TimeSpec (TimeOfDay 8 5 0) (fromGregorian 2015 2 7)
       , testExpectedSchedule = []
@@ -364,6 +377,7 @@ testDepartures =
       , stop' = Stop
         { stopIdentifier = "600029"
         , stopWalktime = 0
+        , stopName = ""
         }
       , now = TimeSpec (TimeOfDay 8 5 0) (fromGregorian 2013 1 7)
       , testExpectedSchedule = []
@@ -374,6 +388,7 @@ testDepartures =
       , stop' = Stop
         { stopIdentifier = "600029"
         , stopWalktime = 0
+        , stopName = ""
         }
       , now = TimeSpec (TimeOfDay 1 0 0) (fromGregorian 2013 2 4)
       , testExpectedSchedule = [ ScheduleItem
@@ -381,6 +396,7 @@ testDepartures =
                                  , stop = Stop
                                    { stopIdentifier = "600029"
                                    , stopWalktime = 0
+                                   , stopName = "not relevant"
                                    }
                                  , serviceName = "66 Graveyard Express"
                                  , scheduledDepartureTime = TimeOfDay 1 1 0
@@ -393,6 +409,7 @@ testDepartures =
                                  , stop = Stop
                                    { stopIdentifier = "600029"
                                    , stopWalktime = 0
+                                   , stopName = "not relevant"
                                    }
                                  , serviceName = "66 Graveyard Express"
                                  , scheduledDepartureTime = TimeOfDay 2 1 0
@@ -407,6 +424,7 @@ testDepartures =
       , stop' = Stop
         { stopIdentifier = "600029"
         , stopWalktime = 0
+        , stopName = ""
         }
       , now = TimeSpec (TimeOfDay 8 5 0) (fromGregorian 2015 1 28)
       , testExpectedSchedule = [ ScheduleItem
@@ -414,6 +432,7 @@ testDepartures =
                                  , stop = Stop
                                    { stopIdentifier = "600029"
                                    , stopWalktime = 0
+                                   , stopName = "not relevant"
                                    }
                                  , serviceName = "66 not relevant"
                                  , scheduledDepartureTime = TimeOfDay 8 5 0
@@ -426,6 +445,7 @@ testDepartures =
                                  , stop = Stop
                                    { stopIdentifier = "600029"
                                    , stopWalktime = 0
+                                   , stopName = "not relevant"
                                    }
                                  , serviceName = "66 not relevant"
                                  , scheduledDepartureTime = TimeOfDay 8 5 33
@@ -438,6 +458,7 @@ testDepartures =
                                  , stop = Stop
                                    { stopIdentifier = "600029"
                                    , stopWalktime = 0
+                                   , stopName = "not relevant"
                                    }
                                  , serviceName = "66 not relevant"
                                  , scheduledDepartureTime = TimeOfDay 8 21 33
@@ -452,6 +473,7 @@ testDepartures =
       , stop' = Stop
         { stopIdentifier = "600029"
         , stopWalktime = 0
+        , stopName = ""
         }
       , now = TimeSpec (TimeOfDay 8 5 0) (fromGregorian 2015 2 4)
       , testExpectedSchedule = [ ScheduleItem
@@ -459,6 +481,7 @@ testDepartures =
                                  , stop = Stop
                                    { stopIdentifier = "600029"
                                    , stopWalktime = 0
+                                   , stopName = "not relevant"
                                    }
                                  , serviceName = "66 not relevant"
                                  , scheduledDepartureTime = TimeOfDay 8 5 33

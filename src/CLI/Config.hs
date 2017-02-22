@@ -70,6 +70,7 @@ stopWithWalktime = ReadM $ do
   Stop
     <$> local (const sCode) (unReadM str)
     <*> (local (const walktime) (unReadM auto) <|> pure 0)
+    <*> pure ""
 
 
 optionParser ::

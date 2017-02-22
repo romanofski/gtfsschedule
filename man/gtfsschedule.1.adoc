@@ -74,6 +74,7 @@ files following the GTFS Static Reference.
          * $scheduledDepartureTime$ - Official departure time retrieved from the static data set.
          * $scheduleTypeDiff$* - status of the trip, which can be one of ADDED
            or CANCELED. The default is SCHEDULED and is not displayed.
+         * $stopName$* - full name of the stop.
 
 *search NAME*:: Search for a stop id by giving the name of a possible stop. The
  search conducted is a sub-string search against the stop names in the database.

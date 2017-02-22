@@ -56,6 +56,7 @@ import Text.StringTemplate (newSTMP, render, setManyAttrib)
 data Stop = Stop
     { stopIdentifier :: String
     , stopWalktime :: Integer
+    , stopName :: String
     } deriving (Show,Eq,Ord)
 
 -- | A poor mans data type to express the state of the service
@@ -184,7 +185,8 @@ defaultScheduleItemFormatter cfg si = render attributesToTemplate
             , ("departureTime", Just $ show (departureTime si))
             , ("scheduledDepartureTime", humanReadableDelay si)
             , ("scheduleType", Just $ show $ scheduleType si)
-            , ("scheduleTypeDiff", scheduleTypeWithoutDefault si)]
+            , ("scheduleTypeDiff", scheduleTypeWithoutDefault si)
+            , ("stopName", Just $ stopName $ stop si)]
             (newSTMP (T.unpack $ scheduleItemTemplate cfg))
 
 scheduleTypeWithoutDefault :: ScheduleItem -> Maybe String
@@ -233,19 +235,20 @@ secondsToDeparture now delay = timeOfDayToTime now + delay
 
 makeSchedule ::
   Stop
-  -> [(Sqlite.Entity DB.StopTime, Sqlite.Entity DB.Trip, Sqlite.Entity DB.Route)]
+  -> [(Sqlite.Entity DB.StopTime, Sqlite.Entity DB.Trip, Sqlite.Entity DB.Route, Sqlite.Entity DB.Stop)]
   -> [ScheduleItem]
 makeSchedule s stops =
-    (\(x,y,z) ->
-          makeItem (Sqlite.entityVal x, Sqlite.entityVal y, Sqlite.entityVal z)) <$>
+    (\(x,y,z,a) ->
+          makeItem (Sqlite.entityVal x, Sqlite.entityVal y, Sqlite.entityVal z, Sqlite.entityVal a)) <$>
     stops
   where
-    makeItem (st,t,r) =
+    makeItem (st,t,r,stop) =
         ScheduleItem
         { tripId = DB.tripTripId t
         , stop = Stop
           { stopIdentifier = DB.stopTimeStopId st
           , stopWalktime = stopWalktime s
+          , stopName = DB.stopName stop
           }
         , serviceName = DB.routeShortName r ++
           " " ++ fromMaybe (DB.routeLongName r) (DB.tripHeadsign t)

@@ -56,6 +56,7 @@ testImportWithExistingDBFile =
                                  Stop
                                  { stopIdentifier = "600029"
                                  , stopWalktime = 7
+                                 , stopName = ""
                                  }
                                  (TimeSpec
                                       (TimeOfDay 8 5 0)
@@ -67,6 +68,7 @@ testImportWithExistingDBFile =
                                , stop = Stop
                                  { stopIdentifier = "600029"
                                  , stopWalktime = 7
+                                 , stopName = "not relevant"
                                  }
                                , serviceName = "66 not relevant"
                                , scheduledDepartureTime = (TimeOfDay 8 5 0)
@@ -79,6 +81,7 @@ testImportWithExistingDBFile =
                                , stop = Stop
                                  { stopIdentifier = "600029"
                                  , stopWalktime = 7
+                                 , stopName = "not relevant"
                                  }
                                , serviceName = "66 not relevant"
                                , scheduledDepartureTime = (TimeOfDay 8 21 33)

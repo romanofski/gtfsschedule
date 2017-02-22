@@ -193,13 +193,13 @@ nextServicesTimeWindow = QueryTimeWindow (secondsToDiffTime 60) (secondsToDiffTi
 -- be a need for querying more than 20. This provides the benefit that users
 -- can't query too many records by mistake.
 --
-getNextDepartures ::
-  (MonadLoggerIO m, MonadResource m)
-  => String  -- ^ stop id
-  -> TimeOfDay  -- ^ current time
-  -> Day  -- ^ current date
-  -> Integer  -- ^ limit
-  -> ReaderT Sqlite.SqlBackend m [(Sqlite.Entity StopTime, Sqlite.Entity Trip, Sqlite.Entity Route)]
+getNextDepartures
+    :: (MonadLoggerIO m, MonadResource m)
+    => String  -- ^ stop id
+    -> TimeOfDay  -- ^ current time
+    -> Day  -- ^ current date
+    -> Integer  -- ^ limit
+    -> ReaderT Sqlite.SqlBackend m [(Sqlite.Entity StopTime, Sqlite.Entity Trip, Sqlite.Entity Route, Sqlite.Entity Stop)]
 getNextDepartures stopID now nowDate l = select $ from $ \(st, t, c, s, r) -> do
   where_ (
     st ^. StopTimeTripId ==. t ^. TripTripId &&.
@@ -214,7 +214,7 @@ getNextDepartures stopID now nowDate l = select $ from $ \(st, t, c, s, r) -> do
     )
   orderBy [asc (st ^. StopTimeDepartureTime)]
   limit (fromInteger (min l 20))
-  return (st, t, r)
+  return (st, t, r, s)
   where earliest = timeToTimeOfDay $ timeOfDayToTime now - queryTimeWindowEarliest nextServicesTimeWindow
         weekday = formatTime defaultTimeLocale "%A" nowDate
         weekdaySqlExp = weekdayToSQLExp weekday

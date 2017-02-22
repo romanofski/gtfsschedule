@@ -42,6 +42,7 @@ testWithRealtimeFeed =
               , stop = Stop
                 { stopIdentifier = "301350"
                 , stopWalktime = 0
+                , stopName = ""
                 }
               , serviceName = "S2"
               , scheduledDepartureTime = TimeOfDay 10 30 0
@@ -54,6 +55,7 @@ testWithRealtimeFeed =
               , stop = Stop
                 { stopIdentifier = "11168"
                 , stopWalktime = 0
+                , stopName = ""
                 }
               , serviceName = "S1"
               , scheduledDepartureTime = TimeOfDay 8 0 0
@@ -66,6 +68,7 @@ testWithRealtimeFeed =
           , stop = Stop
             { stopIdentifier = "11168"
             , stopWalktime = 0
+            , stopName = ""
             }
           , serviceName = "S1"
           , scheduledDepartureTime = TimeOfDay 8 0 0
@@ -78,6 +81,7 @@ testWithRealtimeFeed =
           , stop = Stop
             { stopIdentifier = "301350"
             , stopWalktime = 0
+            , stopName = ""
             }
           , serviceName = "S2"
           , scheduledDepartureTime = TimeOfDay 10 30 0
@@ -92,6 +96,7 @@ testWithRealtimeFeed =
               , stop = Stop
                 { stopIdentifier = "232323"
                 , stopWalktime = 0
+                , stopName = ""
                 }
               , serviceName = "S2"
               , scheduledDepartureTime = TimeOfDay 8 0 0
@@ -104,6 +109,7 @@ testWithRealtimeFeed =
           , stop = Stop
             { stopIdentifier = "232323"
             , stopWalktime = 0
+            , stopName = ""
             }
           , serviceName = "S2"
           , scheduledDepartureTime = TimeOfDay 8 0 0
@@ -118,6 +124,7 @@ testWithRealtimeFeed =
               , stop = Stop
                 { stopIdentifier = "301350"
                 , stopWalktime = 0
+                , stopName = ""
                 }
               , serviceName = "S2"
               , scheduledDepartureTime = TimeOfDay 10 30 0
@@ -130,6 +137,7 @@ testWithRealtimeFeed =
               , stop = Stop
                 { stopIdentifier = "0815"
                 , stopWalktime = 0
+                , stopName = ""
                 }
               , serviceName = "S1"
               , scheduledDepartureTime = TimeOfDay 8 0 0
@@ -142,6 +150,7 @@ testWithRealtimeFeed =
           , stop = Stop
             { stopIdentifier = "301350"
             , stopWalktime = 0
+            , stopName = ""
             }
           , serviceName = "S2"
           , scheduledDepartureTime = TimeOfDay 10 30 0
@@ -154,6 +163,7 @@ testWithRealtimeFeed =
           , stop = Stop
             { stopIdentifier = "0815"
             , stopWalktime = 0
+            , stopName = ""
             }
           , serviceName = "S1"
           , scheduledDepartureTime = TimeOfDay 8 0 0
@@ -168,6 +178,7 @@ testWithRealtimeFeed =
               , stop = Stop
                 { stopIdentifier = "317579"
                 , stopWalktime = 0
+                , stopName = ""
                 }
               , serviceName = "S2"
               , scheduledDepartureTime = TimeOfDay 10 30 0
@@ -180,6 +191,7 @@ testWithRealtimeFeed =
           , stop = Stop
             { stopIdentifier = "317579"
             , stopWalktime = 0
+            , stopName = ""
             }
           , serviceName = "S2"
           , scheduledDepartureTime = TimeOfDay 10 30 0
@@ -194,6 +206,7 @@ testWithRealtimeFeed =
               , stop = Stop
                 { stopIdentifier = "600202"
                 , stopWalktime = 0
+                , stopName = ""
                 }
               , serviceName = "S2"
               , scheduledDepartureTime = TimeOfDay 10 30 0
@@ -206,6 +219,7 @@ testWithRealtimeFeed =
           , stop = Stop
             { stopIdentifier = "600202"
             , stopWalktime = 0
+            , stopName = ""
             }
           , serviceName = "S2"
           , scheduledDepartureTime = TimeOfDay 10 30 0
