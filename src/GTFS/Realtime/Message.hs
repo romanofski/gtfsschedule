@@ -14,14 +14,12 @@ module GTFS.Realtime.Message
 
 import GTFS.Schedule (ScheduleItem(..), ScheduleState(..), Stop(..), secondsToDeparture)
 
-import Data.Functor ((<$>))
-import Control.Applicative (pure)
+import Control.Applicative (pure, (<$>))
 import Prelude hiding (mapM)
 import Data.Traversable (mapM)
 
 import Network.HTTP.Conduit (simpleHttp)
 import Text.ProtocolBuffers (messageGet)
-import Data.Bifunctor (second)
 import qualified Data.Text as T
 
 import Com.Google.Transit.Realtime.TripUpdate.StopTimeEvent (StopTimeEvent(..), delay)

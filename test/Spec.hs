@@ -18,7 +18,7 @@ import Control.Applicative ((<$>), (<*>))
 import Test.Tasty (defaultMain, TestTree, TestName, testGroup)
 import Test.Tasty.HUnit (testCase, (@?=))
 import Test.Tasty.QuickCheck
-       (testProperty, elements, choose, Arbitrary(..), Gen, Positive(..))
+       (testProperty, elements, choose, Arbitrary(..), Gen)
 
 import Data.Time.LocalTime (TimeOfDay(..))
 import Data.Time.Calendar (fromGregorian)
@@ -109,7 +109,7 @@ makeTest (name, input, cfg, expected) = testCase name $ do
 testFormatScheduleItem ::
   TestTree
 testFormatScheduleItem =
-    testGroup "formates schedule item" $
+    testGroup "formats schedule item" $
     makeTest <$>
     [ ( "punctual"
       , [punctual]

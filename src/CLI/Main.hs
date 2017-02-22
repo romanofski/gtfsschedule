@@ -5,8 +5,7 @@ module CLI.Main where
 import CLI.Config
 import GTFS.Schedule
        (getSchedulesByWalktime, printSchedule, getCurrentTimeOfDay,
-        sortSchedules, defaultScheduleConfig, ScheduleConfig(..),
-        defaultScheduleItemTemplate)
+        sortSchedules, ScheduleConfig(..), defaultScheduleItemTemplate)
 import GTFS.Database (userDatabaseFile, searchStopCode, StopSearchResult(..))
 import GTFS.Realtime.Update (printOrUpdateDataset)
 import GTFS.Realtime.Message (updateSchedulesWithRealtimeData)
