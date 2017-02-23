@@ -56,25 +56,8 @@ files following the GTFS Static Reference.
    these services with realtime information if available.
 
 *--schedule-item-template*='STRING':: Template which formats one single schedule
-   item. Be mindful that the characters in the template can be interpreted by
-   the shell. Default template used:
-
-       *$delayIndicator$$serviceName$ $minutesToDeparture$min $departureTime$ $scheduledDepartureTime$ $scheduleTypeDiff$*
-
-
-       Available fields:
-
-         * $delayIndicator$ - Prints an exclamation mark if the delay is not 0.
-         * $serviceName$ - The service name which uses the short route name and
-           the head sign of the service if available. If the head sign of the
-           service is not available, the long route name is used.
-         * $minutesToDeparture$ - Remaining minutes from now to departure time,
-           including the delay it takes to walk to the station.
-         * $departureTime$ - Departure time including any delays retrieved by the realtime feed.
-         * $scheduledDepartureTime$ - Official departure time retrieved from the static data set.
-         * $scheduleTypeDiff$* - status of the trip, which can be one of ADDED
-           or CANCELED. The default is SCHEDULED and is not displayed.
-         * $stopName$* - full name of the stop.
+   item. If you provide a template string on the command line, be mindful that
+   the characters in the template can be interpreted by the shell.
 
 *search NAME*:: Search for a stop id by giving the name of a possible stop. The
  search conducted is a sub-string search against the stop names in the database.
@@ -208,6 +191,27 @@ https://hackage.haskell.org/package/ini/docs/Data-Ini.html
 Note: I have not tested how well the support works with other GTFS feed APIs
 than Translink (QR) provides. Feedback is very welcome.
 
+== Custom schedule formatting
+
+You can specify a custom template to format the schedule. In circumstances in
+which no value is returned for the given field it is not expanded.
+
+Available fields:
+
+  * *$delayIndicator$* - Prints an exclamation mark if the delay is not 0.
+  * *$serviceName$* - The service name which uses the short route name and the
+    head sign of the service if available. If the head sign of the service is
+    not available, the long route name is used.
+  * *$minutesToDeparture$* - Remaining minutes from now to departure time,
+    including the delay it takes to walk to the station.
+  * *$departureTime$* - Departure time including any delays retrieved by the
+     realtime feed.
+  * *$scheduledDepartureTime$* - Official departure time retrieved from the
+     static data set.
+  * *$scheduleTypeDiff$* - status of the trip, which can be one of ADDED
+    or CANCELED. The default is SCHEDULED and is not displayed.
+  * *$stopName$* - full name of the stop.
+
 == Status monitor examples
 
 Xmobar:
@@ -224,5 +228,5 @@ watch -n 60 "gtfsschedule monitor 600248+7"
 
 == Resources
 
-Github: https://github.com/romanofski/gtfsschedule
-GTFS specification: https://developers.google.com/transit/
+* Github: https://github.com/romanofski/gtfsschedule
+* GTFS specification: https://developers.google.com/transit/
