@@ -3,9 +3,10 @@
 %global pkg_name gtfsschedule
 
 %bcond_with tests
+%global with_tests 1
 
 Name:           %{pkg_name}
-Version:        0.6.0.0
+Version:        0.7.0.0
 Release:        1%{?dist}
 Summary:        Be on time for your next public transport service
 
@@ -44,6 +45,7 @@ BuildRequires:  ghc-utf8-string-devel
 BuildRequires:  ghc-xdg-basedir-devel
 BuildRequires:  ghc-zip-archive-devel
 BuildRequires:  ghc-ini-devel
+BuildRequires:  ghc-HStringTemplate-devel
 BuildRequires:  asciidoc
 
 %if 0%{?fedora} <= 24
@@ -56,6 +58,7 @@ BuildRequires:  ghc-network-devel
 BuildRequires:  ghc-streaming-commons-devel
 BuildRequires:  ghc-tasty-devel
 BuildRequires:  ghc-tasty-hunit-devel
+BuildRequires:  ghc-tasty-quickcheck-devel
 BuildRequires:  ghc-transformers-base-devel
 %endif
 # End cabal-rpm deps
@@ -132,6 +135,9 @@ install -m 0644 -p -D man/gtfsschedule.1 %{buildroot}%{_mandir}/man1/gtfsschedul
 
 
 %changelog
+* Thu Feb 23 2017 Róman Joost <roman@bromeco.de> - 0.7.0.0-1
+- 0.7 release
+
 * Sun Feb 05 2017 Róman Joost <roman@bromeco.de> - 0.6.0.0-1
 - 0.6 release
 
