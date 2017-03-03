@@ -1,6 +1,6 @@
 module Realtime (feedTests) where
 
-import GTFS.Realtime.Message
+import GTFS.Realtime.Message.Schedule (updateSchedule)
 import GTFS.Schedule
 
 import Data.Functor ((<$>))

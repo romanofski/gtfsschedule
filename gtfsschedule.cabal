@@ -17,7 +17,8 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   ghc-options:         -Wall
-  exposed-modules:     GTFS.Realtime.Message
+  exposed-modules:     GTFS.Realtime.Message.Types
+                     , GTFS.Realtime.Message.Schedule
                      , GTFS.Realtime.Update
                      , GTFS.Schedule
                      , GTFS.Database

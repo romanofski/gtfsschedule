@@ -1,11 +1,11 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-module Fixtures (withConcurrentTCPServer, serverHost, testScheduleItem) where
+module Fixtures where
 
 import GTFS.Schedule
        (ScheduleItem(..), ScheduleState(..), Stop(..), VehicleInformation(..))
-import GTFS.Realtime.Message (departureTimeWithDelay)
+import GTFS.Realtime.Message.Types (departureTimeWithDelay)
 
 import Data.Time.LocalTime (TimeOfDay(..))
 

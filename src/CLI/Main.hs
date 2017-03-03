@@ -8,7 +8,7 @@ import GTFS.Schedule
         sortSchedules, ScheduleConfig(..), defaultScheduleItemTemplate)
 import GTFS.Database (userDatabaseFile, searchStopCode, StopSearchResult(..))
 import GTFS.Realtime.Update (printOrUpdateDataset)
-import GTFS.Realtime.Message (updateSchedulesWithRealtimeData)
+import GTFS.Realtime.Message.Schedule (updateSchedulesWithRealtimeData)
 import CSV.Import (createNewDatabase)
 
 import Options.Applicative.Extra (execParser, helper)

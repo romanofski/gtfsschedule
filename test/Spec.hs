@@ -6,7 +6,7 @@ import GTFS.Schedule
         ScheduleConfig(..), Stop(..), VehicleInformation(..),
         minutesToDeparture, printSchedule, humanReadableDelay, getSchedule,
         sortSchedules, bumOffSeatTime, defaultScheduleConfig)
-import GTFS.Realtime.Message (departureTimeWithDelay)
+import GTFS.Realtime.Message.Types (departureTimeWithDelay)
 import qualified CSV.Import as CSV
 
 import Realtime (feedTests)
