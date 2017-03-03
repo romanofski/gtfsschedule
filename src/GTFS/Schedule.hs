@@ -10,7 +10,7 @@ realtime information.
 -}
 module GTFS.Schedule
        (ScheduleState(..), ScheduleItem(..), TimeSpec(..),
-        ScheduleConfig(..), Stop(..), getSchedule,
+        ScheduleConfig(..), Stop(..), VehicleInformation(..), getSchedule,
         getSchedulesByWalktime, getTimeSpecFromNow, printSchedule,
         minutesToDeparture, secondsToDeparture, sortSchedules,
         bumOffSeatTime, getCurrentTimeOfDay, humanReadableDelay,
@@ -66,6 +66,12 @@ data ScheduleState
     | SCHEDULED
     deriving (Show,Eq,Ord)
 
+-- | vehicle information
+data VehicleInformation = VehicleInformation
+    { viOccupancyStatus :: Maybe Int
+    , viCongestionLevel :: Maybe Int
+    } deriving (Show,Eq,Ord)
+
 -- | One entity giving information about the departure of a service
 data ScheduleItem = ScheduleItem
     { tripId :: String
@@ -75,6 +81,7 @@ data ScheduleItem = ScheduleItem
     , departureDelay :: Integer  -- ^ delay retrieved from the realtime feed if available
     , departureTime :: TimeOfDay  -- ^ departure time including the realtime update if available
     , scheduleType :: ScheduleState
+    , scheduleItemVehicleInformation :: VehicleInformation
     } deriving (Show,Eq,Ord)
 
 -- | A specific point in time from when we want to calculate the next departing
@@ -186,7 +193,10 @@ defaultScheduleItemFormatter cfg si = render attributesToTemplate
             , ("scheduledDepartureTime", humanReadableDelay si)
             , ("scheduleType", Just $ show $ scheduleType si)
             , ("scheduleTypeDiff", scheduleTypeWithoutDefault si)
-            , ("stopName", Just $ stopName $ stop si)]
+            , ("stopName", Just $ stopName $ stop si)
+            , ("congestionPercent", show <$> (viCongestionLevel $ scheduleItemVehicleInformation si))
+            , ("occupancyPercent", show <$> (viOccupancyStatus $ scheduleItemVehicleInformation si))
+            ]
             (newSTMP (T.unpack $ scheduleItemTemplate cfg))
 
 scheduleTypeWithoutDefault :: ScheduleItem -> Maybe String
@@ -256,6 +266,7 @@ makeSchedule s stops =
         , departureDelay = 0
         , departureTime = DB.stopTimeDepartureTime st
         , scheduleType = SCHEDULED
+        , scheduleItemVehicleInformation = VehicleInformation Nothing Nothing
         }
 
 nextDepartures ::

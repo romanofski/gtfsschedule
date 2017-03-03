@@ -1,7 +1,13 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-module Fixtures (withConcurrentTCPServer, serverHost) where
+module Fixtures (withConcurrentTCPServer, serverHost, testScheduleItem) where
+
+import GTFS.Schedule
+       (ScheduleItem(..), ScheduleState(..), Stop(..), VehicleInformation(..))
+import GTFS.Realtime.Message (departureTimeWithDelay)
+
+import Data.Time.LocalTime (TimeOfDay(..))
 
 import Control.Concurrent (forkIO, takeMVar, putMVar, newEmptyMVar, killThread)
 import Data.Conduit.Network (runTCPServer, serverSettings, ServerSettings, AppData)
@@ -46,3 +52,19 @@ withConcurrentTCPServer app f = do
         (forkIO $ runTCPServer settings app `onException` start)
         killThread
         (const $ takeMVar baton >> f port)
+
+testScheduleItem :: String -> TimeOfDay -> Integer -> Integer -> ScheduleItem
+testScheduleItem sName depTime depDelay walktime = ScheduleItem
+          { tripId = "."
+          , stop = Stop
+            { stopIdentifier = "."
+            , stopWalktime = walktime
+            , stopName = ""
+            }
+          , serviceName = sName
+          , scheduledDepartureTime = depTime
+          , departureDelay = depDelay
+          , departureTime = departureTimeWithDelay depTime depDelay
+          , scheduleType = SCHEDULED
+          , scheduleItemVehicleInformation = VehicleInformation Nothing Nothing
+          }

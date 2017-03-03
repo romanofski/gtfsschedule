@@ -49,6 +49,9 @@ testWithRealtimeFeed =
               , departureDelay = 0
               , departureTime = TimeOfDay 10 30 0
               , scheduleType = SCHEDULED
+              , scheduleItemVehicleInformation = VehicleInformation
+                    Nothing
+                    Nothing
               }
             , ScheduleItem
               { tripId = "7822824-BT 16_17-JUL_FUL-Sunday-02"
@@ -62,7 +65,11 @@ testWithRealtimeFeed =
               , departureDelay = 0
               , departureTime = TimeOfDay 8 0 0
               , scheduleType = SCHEDULED
+              , scheduleItemVehicleInformation = VehicleInformation
+                    Nothing
+                    Nothing
               }]
+            getTripUpdates
       , [ ScheduleItem
           { tripId = "7822824-BT 16_17-JUL_FUL-Sunday-02"
           , stop = Stop
@@ -75,6 +82,7 @@ testWithRealtimeFeed =
           , departureDelay = 66
           , departureTime = TimeOfDay 8 1 6
           , scheduleType = SCHEDULED
+          , scheduleItemVehicleInformation = VehicleInformation Nothing Nothing
           }
         , ScheduleItem
           { tripId = "7935244-SBL 16_17-SBL_SUN-Sunday-01"
@@ -88,6 +96,7 @@ testWithRealtimeFeed =
           , departureDelay = 155
           , departureTime = TimeOfDay 10 32 35
           , scheduleType = SCHEDULED
+          , scheduleItemVehicleInformation = VehicleInformation Nothing Nothing
           }])
     , ( "no updates"
       , updateSchedule
@@ -103,7 +112,11 @@ testWithRealtimeFeed =
               , departureDelay = 0
               , departureTime = TimeOfDay 8 0 0
               , scheduleType = SCHEDULED
+              , scheduleItemVehicleInformation = VehicleInformation
+                    Nothing
+                    Nothing
               }]
+            getTripUpdates
       , [ ScheduleItem
           { tripId = "has no realtime update"
           , stop = Stop
@@ -116,6 +129,7 @@ testWithRealtimeFeed =
           , departureDelay = 0
           , departureTime = TimeOfDay 8 0 0
           , scheduleType = SCHEDULED
+          , scheduleItemVehicleInformation = VehicleInformation Nothing Nothing
           }])
     , ( "partial update"
       , updateSchedule
@@ -131,6 +145,9 @@ testWithRealtimeFeed =
               , departureDelay = 0
               , departureTime = TimeOfDay 10 30 0
               , scheduleType = SCHEDULED
+              , scheduleItemVehicleInformation = VehicleInformation
+                    Nothing
+                    Nothing
               }
             , ScheduleItem
               { tripId = "no realtime update"
@@ -144,7 +161,11 @@ testWithRealtimeFeed =
               , departureDelay = 0
               , departureTime = TimeOfDay 8 0 0
               , scheduleType = SCHEDULED
+              , scheduleItemVehicleInformation = VehicleInformation
+                    Nothing
+                    Nothing
               }]
+            getTripUpdates
       , [ ScheduleItem
           { tripId = "7935244-SBL 16_17-SBL_SUN-Sunday-01"
           , stop = Stop
@@ -157,6 +178,7 @@ testWithRealtimeFeed =
           , departureDelay = 155
           , departureTime = TimeOfDay 10 32 35
           , scheduleType = SCHEDULED
+          , scheduleItemVehicleInformation = VehicleInformation Nothing Nothing
           }
         , ScheduleItem
           { tripId = "no realtime update"
@@ -170,6 +192,7 @@ testWithRealtimeFeed =
           , departureDelay = 0
           , departureTime = TimeOfDay 8 0 0
           , scheduleType = SCHEDULED
+          , scheduleItemVehicleInformation = VehicleInformation Nothing Nothing
           }])
     , ( "canceled service"
       , updateSchedule
@@ -185,7 +208,11 @@ testWithRealtimeFeed =
               , departureDelay = 0
               , departureTime = TimeOfDay 10 30 0
               , scheduleType = SCHEDULED
+              , scheduleItemVehicleInformation = VehicleInformation
+                    Nothing
+                    Nothing
               }]
+            getTripUpdates
       , [ ScheduleItem
           { tripId = "7634889-SUN 16_17-SUN_SUN-Sunday-01"
           , stop = Stop
@@ -198,6 +225,7 @@ testWithRealtimeFeed =
           , departureDelay = 0
           , departureTime = TimeOfDay 10 30 0
           , scheduleType = CANCELED
+          , scheduleItemVehicleInformation = VehicleInformation Nothing Nothing
           }])
     , ( "skipped stop"
       , updateSchedule
@@ -213,7 +241,11 @@ testWithRealtimeFeed =
               , departureDelay = 0
               , departureTime = TimeOfDay 10 30 0
               , scheduleType = SCHEDULED
+              , scheduleItemVehicleInformation = VehicleInformation
+                    Nothing
+                    Nothing
               }]
+            getTripUpdates
       , [ ScheduleItem
           { tripId = "8153081-QR 16_17-Jul_Sun-Sunday-00-1E41"
           , stop = Stop
@@ -226,6 +258,7 @@ testWithRealtimeFeed =
           , departureDelay = 0
           , departureTime = TimeOfDay 10 30 0
           , scheduleType = CANCELED
+          , scheduleItemVehicleInformation = VehicleInformation Nothing Nothing
           }])]
 
 testDepartureWithDelay ::

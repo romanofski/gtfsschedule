@@ -9,10 +9,10 @@ See also: https://developers.google.com/transit/gtfs-realtime/reference/
 -}
 module GTFS.Realtime.Message
        (updateSchedule, updateSchedulesWithRealtimeData,
-        departureTimeWithDelay, FM.FeedMessage)
+        departureTimeWithDelay, getTripUpdates, FM.FeedMessage)
        where
 
-import GTFS.Schedule (ScheduleItem(..), ScheduleState(..), Stop(..), secondsToDeparture)
+import GTFS.Schedule (ScheduleItem(..), ScheduleState(..), Stop(..), VehicleInformation(..), secondsToDeparture)
 
 import Control.Applicative (pure, (<$>))
 import Prelude hiding (mapM)
@@ -27,6 +27,9 @@ import Com.Google.Transit.Realtime.TripDescriptor (trip_id, TripDescriptor(..))
 import qualified Com.Google.Transit.Realtime.TripDescriptor.ScheduleRelationship as TripSR
 import qualified Com.Google.Transit.Realtime.TripUpdate.StopTimeUpdate.ScheduleRelationship as StopTUSR
 import qualified Com.Google.Transit.Realtime.TripUpdate.StopTimeUpdate as STU
+import qualified Com.Google.Transit.Realtime.VehiclePosition as VP
+import qualified Com.Google.Transit.Realtime.VehiclePosition.CongestionLevel as CL
+import qualified Com.Google.Transit.Realtime.VehiclePosition.OccupancyStatus as O
 import qualified Com.Google.Transit.Realtime.FeedMessage as FM
 import qualified Com.Google.Transit.Realtime.TripUpdate as TU
 import qualified Com.Google.Transit.Realtime.FeedEntity as FE
@@ -43,6 +46,7 @@ import Control.Monad (mfilter)
 import Control.Monad.State (State, execState, get, put)
 
 
+type Schedule = Map.Map String ScheduleItem
 -- | Updates the schedule with realtime information from the GTFS feed
 --
 updateSchedulesWithRealtimeData ::
@@ -57,18 +61,19 @@ updateSchedulesWithRealtimeData (Just url) schedules = do
             print $ "Error occurred decoding feed: " ++ err
             pure schedules
         Right (fm,_) -> do
-            pure $ updateSchedule schedules fm
+            pure $ updateSchedule schedules getVehiclePositions fm >> updateSchedule schedules getTripUpdates fm
 
 -- | Updates schedule with trip updates given by feed
 --
-updateSchedule ::
-  [ScheduleItem]
-  -> FM.FeedMessage
-  -> [ScheduleItem]
-updateSchedule schedule fm = Map.elems $ execState (mapM updateForTrip tripUpdates) m
+updateSchedule
+    :: ForFeedElement e
+    => [ScheduleItem]
+    -> (FM.FeedMessage -> P'.Seq e)
+    -> FM.FeedMessage
+    -> [ScheduleItem]
+updateSchedule schedule getter fm = Map.elems $ execState (mapM updateFeedElement $ getter fm) scheduleMap
   where
-    tripUpdates = filterTripUpdate schedule $ getFeedEntities fm
-    m = Map.fromList $ toMap <$> schedule
+    scheduleMap = Map.fromList $ toMap <$> schedule
     toMap x = (tripId x, x)
 
 -- | calculate the new departure time with a delay from the real time update
@@ -78,59 +83,85 @@ departureTimeWithDelay ::
   -> TimeOfDay
 departureTimeWithDelay depTime d = timeToTimeOfDay $ secondsToDeparture depTime (secondsToDiffTime d)
 
-getFeedEntities ::
+getTripUpdates ::
   FM.FeedMessage
   -> P'.Seq TU.TripUpdate
-getFeedEntities fm = (`P'.getVal` FE.trip_update) <$> entity
+getTripUpdates fm = (`P'.getVal` FE.trip_update) <$> entity
   where entity = P'.getVal fm FM.entity
 
--- | filter out all relevant trips for the given schedule
---
--- relevant means it matches the trip_id and has a start time set.
---
-filterTripUpdate ::
-  [ScheduleItem]
-  -> P'.Seq TU.TripUpdate
-  -> P'.Seq TU.TripUpdate
-filterTripUpdate xs = mfilter (\x -> getTripID x `elem` relevantTripIDs)
-  where
-    relevantTripIDs = tripId <$> xs
+getVehiclePositions ::
+  FM.FeedMessage
+  -> P'.Seq VP.VehiclePosition
+getVehiclePositions fm = (`P'.getVal` FE.vehicle) <$> (P'.getVal fm FM.entity)
 
-getTripID ::
-  TU.TripUpdate
-  -> String
-getTripID x = utf8ToString tripID
-  where
-    descriptor = P'.getVal x TU.trip
-    tripID = P'.getVal descriptor trip_id
+class ForFeedElement e where
+  getTripID :: e -> String
+  getTripID x = utf8ToString $ P'.getVal (getTripDescriptor x) trip_id
 
-updateForTrip ::
-  TU.TripUpdate
-  -> State (Map.Map String ScheduleItem) ()
-updateForTrip tu = do
-  m <- get
-  let (_, map') = Map.updateLookupWithKey (f tu) (getTripID tu) m
-  put map'
-  where
-    f TU.TripUpdate { TU.trip = TripDescriptor { schedule_relationship = Just TripSR.CANCELED }} k item =
-      Just ScheduleItem { tripId = k
-                        , stop = stop item
-                        , serviceName = serviceName item
-                        , scheduledDepartureTime = scheduledDepartureTime item
-                        , departureDelay = 0
-                        , departureTime = departureTime item
-                        , scheduleType = CANCELED
-                        }
-    f _ k item = do
-      stu <- findStopTimeUpdate (stop item) (getStopTimeUpdates tu)
-      Just ScheduleItem { tripId = k
-                        , stop = stop item
-                        , serviceName = serviceName item
-                        , scheduledDepartureTime = scheduledDepartureTime item
-                        , departureDelay = getDepartureDelay stu
-                        , departureTime = departureTimeWithDelay (scheduledDepartureTime item) (getDepartureDelay stu)
-                        , scheduleType = scheduleTypeForStop stu
-                        }
+  getTripDescriptor :: e -> TripDescriptor
+  updateScheduleItem :: e -> String -> ScheduleItem -> Maybe ScheduleItem
+
+instance ForFeedElement TU.TripUpdate where
+    getTripDescriptor x = P'.getVal x TU.trip
+    updateScheduleItem TU.TripUpdate{TU.trip = TripDescriptor{schedule_relationship = Just TripSR.CANCELED}} k item =
+        Just
+            ScheduleItem
+            { tripId = k
+            , stop = stop item
+            , serviceName = serviceName item
+            , scheduledDepartureTime = scheduledDepartureTime item
+            , departureDelay = 0
+            , departureTime = departureTime item
+            , scheduleType = CANCELED
+            , scheduleItemVehicleInformation = scheduleItemVehicleInformation item
+            }
+    updateScheduleItem tu k item = do
+        stu <- findStopTimeUpdate (stop item) (getStopTimeUpdates tu)
+        Just
+            ScheduleItem
+            { tripId = k
+            , stop = stop item
+            , serviceName = serviceName item
+            , scheduledDepartureTime = scheduledDepartureTime item
+            , departureDelay = getDepartureDelay stu
+            , departureTime = departureTimeWithDelay
+                  (scheduledDepartureTime item)
+                  (getDepartureDelay stu)
+            , scheduleType = scheduleTypeForStop stu
+            , scheduleItemVehicleInformation = scheduleItemVehicleInformation item
+            }
+
+instance ForFeedElement VP.VehiclePosition where
+  getTripDescriptor x = P'.getVal x VP.trip
+  updateScheduleItem vp k item = Just ScheduleItem
+            { tripId = k
+            , stop = stop item
+            , serviceName = serviceName item
+            , scheduledDepartureTime = scheduledDepartureTime item
+            , departureDelay = departureDelay item
+            , departureTime = departureTime item
+            , scheduleType = scheduleType item
+            , scheduleItemVehicleInformation = makeVehicleInformation vp
+            }
+
+
+updateFeedElement ::
+  ForFeedElement e => e
+  -> State Schedule ()
+updateFeedElement x = do
+    m <- get
+    let (_,map') =
+            Map.updateLookupWithKey (updateScheduleItem x) (getTripID x) m
+    put map'
+
+makeVehicleInformation ::
+  VP.VehiclePosition
+  -> VehicleInformation
+makeVehicleInformation vp = let congestionl = fromEnum (P'.getVal vp VP.congestion_level)
+                                c_percentage = (congestionl * 100) `div` fromEnum (maxBound :: CL.CongestionLevel)
+                                occupancys = fromEnum (P'.getVal vp VP.occupancy_status)
+                                o_percentage = (occupancys * 100) `div` fromEnum (maxBound :: O.OccupancyStatus)
+                            in VehicleInformation (Just c_percentage) (Just o_percentage)
 
 -- | helper to set the appropriate schedule type if the service will skip this stop
 --

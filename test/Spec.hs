@@ -3,15 +3,16 @@ module Main where
 
 import GTFS.Schedule
        (ScheduleItem(..), ScheduleState(..), TimeSpec(..),
-        ScheduleConfig(..), Stop(..), minutesToDeparture, printSchedule,
-        humanReadableDelay, getSchedule, sortSchedules, bumOffSeatTime,
-        defaultScheduleConfig)
+        ScheduleConfig(..), Stop(..), VehicleInformation(..),
+        minutesToDeparture, printSchedule, humanReadableDelay, getSchedule,
+        sortSchedules, bumOffSeatTime, defaultScheduleConfig)
 import GTFS.Realtime.Message (departureTimeWithDelay)
 import qualified CSV.Import as CSV
 
 import Realtime (feedTests)
 import CSVImport (importTests)
 import TestUpdate (updateTests)
+import Fixtures (testScheduleItem)
 
 import Control.Applicative ((<$>), (<*>))
 
@@ -41,6 +42,9 @@ arbitraryTimeOfDay = TimeOfDay <$> choose (0, 23) <*> choose (0, 59) <*>
 arbitraryStop :: Gen Stop
 arbitraryStop = Stop <$> arbitrary <*> arbitrary <*> arbitrary
 
+arbitraryVehicleInformation :: Gen VehicleInformation
+arbitraryVehicleInformation = VehicleInformation <$> arbitrary <*> arbitrary
+
 -- | newtype declaration which wraps the schedule item to avoid orphaned
 -- instances warning if we'd just implement the Arbitrary instance for
 -- ScheduleItems here
@@ -57,6 +61,7 @@ instance Arbitrary ArbitraryScheduleItem where
         s <- arbitraryStop
         name <- arbitrary
         stype <- elements [CANCELED, ADDED, SCHEDULED]
+        vehicleInfo <- arbitraryVehicleInformation
         return $ ScheduleItem { tripId = trip
                               , stop = s
                               , serviceName = name
@@ -64,6 +69,7 @@ instance Arbitrary ArbitraryScheduleItem where
                               , departureDelay = delay
                               , departureTime = departureTimeWithDelay schedDepTime delay
                               , scheduleType = stype
+                              , scheduleItemVehicleInformation = vehicleInfo
                               }
 
 testSortSchedules :: TestTree
@@ -116,108 +122,33 @@ testFormatScheduleItem =
       , (defaultScheduleConfig $ TimeOfDay 7 45 0)
       , "Punctual 5min 07:50:00  ")
     , ( "punctual with walking delay"
-      , [ ScheduleItem
-          { tripId = "."
-          , stop = Stop
-            { stopIdentifier = "."
-            , stopWalktime = 2
-            , stopName = ""
-            }
-          , serviceName = "Punctual"
-          , scheduledDepartureTime = TimeOfDay 7 50 0
-          , departureDelay = 0
-          , departureTime = TimeOfDay 7 50 0
-          , scheduleType = SCHEDULED
-          }]
+      , [ testScheduleItem "Punctual" (TimeOfDay 7 50 0) 0 2]
       , (defaultScheduleConfig $ TimeOfDay 7 45 0)
       , "Punctual 3min 07:50:00  ")
     , ( "running late"
       , [runningLate]
       , (defaultScheduleConfig $ TimeOfDay 7 45 0)
-      , "!Running Late 6min 07:51:00 +04:40 ")
+      , "!Running Late 10min 07:54:40 +04:40 ")
     , ( "running late + walking delay"
-      , [ ScheduleItem
-          { tripId = "."
-          , stop = Stop
-            { stopIdentifier = "."
-            , stopWalktime = 2
-            , stopName = ""
-            }
-          , serviceName = "Running Late"
-          , scheduledDepartureTime = TimeOfDay 7 50 0
-          , departureDelay = 280
-          , departureTime = TimeOfDay 7 51 0
-          , scheduleType = SCHEDULED
-          }]
+      , [ testScheduleItem "Running Late" (TimeOfDay 7 50 0) 280 2]
       , (defaultScheduleConfig $ TimeOfDay 7 45 0)
-      , "!Running Late 4min 07:51:00 +04:40 ")
+      , "!Running Late 8min 07:54:40 +04:40 ")
     , ( "running ahead"
       , [runningAhead]
       , (defaultScheduleConfig $ TimeOfDay 7 45 0)
-      , "!Running Ahead 5min 07:50:00 -04:20 ")
+      , "!Running Ahead 6min 07:50:40 -04:20 ")
     , ( "running ahead + walk delay"
-      , [ ScheduleItem
-          { tripId = "."
-          , stop = Stop
-            { stopIdentifier = "."
-            , stopWalktime = 2
-            , stopName = ""
-            }
-          , serviceName = "Running Ahead"
-          , scheduledDepartureTime = TimeOfDay 7 50 0
-          , departureDelay = -260
-          , departureTime = TimeOfDay 7 50 0  -- not consistent with delay
-          , scheduleType = SCHEDULED
-          }]
+      , [ testScheduleItem "Running Ahead" (TimeOfDay 7 55 0) (-260) 2]
       , (defaultScheduleConfig $ TimeOfDay 7 45 0)
-      , "!Running Ahead 3min 07:50:00 -04:20 ")
+      , "!Running Ahead 4min 07:50:40 -04:20 ")
     , ( "custom template"
       , [runningAhead]
       , (ScheduleConfig (TimeOfDay 7 45 0) "$serviceName$")
       , "Running Ahead")]
   where
-    punctual =
-        ScheduleItem
-        { tripId = "."
-        , stop = Stop
-          { stopIdentifier = "."
-          , stopWalktime = 0
-          , stopName = ""
-          }
-        , serviceName = "Punctual"
-        , scheduledDepartureTime = TimeOfDay 7 50 0
-        , departureDelay = 0
-        , departureTime = TimeOfDay 7 50 0
-        , scheduleType = SCHEDULED
-        }
-    runningAhead =
-        ScheduleItem
-        { tripId = "."
-        , stop = Stop
-          { stopIdentifier = "."
-          , stopWalktime = 0
-          , stopName = ""
-          }
-        , serviceName = "Running Ahead"
-        , scheduledDepartureTime = TimeOfDay 7 50 0
-        , departureDelay = -260
-        , departureTime = TimeOfDay 7 50 0  -- not consistent with delay
-        , scheduleType = SCHEDULED
-        }
-    runningLate =
-        ScheduleItem
-        { tripId = "."
-        , stop = Stop
-          { stopIdentifier = "."
-          , stopWalktime = 0
-          , stopName = ""
-          }
-        , serviceName = "Running Late"
-        , scheduledDepartureTime = TimeOfDay 7 50 0
-        , departureDelay = 280
-        , departureTime = TimeOfDay 7 51 0
-        , scheduleType = SCHEDULED
-        }
+    punctual = testScheduleItem "Punctual" (TimeOfDay 7 50 0) 0 0
+    runningAhead = testScheduleItem "Running Ahead" (TimeOfDay 7 55 0) (-260) 0
+    runningLate = testScheduleItem "Running Late" (TimeOfDay 7 50 0) 280 0
 
 testMinutesToDeparture ::
   TestTree
@@ -228,21 +159,7 @@ testMinutesToDeparture =
     [ ("simple", minutesToDeparture item (TimeOfDay 7 45 0), 6)
     , ("departure in past", minutesToDeparture item (TimeOfDay 7 52 0), -1)]
   where
-    item =
-        ScheduleItem
-        { tripId = "7136402-BT2015-04_FUL-Weekday-00"
-        , stop = Stop
-          { stopIdentifier = "10795"
-          , stopWalktime = 0
-          , stopName = ""
-          }
-        , serviceName = "Test Service"
-        , scheduledDepartureTime = TimeOfDay 7 50 0
-        , departureDelay = 60
-        , departureTime = TimeOfDay 7 51 0
-        , scheduleType = SCHEDULED
-        }
-
+    item = testScheduleItem "Test Service" (TimeOfDay 7 50 0) 60 0
 
 testHumanReadableDelay ::
   TestTree
@@ -251,84 +168,21 @@ testHumanReadableDelay =
     map
         hrTest
         [ ( "seconds delayed"
-          , (humanReadableDelay
-                 ScheduleItem
-                 { tripId = "_"
-                 , stop = Stop
-                   { stopIdentifier = "_"
-                   , stopWalktime = 0
-                   , stopName = ""
-                   }
-                 , serviceName = "_"
-                 , scheduledDepartureTime = TimeOfDay 0 0 0
-                 , departureDelay = 40
-                 , departureTime = TimeOfDay 0 0 0
-                 , scheduleType = SCHEDULED
-                 })
+          , (humanReadableDelay $ testScheduleItem "_" (TimeOfDay 0 0 0) 40 0)
           , Just "+40s")
         , ( "minute late"
-          , (humanReadableDelay
-                 ScheduleItem
-                 { tripId = "_"
-                 , stop = Stop
-                   { stopIdentifier = "_"
-                   , stopWalktime = 0
-                   , stopName = ""
-                   }
-                 , serviceName = "_"
-                 , scheduledDepartureTime = TimeOfDay 0 0 0
-                 , departureDelay = 60
-                 , departureTime = TimeOfDay 0 0 0
-                 , scheduleType = SCHEDULED
-                 })
+          , (humanReadableDelay $ testScheduleItem "_" (TimeOfDay 0 0 0) 60 0)
           , Just "+01:00")
         , ( "minutes late"
-          , (humanReadableDelay
-                 ScheduleItem
-                 { tripId = "_"
-                 , stop = Stop
-                   { stopIdentifier = "_"
-                   , stopWalktime = 0
-                   , stopName = ""
-                   }
-                 , serviceName = "_"
-                 , scheduledDepartureTime = TimeOfDay 0 0 0
-                 , departureDelay = 455
-                 , departureTime = TimeOfDay 0 0 0
-                 , scheduleType = SCHEDULED
-                 })
+          , (humanReadableDelay $ testScheduleItem "_" (TimeOfDay 0 0 0) 455 0)
           , Just "+07:35")
         , ( "seconds ahead"
-          , (humanReadableDelay
-                 ScheduleItem
-                 { tripId = "_"
-                 , stop = Stop
-                   { stopIdentifier = "_"
-                   , stopWalktime = 0
-                   , stopName = ""
-                   }
-                 , serviceName = "_"
-                 , scheduledDepartureTime = TimeOfDay 0 0 0
-                 , departureDelay = -20
-                 , departureTime = TimeOfDay 0 0 0
-                 , scheduleType = SCHEDULED
-                 })
+          , (humanReadableDelay $
+             testScheduleItem "_" (TimeOfDay 0 0 0) (-20) 0)
           , Just "-20s")
         , ( "minutes ahead"
-          , (humanReadableDelay
-                 ScheduleItem
-                 { tripId = "_"
-                 , stop = Stop
-                   { stopIdentifier = "_"
-                   , stopWalktime = 0
-                   , stopName = ""
-                   }
-                 , serviceName = "_"
-                 , scheduledDepartureTime = TimeOfDay 0 0 0
-                 , departureDelay = -230
-                 , departureTime = TimeOfDay 0 0 0
-                 , scheduleType = SCHEDULED
-                 })
+          , (humanReadableDelay $
+             testScheduleItem "_" (TimeOfDay 0 0 0) (-230) 0)
           , Just "-03:50")]
   where
     hrTest (title,actual,expected) = testCase title (actual @?= expected)
@@ -403,6 +257,7 @@ testDepartures =
                                  , departureDelay = 0
                                  , departureTime = TimeOfDay 1 1 0
                                  , scheduleType = SCHEDULED
+                                 , scheduleItemVehicleInformation = VehicleInformation Nothing Nothing
                                  }
                                , ScheduleItem
                                  { tripId = "2"
@@ -416,6 +271,7 @@ testDepartures =
                                  , departureDelay = 0
                                  , departureTime = TimeOfDay 2 1 0
                                  , scheduleType = SCHEDULED
+                                 , scheduleItemVehicleInformation = VehicleInformation Nothing Nothing
                                  }]
       }
     , TestInput
@@ -439,6 +295,7 @@ testDepartures =
                                  , departureDelay = 0
                                  , departureTime = TimeOfDay 8 5 0
                                  , scheduleType = SCHEDULED
+                                 , scheduleItemVehicleInformation = VehicleInformation Nothing Nothing
                                  }
                                , ScheduleItem
                                  { tripId = "QF0815-00-Ekka"
@@ -452,6 +309,7 @@ testDepartures =
                                  , departureDelay = 0
                                  , departureTime = TimeOfDay 8 5 33
                                  , scheduleType = SCHEDULED
+                                 , scheduleItemVehicleInformation = VehicleInformation Nothing Nothing
                                  }
                                , ScheduleItem
                                  { tripId = "QF0815-00"
@@ -465,6 +323,7 @@ testDepartures =
                                  , departureDelay = 0
                                  , departureTime = TimeOfDay 8 21 33
                                  , scheduleType = SCHEDULED
+                                 , scheduleItemVehicleInformation = VehicleInformation Nothing Nothing
                                  }]
       }
     , TestInput
@@ -488,6 +347,7 @@ testDepartures =
                                  , departureDelay = 0
                                  , departureTime = TimeOfDay 8 5 33
                                  , scheduleType = SCHEDULED
+                                 , scheduleItemVehicleInformation = VehicleInformation Nothing Nothing
                                  }]
       }]
 

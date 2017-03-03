@@ -8,7 +8,7 @@ import qualified CSV.Import as CSV
 import qualified GTFS.Database as DB
 import GTFS.Schedule
        (getSchedule, TimeSpec(..), ScheduleItem(..), ScheduleState(..),
-        Stop(..))
+        Stop(..), VehicleInformation(..))
 
 import Fixtures (withConcurrentTCPServer, serverHost)
 
@@ -75,6 +75,7 @@ testImportWithExistingDBFile =
                                , departureDelay = 0
                                , departureTime = (TimeOfDay 8 5 0)
                                , scheduleType = SCHEDULED
+                               , scheduleItemVehicleInformation = VehicleInformation Nothing Nothing
                                }
                              , ScheduleItem
                                { tripId = "QF0815-00"
@@ -88,6 +89,7 @@ testImportWithExistingDBFile =
                                , departureDelay = 0
                                , departureTime = (TimeOfDay 8 21 33)
                                , scheduleType = SCHEDULED
+                               , scheduleItemVehicleInformation = VehicleInformation Nothing Nothing
                                }])
 
 
