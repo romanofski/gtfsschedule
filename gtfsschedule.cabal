@@ -17,37 +17,37 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   ghc-options:         -Wall
-  exposed-modules:     GTFS.Realtime.Message.Types
-                     , GTFS.Realtime.Message.Schedule
-                     , GTFS.Realtime.Update
-                     , GTFS.Schedule
+  exposed-modules:     GTFS.Schedule
                      , GTFS.Database
                      , CSV.Import
                      , CLI.Config
                      , CLI.Main
-  other-modules:       Com.Google.Transit.Realtime.Alert
-                     , Com.Google.Transit.Realtime.Alert.Cause
-                     , Com.Google.Transit.Realtime.Alert.Effect
-                     , Com.Google.Transit.Realtime.EntitySelector
-                     , Com.Google.Transit.Realtime.FeedEntity
-                     , Com.Google.Transit.Realtime.FeedHeader
-                     , Com.Google.Transit.Realtime.FeedHeader.Incrementality
-                     , Com.Google.Transit.Realtime.FeedMessage
-                     , Com.Google.Transit.Realtime.Position
-                     , Com.Google.Transit.Realtime.TimeRange
-                     , Com.Google.Transit.Realtime.TranslatedString
-                     , Com.Google.Transit.Realtime.TranslatedString.Translation
-                     , Com.Google.Transit.Realtime.TripUpdate
-                     , Com.Google.Transit.Realtime.TripUpdate.StopTimeEvent
-                     , Com.Google.Transit.Realtime.TripUpdate.StopTimeUpdate.ScheduleRelationship
-                     , Com.Google.Transit.Realtime.TripUpdate.StopTimeUpdate
-                     , Com.Google.Transit.Realtime.TripDescriptor
-                     , Com.Google.Transit.Realtime.TripDescriptor.ScheduleRelationship
-                     , Com.Google.Transit.Realtime.VehicleDescriptor
-                     , Com.Google.Transit.Realtime.VehiclePosition
-                     , Com.Google.Transit.Realtime.VehiclePosition.VehicleStopStatus
-                     , Com.Google.Transit.Realtime.VehiclePosition.CongestionLevel
-                     , Com.Google.Transit.Realtime.VehiclePosition.OccupancyStatus
+                     , GTFS.Realtime.Message.Types
+                     , GTFS.Realtime.Message.Schedule
+                     , GTFS.Realtime.Update
+                     , GTFS.Realtime.Internal.Com.Google.Transit.Realtime.Alert
+                     , GTFS.Realtime.Internal.Com.Google.Transit.Realtime.Alert.Cause
+                     , GTFS.Realtime.Internal.Com.Google.Transit.Realtime.Alert.Effect
+                     , GTFS.Realtime.Internal.Com.Google.Transit.Realtime.EntitySelector
+                     , GTFS.Realtime.Internal.Com.Google.Transit.Realtime.FeedEntity
+                     , GTFS.Realtime.Internal.Com.Google.Transit.Realtime.FeedHeader
+                     , GTFS.Realtime.Internal.Com.Google.Transit.Realtime.FeedHeader.Incrementality
+                     , GTFS.Realtime.Internal.Com.Google.Transit.Realtime.FeedMessage
+                     , GTFS.Realtime.Internal.Com.Google.Transit.Realtime.Position
+                     , GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TimeRange
+                     , GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TranslatedString
+                     , GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TranslatedString.Translation
+                     , GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripUpdate
+                     , GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripUpdate.StopTimeEvent
+                     , GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripUpdate.StopTimeUpdate.ScheduleRelationship
+                     , GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripUpdate.StopTimeUpdate
+                     , GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripDescriptor
+                     , GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripDescriptor.ScheduleRelationship
+                     , GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehicleDescriptor
+                     , GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition
+                     , GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition.VehicleStopStatus
+                     , GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition.CongestionLevel
+                     , GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition.OccupancyStatus
                      , CSV.Import.Route
                      , CSV.Import.Trip
                      , CSV.Import.Calendar

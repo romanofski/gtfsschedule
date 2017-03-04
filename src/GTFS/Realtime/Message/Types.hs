@@ -1,21 +1,21 @@
 
 module GTFS.Realtime.Message.Types (ForFeedElement(..), departureTimeWithDelay) where
 
-import           Com.Google.Transit.Realtime.TripDescriptor                                 (TripDescriptor (..), trip_id)
-import qualified Com.Google.Transit.Realtime.TripDescriptor.ScheduleRelationship            as TripSR
-import Com.Google.Transit.Realtime.TripUpdate (TripUpdate(..))
-import qualified Com.Google.Transit.Realtime.TripUpdate.StopTimeEvent (delay)
-import qualified Com.Google.Transit.Realtime.TripUpdate.StopTimeUpdate                      as STU
-import qualified Com.Google.Transit.Realtime.TripUpdate.StopTimeUpdate.ScheduleRelationship as StopTUSR
-import qualified Com.Google.Transit.Realtime.VehiclePosition                                as VP
-import qualified Com.Google.Transit.Realtime.VehiclePosition.CongestionLevel                as CL
-import qualified Com.Google.Transit.Realtime.VehiclePosition.OccupancyStatus                as O
-import           Data.Foldable                                                              (find)
-import           Data.Time.Clock                                                            (secondsToDiffTime)
-import           Data.Time.LocalTime                                                        (TimeOfDay, timeToTimeOfDay)
-import           GTFS.Schedule                                                              (ScheduleItem (..), ScheduleState (..), Stop (..), VehicleInformation (..), secondsToDeparture)
-import           Text.ProtocolBuffers.Basic                                                 (uToString)
-import qualified Text.ProtocolBuffers.Header                                                as P'
+import           Data.Foldable                                                                                     (find)
+import           Data.Time.Clock                                                                                   (secondsToDiffTime)
+import           Data.Time.LocalTime                                                                               (TimeOfDay, timeToTimeOfDay)
+import           GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripDescriptor                                 (TripDescriptor (..), trip_id)
+import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripDescriptor.ScheduleRelationship            as TripSR
+import           GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripUpdate                                     (TripUpdate (..))
+import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripUpdate.StopTimeEvent                       (delay)
+import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripUpdate.StopTimeUpdate                      as STU
+import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripUpdate.StopTimeUpdate.ScheduleRelationship as StopTUSR
+import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition                                as VP
+import           GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition.CongestionLevel                (CongestionLevel)
+import           GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition.OccupancyStatus                (OccupancyStatus)
+import           GTFS.Schedule                                                                                     (ScheduleItem (..), ScheduleState (..), Stop (..), VehicleInformation (..), secondsToDeparture)
+import           Text.ProtocolBuffers.Basic                                                                        (uToString)
+import qualified Text.ProtocolBuffers.Header                                                                       as P'
 
 class ForFeedElement e where
   getTripID :: e -> String
@@ -72,16 +72,16 @@ makeVehicleInformation ::
   VP.VehiclePosition
   -> VehicleInformation
 makeVehicleInformation vp = let congestionl = fromEnum (P'.getVal vp VP.congestion_level)
-                                c_percentage = (congestionl * 100) `div` fromEnum (maxBound :: CL.CongestionLevel)
+                                c_percentage = (congestionl * 100) `div` fromEnum (maxBound :: CongestionLevel)
                                 occupancys = fromEnum (P'.getVal vp VP.occupancy_status)
-                                o_percentage = (occupancys * 100) `div` fromEnum (maxBound :: O.OccupancyStatus)
+                                o_percentage = (occupancys * 100) `div` fromEnum (maxBound :: OccupancyStatus)
                             in VehicleInformation (Just c_percentage) (Just o_percentage)
 
 
 getDepartureDelay ::
   STU.StopTimeUpdate
   -> Integer
-getDepartureDelay update = fromIntegral $ P'.getVal d Com.Google.Transit.Realtime.TripUpdate.StopTimeEvent.delay
+getDepartureDelay update = fromIntegral $ P'.getVal d GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripUpdate.StopTimeEvent.delay
   where d = P'.getVal update STU.departure
 
 scheduleTypeForStop ::

@@ -4,6 +4,12 @@ man/gtfsschedule.1: man/gtfsschedule.1.adoc
 README.html: README.adoc ChangeLog.adoc
 	asciidoc $<
 
+src/GTFS/Realtime/Internal/Com/Google/Transit/Realtime.hs: gtfsschedule.proto
+	hprotoc -p GTFS.Realtime.Internal -d src/ -u gtfsschedule.proto
+
+.PHONY: proto
+proto: src/GTFS/Realtime/Internal/Com/Google/Transit/Realtime.hs
+
 .PHONY: docs
 docs: README.html man/gtfsschedule.1
 

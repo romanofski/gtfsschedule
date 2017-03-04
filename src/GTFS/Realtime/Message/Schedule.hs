@@ -8,25 +8,23 @@ the schedule data.
 See also: https://developers.google.com/transit/gtfs-realtime/reference/
 -}
 module GTFS.Realtime.Message.Schedule
-       (updateSchedule, updateSchedulesWithRealtimeData,
-        FM.FeedMessage)
+       (updateSchedule, updateSchedulesWithRealtimeData, getTripUpdates)
        where
 
-import qualified Com.Google.Transit.Realtime.FeedMessage     as FM
-import qualified Com.Google.Transit.Realtime.VehiclePosition as VP
-import           GTFS.Realtime.Message.Types                 (ForFeedElement (..))
-import           GTFS.Schedule                               (ScheduleItem (..))
+import           GTFS.Realtime.Internal.Com.Google.Transit.Realtime.FeedMessage     (FeedMessage, entity)
+import           GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition (VehiclePosition)
+import           GTFS.Realtime.Message.Types                                        (ForFeedElement (..))
+import           GTFS.Schedule                                                      (ScheduleItem (..))
 
-import qualified Com.Google.Transit.Realtime.FeedEntity      as FE
-import qualified Com.Google.Transit.Realtime.TripUpdate      as TU
-import           Control.Monad.State                         (State, execState,
-                                                              get, put)
-import qualified Data.Map.Lazy                               as Map
-import qualified Data.Text                                   as T
-import qualified Text.ProtocolBuffers.Header                 as P'
+import           Control.Monad.State                                                (State, execState, get, put)
+import qualified Data.Map.Lazy                                                      as Map
+import qualified Data.Text                                                          as T
+import           GTFS.Realtime.Internal.Com.Google.Transit.Realtime.FeedEntity      (trip_update, vehicle)
+import           GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripUpdate      (TripUpdate)
+import qualified Text.ProtocolBuffers.Header                                        as P'
 
-import           Network.HTTP.Conduit                        (simpleHttp)
-import           Text.ProtocolBuffers                        (messageGet)
+import           Network.HTTP.Conduit                                               (simpleHttp)
+import           Text.ProtocolBuffers                                               (messageGet)
 
 
 type Schedule = Map.Map String ScheduleItem
@@ -52,8 +50,8 @@ updateSchedulesWithRealtimeData (Just url) schedules = do
 updateSchedule
     :: ForFeedElement e
     => [ScheduleItem]
-    -> (FM.FeedMessage -> P'.Seq e)
-    -> FM.FeedMessage
+    -> (FeedMessage -> P'.Seq e)
+    -> FeedMessage
     -> [ScheduleItem]
 updateSchedule schedule getter fm = Map.elems $ execState (mapM updateFeedElement $ getter fm) scheduleMap
   where
@@ -61,15 +59,14 @@ updateSchedule schedule getter fm = Map.elems $ execState (mapM updateFeedElemen
     toMap x = (tripId x, x)
 
 getTripUpdates ::
-  FM.FeedMessage
-  -> P'.Seq TU.TripUpdate
-getTripUpdates fm = (`P'.getVal` FE.trip_update) <$> entity
-  where entity = P'.getVal fm FM.entity
+  FeedMessage
+  -> P'.Seq TripUpdate
+getTripUpdates fm = (`P'.getVal` trip_update) <$> (P'.getVal fm entity)
 
 getVehiclePositions ::
-  FM.FeedMessage
-  -> P'.Seq VP.VehiclePosition
-getVehiclePositions fm = (`P'.getVal` FE.vehicle) <$> (P'.getVal fm FM.entity)
+  FeedMessage
+  -> P'.Seq VehiclePosition
+getVehiclePositions fm = (`P'.getVal` vehicle) <$> (P'.getVal fm entity)
 
 updateFeedElement ::
   ForFeedElement e => e

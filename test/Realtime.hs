@@ -1,6 +1,9 @@
 module Realtime (feedTests) where
 
-import GTFS.Realtime.Message.Schedule (updateSchedule)
+import GTFS.Realtime.Message.Schedule (updateSchedule, getTripUpdates)
+import GTFS.Realtime.Message.Types (departureTimeWithDelay)
+import GTFS.Realtime.Internal.Com.Google.Transit.Realtime.FeedMessage
+       (FeedMessage)
 import GTFS.Schedule
 
 import Data.Functor ((<$>))
