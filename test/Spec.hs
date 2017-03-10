@@ -1,26 +1,24 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
+import Realtime (feedTests)
+import CSVImport (importTests)
+import TestUpdate (updateTests)
+import TestProperty (proptests)
+import Fixtures (testScheduleItem)
+
 import GTFS.Schedule
        (ScheduleItem(..), ScheduleState(..), TimeSpec(..),
         ScheduleConfig(..), Stop(..), VehicleInformation(..),
         minutesToDeparture, printSchedule, humanReadableDelay, getSchedule,
-        sortSchedules, bumOffSeatTime, defaultScheduleConfig)
-import GTFS.Realtime.Message.Types (departureTimeWithDelay)
+        defaultScheduleConfig)
 import qualified CSV.Import as CSV
-
-import Realtime (feedTests)
-import CSVImport (importTests)
-import TestUpdate (updateTests)
-import Fixtures (testScheduleItem)
 
 import Control.Applicative ((<$>), (<*>))
 
 import Test.Tasty (defaultMain, TestTree, TestName, testGroup)
 import Test.Tasty.HUnit (testCase, (@?=))
-import Test.Tasty.QuickCheck
-       (testProperty, elements, choose, Arbitrary(..), Gen)
-
+  
 import Data.Time.LocalTime (TimeOfDay(..))
 import Data.Time.Calendar (fromGregorian)
 import System.IO.Temp (withSystemTempFile)
@@ -31,60 +29,6 @@ import System.Directory (getCurrentDirectory)
 tests ::
   TestTree
 tests = testGroup "tests" [proptests, unittests]
-
-proptests :: TestTree
-proptests = testGroup "property tests" [ testSortSchedules ]
-
-arbitraryTimeOfDay :: Gen TimeOfDay
-arbitraryTimeOfDay = TimeOfDay <$> choose (0, 23) <*> choose (0, 59) <*>
-        (fromRational . toRational <$> choose (0 :: Double, 60))
-
-arbitraryStop :: Gen Stop
-arbitraryStop = Stop <$> arbitrary <*> arbitrary <*> arbitrary
-
-arbitraryVehicleInformation :: Gen VehicleInformation
-arbitraryVehicleInformation = VehicleInformation <$> arbitrary <*> arbitrary
-
--- | newtype declaration which wraps the schedule item to avoid orphaned
--- instances warning if we'd just implement the Arbitrary instance for
--- ScheduleItems here
---
-newtype ArbitraryScheduleItem = ArbitraryScheduleItem
-    { unArbitrary :: ScheduleItem
-    } deriving (Show)
-
-instance Arbitrary ArbitraryScheduleItem where
-    arbitrary = ArbitraryScheduleItem <$> do
-        schedDepTime <- arbitraryTimeOfDay
-        delay <- arbitrary
-        trip <- arbitrary
-        s <- arbitraryStop
-        name <- arbitrary
-        stype <- elements [CANCELED, ADDED, SCHEDULED]
-        vehicleInfo <- arbitraryVehicleInformation
-        return $ ScheduleItem { tripId = trip
-                              , stop = s
-                              , serviceName = name
-                              , scheduledDepartureTime = schedDepTime
-                              , departureDelay = delay
-                              , departureTime = departureTimeWithDelay schedDepTime delay
-                              , scheduleType = stype
-                              , scheduleItemVehicleInformation = vehicleInfo
-                              }
-
-testSortSchedules :: TestTree
-testSortSchedules =
-    testProperty
-        "schedules are sorted by bum-off-seat-time"
-        (\schedule -> propOrderedSchedule $ sortSchedules  $ unwrapScheduleItems schedule)
-
-unwrapScheduleItems :: [ArbitraryScheduleItem] -> [ScheduleItem]
-unwrapScheduleItems xs = unArbitrary <$> xs
-
-propOrderedSchedule :: [ScheduleItem] -> Bool
-propOrderedSchedule [] = True
-propOrderedSchedule [_] = True
-propOrderedSchedule (x:y:rest) = (bumOffSeatTime x) <= (bumOffSeatTime y) && propOrderedSchedule rest
 
 -- unit tests
 --

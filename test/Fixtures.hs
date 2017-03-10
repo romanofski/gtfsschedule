@@ -22,6 +22,7 @@ import Data.Time.LocalTime (TimeOfDay(..), timeOfDayToTime)
 import Text.ProtocolBuffers.Extensions (ExtField(..))
 import Text.ProtocolBuffers.Basic (uFromString)
 import Text.ProtocolBuffers.Unknown (UnknownField(..))
+
 import Control.Concurrent (forkIO, takeMVar, putMVar, newEmptyMVar, killThread)
 import Data.Conduit.Network (runTCPServer, serverSettings, ServerSettings, AppData)
 import Data.Streaming.Network (bindPortTCP, setAfterBind)
@@ -29,8 +30,9 @@ import Network.Socket (sClose)
 import qualified Data.IORef as I
 import Control.Exception.Lifted (IOException, try, onException, bracket)
 import System.IO.Unsafe (unsafePerformIO)
+
 import qualified Data.Map.Lazy as Map
-import Data.Sequence (empty, fromList, Seq)
+import Data.Sequence (empty, Seq)
 
 serverHost :: String
 serverHost = "127.0.0.1"

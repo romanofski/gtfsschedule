@@ -111,6 +111,7 @@ test-suite unit-tests
                        Realtime
                        Fixtures
                        TestUpdate
+                       TestProperty
   build-depends:       base
                      , gtfsschedule
                      , tasty-hunit
