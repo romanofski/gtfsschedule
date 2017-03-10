@@ -12,6 +12,7 @@ extra-deps:
   - cassava-0.4.5.0
   - http-conduit-2.1.8
   - persistent-template-2.1.5
+  - QuickCheck-2.8.2
 
 # Override default flag values for local packages and extra-deps
 flags: {}
