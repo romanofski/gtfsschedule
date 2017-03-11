@@ -18,7 +18,7 @@ import Control.Applicative ((<$>), (<*>))
 
 import Test.Tasty (defaultMain, TestTree, TestName, testGroup)
 import Test.Tasty.HUnit (testCase, (@?=))
-  
+
 import Data.Time.LocalTime (TimeOfDay(..))
 import Data.Time.Calendar (fromGregorian)
 import System.IO.Temp (withSystemTempFile)

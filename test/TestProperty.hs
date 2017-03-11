@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC  -fno-warn-orphans #-}
 module TestProperty (proptests) where
 
 import Fixtures
@@ -6,41 +7,60 @@ import GTFS.Realtime.Message.Schedule (updateSchedule, getTripUpdates)
 import GTFS.Realtime.Message.Types (departureTimeWithDelay)
 import GTFS.Schedule
        (ScheduleItem(..), ScheduleState(..),
-        Stop(..), VehicleInformation(..),
-        sortSchedules, bumOffSeatTime)
+        Stop(..), VehicleInformation(..), ScheduleConfig(..),
+        sortSchedules, bumOffSeatTime, defaultScheduleItemFormatter)
 
+import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripDescriptor as TD
+import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripDescriptor.ScheduleRelationship as TDSR
+import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehicleDescriptor as VD
 import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.FeedEntity as FE
 import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.FeedHeader as FH
 import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.FeedMessage as FM
+import qualified
+       GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition
+       as VP
 
 import Data.Time.LocalTime (TimeOfDay(..))
 
 import Text.ProtocolBuffers.Basic (uFromString)
 
+import Data.List (nub)
+import qualified Data.Text as T
+
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.QuickCheck
-       (testProperty, elements, choose, Arbitrary(..), Gen)
+       (testProperty, shuffle, listOf1, elements, choose,
+        arbitraryBoundedEnum, Arbitrary(..), Gen)
 
 
 proptests :: TestTree
 proptests =
     testGroup
         "property tests"
-        [testSortSchedules, testUpdateSchedulesKeepsLength]
+        [ testSortSchedules
+        , testUpdateSchedulesKeepsLength
+        , testFormatScheduleItemNeverEmpty]
 
+
+testFormatScheduleItemNeverEmpty :: TestTree
+testFormatScheduleItemNeverEmpty =
+    testProperty
+        "formatting schedule item never empty"
+        (\cfg item ->
+              length (defaultScheduleItemFormatter cfg item) > 0)
 
 testUpdateSchedulesKeepsLength :: TestTree
 testUpdateSchedulesKeepsLength =
     testProperty
         "don't discard schedule items when updating from feed"
-        (\schedule fm -> (length (updateSchedule (unwrapScheduleItems $ schedule) getTripUpdates fm) == length(schedule)))
+        (\schedule fm -> (length (updateSchedule schedule getTripUpdates fm) == length(schedule)))
 
 
 testSortSchedules :: TestTree
 testSortSchedules =
     testProperty
         "schedules are sorted by bum-off-seat-time"
-        (\schedule -> propOrderedSchedule $ sortSchedules  $ unwrapScheduleItems schedule)
+        (\schedule -> propOrderedSchedule $ sortSchedules schedule)
 
 propOrderedSchedule :: [ScheduleItem] -> Bool
 propOrderedSchedule [] = True
@@ -64,8 +84,39 @@ instance Arbitrary FE.FeedEntity where
     arbitrary =
         FE.FeedEntity <$> (uFromString <$> arbitrary) <*> arbitrary <*>
         pure Nothing <*>
+        arbitrary <*>
+        pure Nothing <*>
+        pure testExtField <*>
+        pure testUnknownField
+
+instance Arbitrary VP.VehiclePosition where
+    arbitrary =
+        VP.VehiclePosition <$> arbitrary <*> arbitrary <*> pure Nothing <*>
         pure Nothing <*>
         pure Nothing <*>
+        pure Nothing <*>
+        pure Nothing <*>
+        pure Nothing <*>
+        pure Nothing <*>
+        pure testExtField <*>
+        pure testUnknownField
+
+instance Arbitrary VD.VehicleDescriptor where
+    arbitrary =
+        VD.VehicleDescriptor <$> (Just . uFromString <$> arbitraryUniques1 arbitrary) <*>
+        (Just . uFromString <$> arbitraryUniques1 arbitrary) <*>
+        (Just . uFromString <$> arbitraryUniques1 arbitrary) <*>
+        pure testExtField <*>
+        pure testUnknownField
+
+instance Arbitrary TD.TripDescriptor where
+    arbitrary =
+        TD.TripDescriptor <$> (Just . uFromString <$> arbitrary) <*>
+        (Just . uFromString <$> arbitrary) <*>
+        pure Nothing <*>
+        pure Nothing <*>
+        pure Nothing <*>
+        (Just <$> arbitraryBoundedEnum) <*>
         pure testExtField <*>
         pure testUnknownField
 
@@ -79,22 +130,14 @@ arbitraryStop = Stop <$> arbitrary <*> arbitrary <*> arbitrary
 arbitraryVehicleInformation :: Gen VehicleInformation
 arbitraryVehicleInformation = VehicleInformation <$> arbitrary <*> arbitrary
 
-unwrapScheduleItems :: [ArbitraryScheduleItem] -> [ScheduleItem]
-unwrapScheduleItems xs = unArbitrary <$> xs
+arbitraryUniques1 :: Eq a => Gen a -> Gen [a]
+arbitraryUniques1 gen = nub <$> listOf1 gen
 
--- | newtype declaration which wraps the schedule item to avoid orphaned
--- instances warning if we'd just implement the Arbitrary instance for
--- ScheduleItems here
---
-newtype ArbitraryScheduleItem = ArbitraryScheduleItem
-    { unArbitrary :: ScheduleItem
-    } deriving (Show)
-
-instance Arbitrary ArbitraryScheduleItem where
-    arbitrary = ArbitraryScheduleItem <$> do
+instance Arbitrary ScheduleItem where
+    arbitrary = do
         schedDepTime <- arbitraryTimeOfDay
         delay <- arbitrary
-        trip <- arbitrary
+        trip <- arbitraryUniques1 arbitrary
         s <- arbitraryStop
         name <- arbitrary
         stype <- elements [CANCELED, ADDED, SCHEDULED]
@@ -108,3 +151,20 @@ instance Arbitrary ArbitraryScheduleItem where
                               , scheduleType = stype
                               , scheduleItemVehicleInformation = vehicleInfo
                               }
+
+instance Arbitrary ScheduleConfig where
+    arbitrary =
+        ScheduleConfig <$> arbitraryTimeOfDay <*>
+        (T.pack .
+         concatMap
+             (\x ->
+                   '$' : x ++ "$") <$>
+         shuffle
+             [ "serviceName"
+             , "departureTime"
+             , "scheduledDepartureTime"
+             , "scheduleType"
+             , "scheduleTypeDiff"
+             , "stopName"
+             , "congestionPercent"
+             , "occupancyPercent"])

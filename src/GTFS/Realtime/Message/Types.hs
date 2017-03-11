@@ -22,14 +22,12 @@ class ForFeedElement e where
   getTripID x = uToString $ P'.getVal (getTripDescriptor x) trip_id
 
   getTripDescriptor :: e -> TripDescriptor
-  updateScheduleItem :: e -> String -> ScheduleItem -> Maybe ScheduleItem
+  updateScheduleItem :: e -> String -> ScheduleItem -> ScheduleItem
 
 
 instance ForFeedElement TripUpdate where
     getTripDescriptor x = P'.getVal x trip
-    updateScheduleItem TripUpdate{trip = TripDescriptor{schedule_relationship = Just TripSR.CANCELED}} k item =
-        Just
-            ScheduleItem
+    updateScheduleItem TripUpdate{trip = TripDescriptor{schedule_relationship = Just TripSR.CANCELED}} k item = ScheduleItem
             { tripId = k
             , stop = stop item
             , serviceName = serviceName item
@@ -39,10 +37,9 @@ instance ForFeedElement TripUpdate where
             , scheduleType = CANCELED
             , scheduleItemVehicleInformation = scheduleItemVehicleInformation item
             }
-    updateScheduleItem tu k item = do
-        stu <- findStopTimeUpdate (stop item) (getStopTimeUpdates tu)
-        Just
-            ScheduleItem
+    updateScheduleItem tu k item =
+        case (findStopTimeUpdate (stop item) (getStopTimeUpdates tu)) of
+          Just stu -> ScheduleItem
             { tripId = k
             , stop = stop item
             , serviceName = serviceName item
@@ -54,10 +51,11 @@ instance ForFeedElement TripUpdate where
             , scheduleType = scheduleTypeForStop stu
             , scheduleItemVehicleInformation = scheduleItemVehicleInformation item
             }
+          Nothing -> item
 
 instance ForFeedElement VP.VehiclePosition where
   getTripDescriptor x = P'.getVal x VP.trip
-  updateScheduleItem vp k item = Just ScheduleItem
+  updateScheduleItem vp k item = ScheduleItem
             { tripId = k
             , stop = stop item
             , serviceName = serviceName item

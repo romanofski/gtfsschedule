@@ -53,7 +53,8 @@ updateSchedule
     -> (FeedMessage -> P'.Seq e)
     -> FeedMessage
     -> [ScheduleItem]
-updateSchedule schedule getter fm = Map.elems $ execState (mapM updateFeedElement $ getter fm) scheduleMap
+updateSchedule schedule getter fm =
+    Map.elems $ execState (mapM updateFeedElement $ getter fm) scheduleMap
   where
     scheduleMap = Map.fromList $ toMap <$> schedule
     toMap x = (tripId x, x)
@@ -68,11 +69,10 @@ getVehiclePositions ::
   -> P'.Seq VehiclePosition
 getVehiclePositions fm = (`P'.getVal` vehicle) <$> (P'.getVal fm entity)
 
-updateFeedElement ::
-  ForFeedElement e => e
-  -> State Schedule ()
+updateFeedElement
+    :: ForFeedElement e
+    => e -> State Schedule ()
 updateFeedElement x = do
     m <- get
-    let (_,map') =
-            Map.updateLookupWithKey (updateScheduleItem x) (getTripID x) m
+    let map' = Map.adjustWithKey (updateScheduleItem x) (getTripID x) m
     put map'

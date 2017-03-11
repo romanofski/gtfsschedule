@@ -14,7 +14,8 @@ module GTFS.Schedule
         getSchedulesByWalktime, getTimeSpecFromNow, printSchedule,
         minutesToDeparture, secondsToDeparture, sortSchedules,
         bumOffSeatTime, getCurrentTimeOfDay, humanReadableDelay,
-        defaultScheduleConfig, defaultScheduleItemTemplate)
+        defaultScheduleConfig, defaultScheduleItemTemplate,
+        defaultScheduleItemFormatter)
        where
 
 import qualified GTFS.Database as DB
@@ -160,7 +161,7 @@ printSchedule xs cfg =
 data ScheduleConfig = ScheduleConfig
     { scheduleTimeOfDay :: TimeOfDay
     , scheduleItemTemplate :: T.Text
-    }
+    } deriving (Show)
 
 defaultScheduleItemTemplate :: T.Text
 defaultScheduleItemTemplate = "$delayIndicator$$serviceName$ $minutesToDeparture$min $departureTime$ $scheduledDepartureTime$ $scheduleTypeDiff$"
