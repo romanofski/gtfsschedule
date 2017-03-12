@@ -1,10 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Main where
+module TestSchedule (scheduleTests) where
 
-import Realtime (feedTests)
-import CSVImport (importTests)
-import TestUpdate (updateTests)
-import TestProperty (proptests)
 import Fixtures (testScheduleItem)
 
 import GTFS.Schedule
@@ -16,7 +12,7 @@ import qualified CSV.Import as CSV
 
 import Control.Applicative ((<$>), (<*>))
 
-import Test.Tasty (defaultMain, TestTree, TestName, testGroup)
+import Test.Tasty (TestTree, TestName, testGroup)
 import Test.Tasty.HUnit (testCase, (@?=))
 
 import Data.Time.LocalTime (TimeOfDay(..))
@@ -26,22 +22,16 @@ import System.IO.Silently (capture_)
 import System.Directory (getCurrentDirectory)
 
 
-tests ::
+scheduleTests ::
   TestTree
-tests = testGroup "tests" [proptests, unittests]
-
--- unit tests
---
-unittests :: TestTree
-unittests = testGroup "unit tests" [ feedTests
-                               , importTests
-                               , updateTests
-                               , testMinutesToDeparture
-                               , testFormatScheduleItem
-                               , testDepartures
-                               , testPrintSchedule
-                               , testHumanReadableDelay
-                               ]
+scheduleTests =
+    testGroup
+        "realtime feed Tests"
+        [ testMinutesToDeparture
+        , testFormatScheduleItem
+        , testDepartures
+        , testPrintSchedule
+        , testHumanReadableDelay]
 
 testPrintSchedule ::
   TestTree
@@ -294,7 +284,3 @@ testDepartures =
                                  , scheduleItemVehicleInformation = VehicleInformation Nothing Nothing
                                  }]
       }]
-
-main ::
-  IO ()
-main = defaultMain tests

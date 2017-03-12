@@ -1,4 +1,4 @@
-module Realtime (feedTests) where
+module TestRealtime (feedTests) where
 
 import Fixtures
 

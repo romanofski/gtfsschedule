@@ -2,7 +2,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-module CSVImport (importTests) where
+module TestCSVImport (importTests) where
 
 import qualified CSV.Import as CSV
 import qualified GTFS.Database as DB

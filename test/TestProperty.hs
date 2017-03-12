@@ -4,8 +4,7 @@ module TestProperty (proptests) where
 import Fixtures
 
 import GTFS.Realtime.Message.Internal (makeVehicleInformation)
-import GTFS.Realtime.Message.Schedule
-       (updateSchedule, getTripUpdates, getVehiclePositions)
+import GTFS.Realtime.Message.Schedule (updateSchedule)
 import GTFS.Realtime.Message.Types (departureTimeWithDelay)
 import GTFS.Schedule
        (ScheduleItem(..), ScheduleState(..),
@@ -13,7 +12,6 @@ import GTFS.Schedule
         sortSchedules, bumOffSeatTime, defaultScheduleItemFormatter)
 
 import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripDescriptor as TD
-import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripDescriptor.ScheduleRelationship as TDSR
 import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehicleDescriptor as VD
 import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.FeedEntity as FE
 import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.FeedHeader as FH
