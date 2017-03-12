@@ -13,6 +13,9 @@ import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripUpdate.S
 import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripUpdate.StopTimeUpdate.ScheduleRelationship as STUSR
 import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripUpdate.StopTimeEvent as STE
 import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripDescriptor.ScheduleRelationship as TUSR
+import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition as VP
+import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition.CongestionLevel as VPCL
+import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition.OccupancyStatus as VPOS
 import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.FeedEntity as FE
 import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.FeedHeader as FH
 import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.FeedMessage as FM
@@ -92,6 +95,28 @@ testExtField = ExtField Map.empty
 testUnknownField :: UnknownField
 testUnknownField = UnknownField empty
 
+testVehiclePosition
+    :: Maybe String
+    -> Maybe VPCL.CongestionLevel
+    -> Maybe VPOS.OccupancyStatus
+    -> Maybe String
+    -> Maybe TUSR.ScheduleRelationship
+    -> VP.VehiclePosition
+testVehiclePosition sid cl os t sr =
+    VP.VehiclePosition
+    { VP.trip = Just $ testTripDescriptor t sr
+    , VP.vehicle = Nothing
+    , VP.position = Nothing
+    , VP.current_stop_sequence = Nothing
+    , VP.stop_id = uFromString <$> sid
+    , VP.current_status = Nothing
+    , VP.timestamp = Nothing
+    , VP.congestion_level = cl
+    , VP.occupancy_status = os
+    , VP.ext'field = testExtField
+    , VP.unknown'field = testUnknownField
+    }
+
 testTripDescriptor :: Maybe String -> Maybe TUSR.ScheduleRelationship -> TD.TripDescriptor
 testTripDescriptor t sr =
     TD.TripDescriptor
@@ -143,13 +168,13 @@ testTripUpdate t sr stus =
     , unknown'field = testUnknownField
     }
 
-testFeedEntity :: Maybe TripUpdate -> FE.FeedEntity
-testFeedEntity t =
+testFeedEntity :: Maybe TripUpdate -> Maybe VP.VehiclePosition -> FE.FeedEntity
+testFeedEntity t vp =
     FE.FeedEntity
     { FE.id = uFromString "asdf"
     , FE.is_deleted = Nothing
     , FE.trip_update = t
-    , FE.vehicle = Nothing
+    , FE.vehicle = vp
     , FE.alert = Nothing
     , FE.ext'field = testExtField
     , FE.unknown'field = testUnknownField

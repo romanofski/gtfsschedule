@@ -10,6 +10,8 @@ import GTFS.Schedule
 
 import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripDescriptor.ScheduleRelationship as TUSR
 import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripUpdate.StopTimeUpdate.ScheduleRelationship as STUSR
+import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition.CongestionLevel as VPCL
+import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition.OccupancyStatus as VPOS
 
 import Data.Functor ((<$>))
 
@@ -33,6 +35,24 @@ makeFeedTest :: (TestName, FeedMessage, [ScheduleItem], [ScheduleItem])
 makeFeedTest (name,fm,schedule,expected) =
     testCase name $ do updateSchedule fm schedule @?= expected
 
+makeFeedWithVehiclePosition :: FeedMessage
+makeFeedWithVehiclePosition =
+    let vp =
+            Just $
+            testVehiclePosition
+                (Just "600202")
+                (Just VPCL.SEVERE_CONGESTION)
+                (Just VPOS.NOT_ACCEPTING_PASSENGERS)
+                (Just "trip congested and full")
+                (Just TUSR.SCHEDULED)
+        tuCanceled =
+            Just $
+            testTripUpdate
+                (Just "trip congested and full")
+                (Just TUSR.CANCELED)
+                (Seq.empty)
+    in testFeedMessage $ Seq.fromList [testFeedEntity tuCanceled vp]
+
 makeFeedWithCanceledTrips :: FeedMessage
 makeFeedWithCanceledTrips =
     let tuCanceled =
@@ -52,7 +72,8 @@ makeFeedWithCanceledTrips =
                            Nothing
                            (Just STUSR.SKIPPED)])
     in testFeedMessage $
-       Seq.fromList [testFeedEntity tuCanceled, testFeedEntity tuSkipped]
+       Seq.fromList
+           [testFeedEntity tuCanceled Nothing, testFeedEntity tuSkipped Nothing]
 
 makeFeedWithTripDelays :: FeedMessage
 makeFeedWithTripDelays =
@@ -90,10 +111,10 @@ makeFeedWithTripDelays =
                 (Seq.empty)
     in testFeedMessage $
        Seq.fromList
-           [ testFeedEntity Nothing
-           , testFeedEntity tuDelayed1
-           , testFeedEntity tuDelayed2
-           , testFeedEntity tuCanceled]
+           [ testFeedEntity Nothing Nothing
+           , testFeedEntity tuDelayed1 Nothing
+           , testFeedEntity tuDelayed2 Nothing
+           , testFeedEntity tuCanceled Nothing]
 
 
 testWithRealtimeFeed ::
@@ -104,37 +125,33 @@ testWithRealtimeFeed =
     [ ( "full updates"
       , makeFeedWithTripDelays
       , [ ScheduleItem
-              { tripId = "7935244-SBL 16_17-SBL_SUN-Sunday-01"
-              , stop = Stop
-                { stopIdentifier = "301350"
-                , stopWalktime = 0
-                , stopName = ""
-                }
-              , serviceName = "S2"
-              , scheduledDepartureTime = TimeOfDay 10 30 0
-              , departureDelay = 0
-              , departureTime = TimeOfDay 10 30 0
-              , scheduleType = SCHEDULED
-              , scheduleItemVehicleInformation = VehicleInformation
-                    Nothing
-                    Nothing
-              }
-            , ScheduleItem
-              { tripId = "7822824-BT 16_17-JUL_FUL-Sunday-02"
-              , stop = Stop
-                { stopIdentifier = "11168"
-                , stopWalktime = 0
-                , stopName = ""
-                }
-              , serviceName = "S1"
-              , scheduledDepartureTime = TimeOfDay 8 0 0
-              , departureDelay = 0
-              , departureTime = TimeOfDay 8 0 0
-              , scheduleType = SCHEDULED
-              , scheduleItemVehicleInformation = VehicleInformation
-                    Nothing
-                    Nothing
-              }]
+          { tripId = "7935244-SBL 16_17-SBL_SUN-Sunday-01"
+          , stop = Stop
+            { stopIdentifier = "301350"
+            , stopWalktime = 0
+            , stopName = ""
+            }
+          , serviceName = "S2"
+          , scheduledDepartureTime = TimeOfDay 10 30 0
+          , departureDelay = 0
+          , departureTime = TimeOfDay 10 30 0
+          , scheduleType = SCHEDULED
+          , scheduleItemVehicleInformation = VehicleInformation Nothing Nothing
+          }
+        , ScheduleItem
+          { tripId = "7822824-BT 16_17-JUL_FUL-Sunday-02"
+          , stop = Stop
+            { stopIdentifier = "11168"
+            , stopWalktime = 0
+            , stopName = ""
+            }
+          , serviceName = "S1"
+          , scheduledDepartureTime = TimeOfDay 8 0 0
+          , departureDelay = 0
+          , departureTime = TimeOfDay 8 0 0
+          , scheduleType = SCHEDULED
+          , scheduleItemVehicleInformation = VehicleInformation Nothing Nothing
+          }]
       , [ ScheduleItem
           { tripId = "7822824-BT 16_17-JUL_FUL-Sunday-02"
           , stop = Stop
@@ -166,21 +183,19 @@ testWithRealtimeFeed =
     , ( "no updates"
       , makeFeedWithTripDelays
       , [ ScheduleItem
-              { tripId = "has no realtime update"
-              , stop = Stop
-                { stopIdentifier = "232323"
-                , stopWalktime = 0
-                , stopName = ""
-                }
-              , serviceName = "S2"
-              , scheduledDepartureTime = TimeOfDay 8 0 0
-              , departureDelay = 0
-              , departureTime = TimeOfDay 8 0 0
-              , scheduleType = SCHEDULED
-              , scheduleItemVehicleInformation = VehicleInformation
-                    Nothing
-                    Nothing
-              }]
+          { tripId = "has no realtime update"
+          , stop = Stop
+            { stopIdentifier = "232323"
+            , stopWalktime = 0
+            , stopName = ""
+            }
+          , serviceName = "S2"
+          , scheduledDepartureTime = TimeOfDay 8 0 0
+          , departureDelay = 0
+          , departureTime = TimeOfDay 8 0 0
+          , scheduleType = SCHEDULED
+          , scheduleItemVehicleInformation = VehicleInformation Nothing Nothing
+          }]
       , [ ScheduleItem
           { tripId = "has no realtime update"
           , stop = Stop
@@ -198,37 +213,33 @@ testWithRealtimeFeed =
     , ( "partial update"
       , makeFeedWithTripDelays
       , [ ScheduleItem
-              { tripId = "7935244-SBL 16_17-SBL_SUN-Sunday-01"
-              , stop = Stop
-                { stopIdentifier = "301350"
-                , stopWalktime = 0
-                , stopName = ""
-                }
-              , serviceName = "S2"
-              , scheduledDepartureTime = TimeOfDay 10 30 0
-              , departureDelay = 0
-              , departureTime = TimeOfDay 10 30 0
-              , scheduleType = SCHEDULED
-              , scheduleItemVehicleInformation = VehicleInformation
-                    Nothing
-                    Nothing
-              }
-            , ScheduleItem
-              { tripId = "no realtime update"
-              , stop = Stop
-                { stopIdentifier = "0815"
-                , stopWalktime = 0
-                , stopName = ""
-                }
-              , serviceName = "S1"
-              , scheduledDepartureTime = TimeOfDay 8 0 0
-              , departureDelay = 0
-              , departureTime = TimeOfDay 8 0 0
-              , scheduleType = SCHEDULED
-              , scheduleItemVehicleInformation = VehicleInformation
-                    Nothing
-                    Nothing
-              }]
+          { tripId = "7935244-SBL 16_17-SBL_SUN-Sunday-01"
+          , stop = Stop
+            { stopIdentifier = "301350"
+            , stopWalktime = 0
+            , stopName = ""
+            }
+          , serviceName = "S2"
+          , scheduledDepartureTime = TimeOfDay 10 30 0
+          , departureDelay = 0
+          , departureTime = TimeOfDay 10 30 0
+          , scheduleType = SCHEDULED
+          , scheduleItemVehicleInformation = VehicleInformation Nothing Nothing
+          }
+        , ScheduleItem
+          { tripId = "no realtime update"
+          , stop = Stop
+            { stopIdentifier = "0815"
+            , stopWalktime = 0
+            , stopName = ""
+            }
+          , serviceName = "S1"
+          , scheduledDepartureTime = TimeOfDay 8 0 0
+          , departureDelay = 0
+          , departureTime = TimeOfDay 8 0 0
+          , scheduleType = SCHEDULED
+          , scheduleItemVehicleInformation = VehicleInformation Nothing Nothing
+          }]
       , [ ScheduleItem
           { tripId = "7935244-SBL 16_17-SBL_SUN-Sunday-01"
           , stop = Stop
@@ -260,21 +271,19 @@ testWithRealtimeFeed =
     , ( "canceled service"
       , makeFeedWithCanceledTrips
       , [ ScheduleItem
-              { tripId = "7634889-SUN 16_17-SUN_SUN-Sunday-01"
-              , stop = Stop
-                { stopIdentifier = "317579"
-                , stopWalktime = 0
-                , stopName = ""
-                }
-              , serviceName = "S2"
-              , scheduledDepartureTime = TimeOfDay 10 30 0
-              , departureDelay = 0
-              , departureTime = TimeOfDay 10 30 0
-              , scheduleType = SCHEDULED
-              , scheduleItemVehicleInformation = VehicleInformation
-                    Nothing
-                    Nothing
-              }]
+          { tripId = "7634889-SUN 16_17-SUN_SUN-Sunday-01"
+          , stop = Stop
+            { stopIdentifier = "317579"
+            , stopWalktime = 0
+            , stopName = ""
+            }
+          , serviceName = "S2"
+          , scheduledDepartureTime = TimeOfDay 10 30 0
+          , departureDelay = 0
+          , departureTime = TimeOfDay 10 30 0
+          , scheduleType = SCHEDULED
+          , scheduleItemVehicleInformation = VehicleInformation Nothing Nothing
+          }]
       , [ ScheduleItem
           { tripId = "7634889-SUN 16_17-SUN_SUN-Sunday-01"
           , stop = Stop
@@ -292,21 +301,19 @@ testWithRealtimeFeed =
     , ( "skipped stop"
       , makeFeedWithCanceledTrips
       , [ ScheduleItem
-              { tripId = "trip with skipped stop"
-              , stop = Stop
-                { stopIdentifier = "600202"
-                , stopWalktime = 0
-                , stopName = ""
-                }
-              , serviceName = "S2"
-              , scheduledDepartureTime = TimeOfDay 10 30 0
-              , departureDelay = 0
-              , departureTime = TimeOfDay 10 30 0
-              , scheduleType = SCHEDULED
-              , scheduleItemVehicleInformation = VehicleInformation
-                    Nothing
-                    Nothing
-              }]
+          { tripId = "trip with skipped stop"
+          , stop = Stop
+            { stopIdentifier = "600202"
+            , stopWalktime = 0
+            , stopName = ""
+            }
+          , serviceName = "S2"
+          , scheduledDepartureTime = TimeOfDay 10 30 0
+          , departureDelay = 0
+          , departureTime = TimeOfDay 10 30 0
+          , scheduleType = SCHEDULED
+          , scheduleItemVehicleInformation = VehicleInformation Nothing Nothing
+          }]
       , [ ScheduleItem
           { tripId = "trip with skipped stop"
           , stop = Stop
@@ -320,7 +327,38 @@ testWithRealtimeFeed =
           , departureTime = TimeOfDay 10 30 0
           , scheduleType = CANCELED
           , scheduleItemVehicleInformation = VehicleInformation Nothing Nothing
-          }])]
+          }])
+    , ( "service congested and full"
+      , makeFeedWithVehiclePosition
+      , [ ScheduleItem
+          { tripId = "trip congested and full"
+          , stop = Stop
+            { stopIdentifier = "600202"
+            , stopWalktime = 0
+            , stopName = ""
+            }
+          , serviceName = "S2"
+          , scheduledDepartureTime = TimeOfDay 10 30 0
+          , departureDelay = 0
+          , departureTime = TimeOfDay 10 30 0
+          , scheduleType = SCHEDULED
+          , scheduleItemVehicleInformation = VehicleInformation Nothing Nothing
+          }]
+      , [ ScheduleItem
+          { tripId = "trip congested and full"
+          , stop = Stop
+            { stopIdentifier = "600202"
+            , stopWalktime = 0
+            , stopName = ""
+            }
+          , serviceName = "S2"
+          , scheduledDepartureTime = TimeOfDay 10 30 0
+          , departureDelay = 0
+          , departureTime = TimeOfDay 10 30 0
+          , scheduleType = CANCELED
+          , scheduleItemVehicleInformation = VehicleInformation (Just 100) (Just 100)
+          }])
+    ]
 
 testDepartureWithDelay ::
   TestTree
