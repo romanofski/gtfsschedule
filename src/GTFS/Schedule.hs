@@ -164,7 +164,7 @@ data ScheduleConfig = ScheduleConfig
     } deriving (Show)
 
 defaultScheduleItemTemplate :: T.Text
-defaultScheduleItemTemplate = "$delayIndicator$$serviceName$ $minutesToDeparture$min $departureTime$ $scheduledDepartureTime$ $scheduleTypeDiff$"
+defaultScheduleItemTemplate = "$delayIndicator$$serviceName$ $minutesToDeparture$min $departureTime$ $readableDelay$ $scheduleTypeDiff$"
 
 defaultScheduleConfig :: TimeOfDay -> ScheduleConfig
 defaultScheduleConfig tod =

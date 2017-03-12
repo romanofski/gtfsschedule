@@ -213,8 +213,9 @@ Available fields which may not return a value:
 
   * *$delayIndicator$* - Prints an exclamation mark if the delay is not 0,
      otherwise nothing.
-  * *$readableDelay$* - Prints the delay as a formatted time (HH:MM:SS). If the
-     service has no delay, nothing is printed.
+  * *$readableDelay$* - Prints the delay as a formatted time (HH:MM:SS). Delay
+     is indicated by a '-' prefix, while running ahead of schedule with a '+'.
+     If the service has no delay, nothing is printed.
   * *$congestionPercent$* - shows congestion level in percent. 0 means unknown
      congestion level while 100 means severe congestion. Nothing is printed if
      the feed does not provide this information.
