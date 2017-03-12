@@ -8,7 +8,8 @@ the schedule data.
 See also: https://developers.google.com/transit/gtfs-realtime/reference/
 -}
 module GTFS.Realtime.Message.Schedule
-       (updateSchedule, updateSchedulesWithRealtimeData, getTripUpdates)
+       (updateSchedule, updateSchedulesWithRealtimeData, getTripUpdates,
+        getVehiclePositions)
        where
 
 import           GTFS.Realtime.Internal.Com.Google.Transit.Realtime.FeedMessage     (FeedMessage, entity)

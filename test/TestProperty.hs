@@ -3,7 +3,9 @@ module TestProperty (proptests) where
 
 import Fixtures
 
-import GTFS.Realtime.Message.Schedule (updateSchedule, getTripUpdates)
+import GTFS.Realtime.Message.Internal (makeVehicleInformation)
+import GTFS.Realtime.Message.Schedule
+       (updateSchedule, getTripUpdates, getVehiclePositions)
 import GTFS.Realtime.Message.Types (departureTimeWithDelay)
 import GTFS.Schedule
        (ScheduleItem(..), ScheduleState(..),
@@ -39,8 +41,22 @@ proptests =
         "property tests"
         [ testSortSchedules
         , testUpdateSchedulesKeepsLength
-        , testFormatScheduleItemNeverEmpty]
+        , testFormatScheduleItemNeverEmpty
+        , testVehicleInformationIsPercentage]
 
+
+testVehicleInformationIsPercentage :: TestTree
+testVehicleInformationIsPercentage =
+    testProperty
+        "vehicle information is percentage"
+        prop_VehicleInformationIsPercentage
+
+prop_VehicleInformationIsPercentage :: VP.VehiclePosition -> Bool
+prop_VehicleInformationIsPercentage vp = check $ makeVehicleInformation vp
+  where check (VehicleInformation (Just x) (Just y)) = x <= 100 && x >= 0 && y >= 0 && y <= 100
+        check (VehicleInformation (Just x) Nothing) = x <= 100 && x >= 0
+        check (VehicleInformation Nothing (Just x)) = x <= 100 && x >= 0
+        check (VehicleInformation Nothing Nothing) = True
 
 testFormatScheduleItemNeverEmpty :: TestTree
 testFormatScheduleItemNeverEmpty =
@@ -53,7 +69,8 @@ testUpdateSchedulesKeepsLength :: TestTree
 testUpdateSchedulesKeepsLength =
     testProperty
         "don't discard schedule items when updating from feed"
-        (\schedule fm -> (length (updateSchedule schedule getTripUpdates fm) == length(schedule)))
+        (\schedule fm ->
+              (length (updateSchedule fm schedule) == length (schedule)))
 
 
 testSortSchedules :: TestTree
@@ -96,8 +113,8 @@ instance Arbitrary VP.VehiclePosition where
         pure Nothing <*>
         pure Nothing <*>
         pure Nothing <*>
-        pure Nothing <*>
-        pure Nothing <*>
+        (Just <$> arbitraryBoundedEnum) <*>
+        (Just <$> arbitraryBoundedEnum) <*>
         pure testExtField <*>
         pure testUnknownField
 
@@ -111,7 +128,8 @@ instance Arbitrary VD.VehicleDescriptor where
 
 instance Arbitrary TD.TripDescriptor where
     arbitrary =
-        TD.TripDescriptor <$> (Just . uFromString <$> arbitrary) <*>
+        TD.TripDescriptor <$>
+        (Just . uFromString <$> arbitraryUniques1 arbitrary) <*>
         (Just . uFromString <$> arbitrary) <*>
         pure Nothing <*>
         pure Nothing <*>

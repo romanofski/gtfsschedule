@@ -24,6 +24,7 @@ library
                      , CLI.Main
                      , GTFS.Realtime.Message.Types
                      , GTFS.Realtime.Message.Schedule
+                     , GTFS.Realtime.Message.Internal
                      , GTFS.Realtime.Update
                      , GTFS.Realtime.Internal.Com.Google.Transit.Realtime.Alert
                      , GTFS.Realtime.Internal.Com.Google.Transit.Realtime.Alert.Cause

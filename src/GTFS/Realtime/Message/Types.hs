@@ -13,6 +13,7 @@ import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripUpdate.S
 import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition                                as VP
 import           GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition.CongestionLevel                (CongestionLevel)
 import           GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition.OccupancyStatus                (OccupancyStatus)
+import           GTFS.Realtime.Message.Internal                                                                    (makeVehicleInformation)
 import           GTFS.Schedule                                                                                     (ScheduleItem (..), ScheduleState (..), Stop (..), VehicleInformation (..), secondsToDeparture)
 import           Text.ProtocolBuffers.Basic                                                                        (uToString)
 import qualified Text.ProtocolBuffers.Header                                                                       as P'
@@ -65,16 +66,6 @@ instance ForFeedElement VP.VehiclePosition where
             , scheduleType = scheduleType item
             , scheduleItemVehicleInformation = makeVehicleInformation vp
             }
-
-makeVehicleInformation ::
-  VP.VehiclePosition
-  -> VehicleInformation
-makeVehicleInformation vp = let congestionl = fromEnum (P'.getVal vp VP.congestion_level)
-                                c_percentage = (congestionl * 100) `div` fromEnum (maxBound :: CongestionLevel)
-                                occupancys = fromEnum (P'.getVal vp VP.occupancy_status)
-                                o_percentage = (occupancys * 100) `div` fromEnum (maxBound :: OccupancyStatus)
-                            in VehicleInformation (Just c_percentage) (Just o_percentage)
-
 
 getDepartureDelay ::
   STU.StopTimeUpdate
