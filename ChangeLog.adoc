@@ -1,5 +1,12 @@
 == ChangeLog
 
+=== 0.8.0.0 (unreleased)
+
+Major changes:
+
+* Now supports to show congestion level and occupancy status if the realtime
+  feed provides it.
+
 === 0.7.0.0 (23-02-2017)
 
 Major changes:

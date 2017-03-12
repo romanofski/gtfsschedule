@@ -183,7 +183,7 @@ defaultScheduleItemFormatter cfg si = render attributesToTemplate
             [ ( "delayIndicator"
               , if departureDelay si /= 0
                     then Just "!"
-                    else Just "")
+                    else Nothing)
             , ("serviceName", Just $ serviceName si)
             , ( "minutesToDeparture"
               , Just $
@@ -191,7 +191,8 @@ defaultScheduleItemFormatter cfg si = render attributesToTemplate
                     (minutesToDeparture si (scheduleTimeOfDay cfg) -
                      (stopWalktime $ stop si)))
             , ("departureTime", Just $ show (departureTime si))
-            , ("scheduledDepartureTime", humanReadableDelay si)
+            , ("readableDelay", humanReadableDelay si)
+            , ("scheduledDepartureTime", Just $ show (scheduledDepartureTime si))
             , ("scheduleType", Just $ show $ scheduleType si)
             , ("scheduleTypeDiff", scheduleTypeWithoutDefault si)
             , ("stopName", Just $ stopName $ stop si)
