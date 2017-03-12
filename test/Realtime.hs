@@ -2,7 +2,7 @@ module Realtime (feedTests) where
 
 import Fixtures
 
-import GTFS.Realtime.Message.Schedule (updateSchedule, getTripUpdates)
+import GTFS.Realtime.Message.Schedule (updateSchedule)
 import GTFS.Realtime.Message.Types (departureTimeWithDelay)
 import GTFS.Realtime.Internal.Com.Google.Transit.Realtime.FeedMessage
        (FeedMessage)
@@ -28,13 +28,10 @@ feedTests = testGroup "realtime feed Tests"
             ]
 
 
-makeFeedTest ::
-  (Eq a, Show a)
-  => (TestName, FeedMessage, FeedMessage -> a, a)
-  -> TestTree
-makeFeedTest (name, fm, prepare, expected) = testCase name $ do
-  let items = prepare fm
-  items @?= expected
+makeFeedTest :: (TestName, FeedMessage, [ScheduleItem], [ScheduleItem])
+             -> TestTree
+makeFeedTest (name,fm,schedule,expected) =
+    testCase name $ do updateSchedule fm schedule @?= expected
 
 makeFeedWithCanceledTrips :: FeedMessage
 makeFeedWithCanceledTrips =
@@ -106,8 +103,7 @@ testWithRealtimeFeed =
     makeFeedTest <$>
     [ ( "full updates"
       , makeFeedWithTripDelays
-      , updateSchedule
-            [ ScheduleItem
+      , [ ScheduleItem
               { tripId = "7935244-SBL 16_17-SBL_SUN-Sunday-01"
               , stop = Stop
                 { stopIdentifier = "301350"
@@ -139,7 +135,6 @@ testWithRealtimeFeed =
                     Nothing
                     Nothing
               }]
-            getTripUpdates
       , [ ScheduleItem
           { tripId = "7822824-BT 16_17-JUL_FUL-Sunday-02"
           , stop = Stop
@@ -170,8 +165,7 @@ testWithRealtimeFeed =
           }])
     , ( "no updates"
       , makeFeedWithTripDelays
-      , updateSchedule
-            [ ScheduleItem
+      , [ ScheduleItem
               { tripId = "has no realtime update"
               , stop = Stop
                 { stopIdentifier = "232323"
@@ -187,7 +181,6 @@ testWithRealtimeFeed =
                     Nothing
                     Nothing
               }]
-            getTripUpdates
       , [ ScheduleItem
           { tripId = "has no realtime update"
           , stop = Stop
@@ -204,8 +197,7 @@ testWithRealtimeFeed =
           }])
     , ( "partial update"
       , makeFeedWithTripDelays
-      , updateSchedule
-            [ ScheduleItem
+      , [ ScheduleItem
               { tripId = "7935244-SBL 16_17-SBL_SUN-Sunday-01"
               , stop = Stop
                 { stopIdentifier = "301350"
@@ -237,7 +229,6 @@ testWithRealtimeFeed =
                     Nothing
                     Nothing
               }]
-            getTripUpdates
       , [ ScheduleItem
           { tripId = "7935244-SBL 16_17-SBL_SUN-Sunday-01"
           , stop = Stop
@@ -268,8 +259,7 @@ testWithRealtimeFeed =
           }])
     , ( "canceled service"
       , makeFeedWithCanceledTrips
-      , updateSchedule
-            [ ScheduleItem
+      , [ ScheduleItem
               { tripId = "7634889-SUN 16_17-SUN_SUN-Sunday-01"
               , stop = Stop
                 { stopIdentifier = "317579"
@@ -285,7 +275,6 @@ testWithRealtimeFeed =
                     Nothing
                     Nothing
               }]
-            getTripUpdates
       , [ ScheduleItem
           { tripId = "7634889-SUN 16_17-SUN_SUN-Sunday-01"
           , stop = Stop
@@ -302,8 +291,7 @@ testWithRealtimeFeed =
           }])
     , ( "skipped stop"
       , makeFeedWithCanceledTrips
-      , updateSchedule
-            [ ScheduleItem
+      , [ ScheduleItem
               { tripId = "trip with skipped stop"
               , stop = Stop
                 { stopIdentifier = "600202"
@@ -319,7 +307,6 @@ testWithRealtimeFeed =
                     Nothing
                     Nothing
               }]
-            getTripUpdates
       , [ ScheduleItem
           { tripId = "trip with skipped stop"
           , stop = Stop

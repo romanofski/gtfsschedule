@@ -42,18 +42,25 @@ updateSchedulesWithRealtimeData (Just url) schedules = do
         Left err -> do
             print $ "Error occurred decoding feed: " ++ err
             pure schedules
-        Right (fm,_) -> do
-            pure $ updateSchedule schedules getVehiclePositions fm >> updateSchedule schedules getTripUpdates fm
+        Right (fm,_) -> pure $ updateSchedule fm schedules
 
 -- | Updates schedule with trip updates given by feed
 --
-updateSchedule
+updateSchedule ::
+  FeedMessage
+  -> [ScheduleItem]
+  -> [ScheduleItem]
+updateSchedule fm schedules =
+    updateScheduleHelper getVehiclePositions fm $
+    updateScheduleHelper getTripUpdates fm schedules
+
+updateScheduleHelper
     :: ForFeedElement e
-    => [ScheduleItem]
-    -> (FeedMessage -> P'.Seq e)
+    => (FeedMessage -> P'.Seq e)
     -> FeedMessage
     -> [ScheduleItem]
-updateSchedule schedule getter fm =
+    -> [ScheduleItem]
+updateScheduleHelper getter fm schedule =
     Map.elems $ execState (mapM updateFeedElement $ getter fm) scheduleMap
   where
     scheduleMap = Map.fromList $ toMap <$> schedule
