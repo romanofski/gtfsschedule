@@ -53,17 +53,21 @@ instance ForFeedElement TripUpdate where
           Nothing -> item
 
 instance ForFeedElement VP.VehiclePosition where
-  getTripDescriptor x = P'.getVal x VP.trip
-  updateScheduleItem vp k item = ScheduleItem
-            { tripId = k
-            , stop = stop item
-            , serviceName = serviceName item
-            , scheduledDepartureTime = scheduledDepartureTime item
-            , departureDelay = departureDelay item
-            , departureTime = departureTime item
-            , scheduleType = scheduleType item
-            , scheduleItemVehicleInformation = makeVehicleInformation vp
-            }
+    getTripDescriptor x = P'.getVal x VP.trip
+    updateScheduleItem vp k item =
+        if (uToString $ P'.getVal vp VP.stop_id) ==
+           (stopIdentifier $ stop item)
+            then ScheduleItem
+                 { tripId = k
+                 , stop = stop item
+                 , serviceName = serviceName item
+                 , scheduledDepartureTime = scheduledDepartureTime item
+                 , departureDelay = departureDelay item
+                 , departureTime = departureTime item
+                 , scheduleType = scheduleType item
+                 , scheduleItemVehicleInformation = makeVehicleInformation vp
+                 }
+            else item
 
 getDepartureDelay ::
   STU.StopTimeUpdate

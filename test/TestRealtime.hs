@@ -45,13 +45,22 @@ makeFeedWithVehiclePosition =
                 (Just VPOS.NOT_ACCEPTING_PASSENGERS)
                 (Just "trip congested and full")
                 (Just TUSR.SCHEDULED)
+        vp' =
+            Just $
+            testVehiclePosition
+                (Just "603333")
+                Nothing
+                Nothing
+                (Just "trip congested and full")
+                (Just TUSR.SCHEDULED)
         tuCanceled =
             Just $
             testTripUpdate
                 (Just "trip congested and full")
                 (Just TUSR.CANCELED)
                 (Seq.empty)
-    in testFeedMessage $ Seq.fromList [testFeedEntity tuCanceled vp]
+    in testFeedMessage $
+       Seq.fromList [testFeedEntity tuCanceled vp, testFeedEntity Nothing vp']
 
 makeFeedWithCanceledTrips :: FeedMessage
 makeFeedWithCanceledTrips =
