@@ -11,10 +11,8 @@ import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripUpdate.S
 import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripUpdate.StopTimeUpdate                      as STU
 import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripUpdate.StopTimeUpdate.ScheduleRelationship as StopTUSR
 import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition                                as VP
-import           GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition.CongestionLevel                (CongestionLevel)
-import           GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition.OccupancyStatus                (OccupancyStatus)
 import           GTFS.Realtime.Message.Internal                                                                    (makeVehicleInformation)
-import           GTFS.Schedule                                                                                     (ScheduleItem (..), ScheduleState (..), Stop (..), VehicleInformation (..), secondsToDeparture)
+import           GTFS.Schedule                                                                                     (ScheduleItem (..), ScheduleState (..), Stop (..), secondsToDeparture)
 import           Text.ProtocolBuffers.Basic                                                                        (uToString)
 import qualified Text.ProtocolBuffers.Header                                                                       as P'
 
