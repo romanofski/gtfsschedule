@@ -27,6 +27,10 @@ import qualified Text.ProtocolBuffers.Header                                    
 import           Network.HTTP.Conduit                                               (simpleHttp)
 import           Text.ProtocolBuffers                                               (messageGet)
 
+import           Control.Applicative                                                (pure, (<$>))
+import           Data.Traversable                                                   (mapM)
+import           Prelude                                                            hiding (mapM)
+
 
 type Schedule = Map.Map String ScheduleItem
 

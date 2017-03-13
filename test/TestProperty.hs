@@ -34,6 +34,8 @@ import Test.Tasty.QuickCheck
        (testProperty, shuffle, listOf1, elements, choose,
         arbitraryBoundedEnum, Arbitrary(..), Gen)
 
+import Control.Applicative ((<*>), (<$>), pure)
+
 
 proptests :: TestTree
 proptests =

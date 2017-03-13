@@ -37,6 +37,8 @@ import System.IO.Unsafe (unsafePerformIO)
 import qualified Data.Map.Lazy as Map
 import Data.Sequence (empty, Seq)
 
+import Data.Functor ((<$>))
+
 serverHost :: String
 serverHost = "127.0.0.1"
 

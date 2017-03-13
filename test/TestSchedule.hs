@@ -10,7 +10,7 @@ import GTFS.Schedule
         defaultScheduleConfig)
 import qualified CSV.Import as CSV
 
-import Control.Applicative ((<$>), (<*>))
+import Control.Applicative ((<$>))
 
 import Test.Tasty (TestTree, TestName, testGroup)
 import Test.Tasty.HUnit (testCase, (@?=))
