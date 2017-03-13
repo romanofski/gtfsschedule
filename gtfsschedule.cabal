@@ -117,7 +117,7 @@ test-suite unit-tests
                      , gtfsschedule
                      , tasty-hunit
                      , tasty-quickcheck >= 0.8
-                     , QuickCheck >= 2.8.2
+                     , QuickCheck
                      , tasty
                      , bytestring
                      , time

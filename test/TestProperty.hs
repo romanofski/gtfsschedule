@@ -24,6 +24,8 @@ import Data.Time.LocalTime (TimeOfDay(..))
 
 import Text.ProtocolBuffers.Basic (uFromString)
 
+import qualified Data.Sequence as Seq
+import Data.Foldable (toList)
 import Data.List (nub)
 import qualified Data.Text as T
 
@@ -83,6 +85,11 @@ propOrderedSchedule [_] = True
 propOrderedSchedule (x:y:rest) = (bumOffSeatTime x) <= (bumOffSeatTime y) && propOrderedSchedule rest
 
 
+-- TODO: remove me if you upgrade to Quickcheck >= 2.8.2
+--
+instance Arbitrary a => Arbitrary (Seq.Seq a) where
+  arbitrary = Seq.fromList <$> arbitrary
+  shrink = map Seq.fromList . shrink . toList
 
 instance Arbitrary FM.FeedMessage where
     arbitrary =
