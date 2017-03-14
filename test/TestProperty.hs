@@ -7,9 +7,8 @@ import GTFS.Realtime.Message.Internal (makeVehicleInformation)
 import GTFS.Realtime.Message.Schedule (updateSchedule)
 import GTFS.Realtime.Message.Types (departureTimeWithDelay)
 import GTFS.Schedule
-       (ScheduleItem(..), ScheduleState(..),
-        Stop(..), VehicleInformation(..), ScheduleConfig(..),
-        sortSchedules, bumOffSeatTime, defaultScheduleItemFormatter)
+       (ScheduleItem(..), ScheduleState(..), Stop(..),
+        VehicleInformation(..), sortSchedules, bumOffSeatTime)
 
 import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripDescriptor as TD
 import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehicleDescriptor as VD
@@ -27,11 +26,10 @@ import Text.ProtocolBuffers.Basic (uFromString)
 import qualified Data.Sequence as Seq
 import Data.Foldable (toList)
 import Data.List (nub)
-import qualified Data.Text as T
 
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.QuickCheck
-       (testProperty, shuffle, listOf1, elements, choose,
+       (testProperty, listOf1, elements, choose,
         arbitraryBoundedEnum, Arbitrary(..), Gen)
 
 import Control.Applicative ((<*>), (<$>), pure)
@@ -43,7 +41,6 @@ proptests =
         "property tests"
         [ testSortSchedules
         , testUpdateSchedulesKeepsLength
-        , testFormatScheduleItemNeverEmpty
         , testVehicleInformationIsPercentage]
 
 
@@ -59,13 +56,6 @@ prop_VehicleInformationIsPercentage vp = check $ makeVehicleInformation vp
         check (VehicleInformation (Just x) Nothing) = x <= 100 && x >= 0
         check (VehicleInformation Nothing (Just x)) = x <= 100 && x >= 0
         check (VehicleInformation Nothing Nothing) = True
-
-testFormatScheduleItemNeverEmpty :: TestTree
-testFormatScheduleItemNeverEmpty =
-    testProperty
-        "formatting schedule item never empty"
-        (\cfg item ->
-              length (defaultScheduleItemFormatter cfg item) > 0)
 
 testUpdateSchedulesKeepsLength :: TestTree
 testUpdateSchedulesKeepsLength =
@@ -176,20 +166,3 @@ instance Arbitrary ScheduleItem where
                               , scheduleType = stype
                               , scheduleItemVehicleInformation = vehicleInfo
                               }
-
-instance Arbitrary ScheduleConfig where
-    arbitrary =
-        ScheduleConfig <$> arbitraryTimeOfDay <*>
-        (T.pack .
-         concatMap
-             (\x ->
-                   '$' : x ++ "$") <$>
-         shuffle
-             [ "serviceName"
-             , "departureTime"
-             , "scheduledDepartureTime"
-             , "scheduleType"
-             , "scheduleTypeDiff"
-             , "stopName"
-             , "congestionPercent"
-             , "occupancyPercent"])
