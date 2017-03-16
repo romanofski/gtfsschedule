@@ -117,16 +117,16 @@ instance Arbitrary VP.VehiclePosition where
 
 instance Arbitrary VD.VehicleDescriptor where
     arbitrary =
-        VD.VehicleDescriptor <$> (Just . uFromString <$> arbitraryUniques1 arbitrary) <*>
-        (Just . uFromString <$> arbitraryUniques1 arbitrary) <*>
-        (Just . uFromString <$> arbitraryUniques1 arbitrary) <*>
+        VD.VehicleDescriptor <$> (Just . uFromString <$> listOf1 arbitrary) <*>
+        (Just . uFromString <$> listOf1 arbitrary) <*>
+        (Just . uFromString <$> listOf1 arbitrary) <*>
         pure testExtField <*>
         pure testUnknownField
 
 instance Arbitrary TD.TripDescriptor where
     arbitrary =
         TD.TripDescriptor <$>
-        (Just . uFromString <$> arbitraryUniques1 arbitrary) <*>
+        (Just . uFromString <$> listOf1 arbitrary) <*>
         (Just . uFromString <$> arbitrary) <*>
         pure Nothing <*>
         pure Nothing <*>
@@ -145,14 +145,11 @@ arbitraryStop = Stop <$> arbitrary <*> arbitrary <*> arbitrary
 arbitraryVehicleInformation :: Gen VehicleInformation
 arbitraryVehicleInformation = VehicleInformation <$> arbitrary <*> arbitrary
 
-arbitraryUniques1 :: Eq a => Gen a -> Gen [a]
-arbitraryUniques1 gen = nub <$> listOf1 gen
-
 instance Arbitrary ScheduleItem where
     arbitrary = do
         schedDepTime <- arbitraryTimeOfDay
         delay <- arbitrary
-        trip <- arbitraryUniques1 arbitrary
+        trip <- listOf1 arbitrary
         s <- arbitraryStop
         name <- arbitrary
         stype <- elements [CANCELED, ADDED, SCHEDULED]
