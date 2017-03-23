@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
 {-
 Copyright (C) - 2017 Róman Joost <roman@bromeco.de>
 
@@ -22,17 +22,17 @@ along with gtfsschedule.  If not, see <http://www.gnu.org/licenses/>.
 -}
 module TestUpdate (updateTests) where
 
-import Fixtures (withConcurrentTCPServer)
-import GTFS.Realtime.Update (isDatasetUpToDate, isCurrent, Error(..))
+import           Fixtures             (withConcurrentTCPServer)
+import           GTFS.Realtime.Update (Error (..), isCurrent, isDatasetUpToDate)
 
-import Data.Time.Calendar (fromGregorian)
-import Test.Tasty.HUnit (testCase, (@?=))
-import Test.Tasty (TestTree, testGroup)
+import           Data.Time.Calendar   (fromGregorian)
+import           Test.Tasty           (TestTree, testGroup)
+import           Test.Tasty.HUnit     (testCase, (@?=))
 
-import Data.Conduit (($$), yield)
-import Data.Conduit.Network (AppData, appSink)
+import           Data.Conduit         (yield, ($$))
+import           Data.Conduit.Network (AppData, appSink)
 
-import qualified Data.Text as T
+import qualified Data.Text            as T
 
 updateTests ::
   TestTree

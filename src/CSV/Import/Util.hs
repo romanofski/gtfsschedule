@@ -18,7 +18,7 @@ along with gtfsschedule.  If not, see <http://www.gnu.org/licenses/>.
 -}
 module CSV.Import.Util where
 
-import Database.Persist (PersistValue(..))
+import           Database.Persist (PersistValue (..))
 
 -- | Convert a maybe value to a either PersistNull if Nothing or a default PersistValue
 -- TODO: better to use a class here?

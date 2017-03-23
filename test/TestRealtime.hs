@@ -18,26 +18,25 @@ along with gtfsschedule.  If not, see <http://www.gnu.org/licenses/>.
 -}
 module TestRealtime (feedTests) where
 
-import Fixtures
+import           Fixtures
 
-import GTFS.Realtime.Message.Schedule (updateSchedule)
-import GTFS.Realtime.Message.Types (departureTimeWithDelay)
-import GTFS.Realtime.Internal.Com.Google.Transit.Realtime.FeedMessage
-       (FeedMessage)
-import GTFS.Schedule
+import           GTFS.Realtime.Internal.Com.Google.Transit.Realtime.FeedMessage                                    (FeedMessage)
+import           GTFS.Realtime.Message.Schedule                                                                    (updateSchedule)
+import           GTFS.Realtime.Message.Types                                                                       (departureTimeWithDelay)
+import           GTFS.Schedule
 
-import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripDescriptor.ScheduleRelationship as TUSR
+import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripDescriptor.ScheduleRelationship            as TUSR
 import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripUpdate.StopTimeUpdate.ScheduleRelationship as STUSR
-import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition.CongestionLevel as VPCL
-import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition.OccupancyStatus as VPOS
+import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition.CongestionLevel                as VPCL
+import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition.OccupancyStatus                as VPOS
 
-import Data.Functor ((<$>))
+import           Data.Functor                                                                                      ((<$>))
 
-import Test.Tasty (TestTree, TestName, testGroup)
-import Test.Tasty.HUnit (testCase, (@?=))
-import Data.Time.LocalTime (TimeOfDay(..))
+import           Data.Time.LocalTime                                                                               (TimeOfDay (..))
+import           Test.Tasty                                                                                        (TestName, TestTree, testGroup)
+import           Test.Tasty.HUnit                                                                                  (testCase, (@?=))
 
-import qualified Data.Sequence as Seq
+import qualified Data.Sequence                                                                                     as Seq
 
 
 feedTests ::

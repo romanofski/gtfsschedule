@@ -1,5 +1,4 @@
-{-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-
 Copyright (C) - 2017 Róman Joost <roman@bromeco.de>
@@ -21,24 +20,22 @@ along with gtfsschedule.  If not, see <http://www.gnu.org/licenses/>.
 -}
 module CSV.Import.StopTime where
 
-import CSV.Import.Util (maybeToPersist)
+import           CSV.Import.Util  (maybeToPersist)
 
-import Data.Csv ( FromNamedRecord
-                , DefaultOrdered
-                )
-import GHC.Generics hiding (from)
+import           Data.Csv         (DefaultOrdered, FromNamedRecord)
+import           GHC.Generics     hiding (from)
 
-import Data.Int (Int64)
-import Database.Persist (PersistValue(..))
-import qualified Data.Text as T
+import           Data.Int         (Int64)
+import qualified Data.Text        as T
+import           Database.Persist (PersistValue (..))
 
-data StopTime = StopTime { trip_id :: !T.Text
-                         , arrival_time :: !T.Text
+data StopTime = StopTime { trip_id        :: !T.Text
+                         , arrival_time   :: !T.Text
                          , departure_time :: !T.Text
-                         , stop_id :: !T.Text
-                         , stop_sequence :: !Int64
-                         , pickup_type :: Maybe Int64
-                         , drop_off_type :: Maybe Int64
+                         , stop_id        :: !T.Text
+                         , stop_sequence  :: !Int64
+                         , pickup_type    :: Maybe Int64
+                         , drop_off_type  :: Maybe Int64
                          }
   deriving (Eq, Generic, Show)
 

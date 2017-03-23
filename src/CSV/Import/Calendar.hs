@@ -1,5 +1,5 @@
-{-# LANGUAGE CPP #-}
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE CPP               #-}
+{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-
 Copyright (C) - 2017 Róman Joost <roman@bromeco.de>
@@ -21,36 +21,33 @@ along with gtfsschedule.  If not, see <http://www.gnu.org/licenses/>.
 -}
 module CSV.Import.Calendar where
 
-import Data.Csv ( FromNamedRecord
-                , DefaultOrdered
-                , FromField
-                , parseField
-                )
-import Control.Monad (mzero)
+import           Control.Monad         (mzero)
+import           Data.Csv              (DefaultOrdered, FromField,
+                                        FromNamedRecord, parseField)
 #if MIN_VERSION_time(1, 5, 0)
-import Data.Time.Format (defaultTimeLocale)
+import           Data.Time.Format      (defaultTimeLocale)
 #else
-import System.Locale (defaultTimeLocale)
+import           System.Locale         (defaultTimeLocale)
 #endif
-import Data.Time.Format ( parseTime)
-import Data.Time.Calendar (Day)
-import GHC.Generics
+import           Data.Time.Calendar    (Day)
+import           Data.Time.Format      (parseTime)
+import           GHC.Generics
 
-import Database.Persist (PersistValue(..))
 import qualified Data.ByteString.Char8 as B
-import qualified Data.Text as T
+import qualified Data.Text             as T
+import           Database.Persist      (PersistValue (..))
 
 
 data Calendar = Calendar { service_id :: !T.Text
-                         , monday :: !Int
-                         , tuesday :: !Int
-                         , wednesday :: !Int
-                         , thursday :: !Int
-                         , friday :: !Int
-                         , saturday :: !Int
-                         , sunday :: !Int
+                         , monday     :: !Int
+                         , tuesday    :: !Int
+                         , wednesday  :: !Int
+                         , thursday   :: !Int
+                         , friday     :: !Int
+                         , saturday   :: !Int
+                         , sunday     :: !Int
                          , start_date :: !Day
-                         , end_date :: !Day
+                         , end_date   :: !Day
                          }
   deriving (Eq, Generic, Show)
 

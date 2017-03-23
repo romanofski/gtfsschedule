@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-
 Copyright (C) - 2017 Róman Joost <roman@bromeco.de>
@@ -20,27 +20,25 @@ along with gtfsschedule.  If not, see <http://www.gnu.org/licenses/>.
 -}
 module CSV.Import.Stop where
 
-import CSV.Import.Util (maybeToPersist)
+import           CSV.Import.Util  (maybeToPersist)
 
-import Data.Csv ( FromNamedRecord
-                , DefaultOrdered
-                )
-import GHC.Generics
+import           Data.Csv         (DefaultOrdered, FromNamedRecord)
+import           GHC.Generics
 
-import Data.Int (Int64)
-import Database.Persist (PersistValue(..))
-import qualified Data.Text as T
+import           Data.Int         (Int64)
+import qualified Data.Text        as T
+import           Database.Persist (PersistValue (..))
 
 
-data Stop = Stop { stop_id :: !T.Text
-                 , stop_code :: Maybe T.Text
-                 , stop_name :: !T.Text
-                 , stop_desc :: Maybe T.Text
-                 , stop_lat :: !Double
-                 , stop_lon :: !Double
-                 , zone_id :: Maybe T.Text
-                 , stop_url :: Maybe T.Text
-                 , location_type :: Maybe Int64
+data Stop = Stop { stop_id        :: !T.Text
+                 , stop_code      :: Maybe T.Text
+                 , stop_name      :: !T.Text
+                 , stop_desc      :: Maybe T.Text
+                 , stop_lat       :: !Double
+                 , stop_lon       :: !Double
+                 , zone_id        :: Maybe T.Text
+                 , stop_url       :: Maybe T.Text
+                 , location_type  :: Maybe Int64
                  , parent_station :: Maybe T.Text
                  }
   deriving (Eq, Generic, Show)

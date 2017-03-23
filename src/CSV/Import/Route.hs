@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-
 Copyright (C) - 2017 Róman Joost <roman@bromeco.de>
@@ -20,24 +20,22 @@ along with gtfsschedule.  If not, see <http://www.gnu.org/licenses/>.
 -}
 module CSV.Import.Route where
 
-import CSV.Import.Util (maybeToPersist)
+import           CSV.Import.Util  (maybeToPersist)
 
-import Data.Csv ( FromNamedRecord
-                , DefaultOrdered
-                )
-import GHC.Generics
+import           Data.Csv         (DefaultOrdered, FromNamedRecord)
+import           GHC.Generics
 
-import Database.Persist (PersistValue(..))
-import qualified Data.Text as T
+import qualified Data.Text        as T
+import           Database.Persist (PersistValue (..))
 
 
-data Route = Route { route_id :: !T.Text
+data Route = Route { route_id         :: !T.Text
                    , route_short_name :: !T.Text
-                   , route_long_name :: !T.Text
-                   , route_desc :: Maybe T.Text
-                   , route_type :: !T.Text
-                   , route_url :: Maybe T.Text
-                   , route_color :: Maybe T.Text
+                   , route_long_name  :: !T.Text
+                   , route_desc       :: Maybe T.Text
+                   , route_type       :: !T.Text
+                   , route_url        :: Maybe T.Text
+                   , route_color      :: Maybe T.Text
                    , route_text_color :: Maybe T.Text
                    }
   deriving (Eq, Generic, Show)

@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP               #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-
 Copyright (C) - 2017 Róman Joost <roman@bromeco.de>
@@ -26,26 +26,27 @@ module GTFS.Realtime.Update
         printOrUpdateDataset, Error(..))
        where
 
-import GTFS.Database (userDatabaseFile, getLastUpdatedDatabase)
-import CSV.Import (createNewDatabase)
+import           CSV.Import                (createNewDatabase)
+import           GTFS.Database             (getLastUpdatedDatabase,
+                                            userDatabaseFile)
 
-import Data.Functor ((<$>))
+import           Data.Functor              ((<$>))
 
-import Network.HTTP.Conduit
-import Network.HTTP.Types.Header (ResponseHeaders, hLastModified)
-import Data.Time.Calendar (Day)
+import           Data.Time.Calendar        (Day)
+import           Network.HTTP.Conduit
+import           Network.HTTP.Types.Header (ResponseHeaders, hLastModified)
 #if MIN_VERSION_time(1, 5, 0)
-import Data.Time.Format (defaultTimeLocale)
+import           Data.Time.Format          (defaultTimeLocale)
 #else
-import System.Locale (defaultTimeLocale)
+import           System.Locale             (defaultTimeLocale)
 #endif
-import Data.Time.Format (parseTime)
-import Data.List (find)
-import System.IO (hPrint, hPutStr, stderr)
-import Control.Monad (join)
-import qualified Control.Exception as E
-import qualified Data.ByteString.Char8 as B
-import qualified Data.Text as T
+import qualified Control.Exception         as E
+import           Control.Monad             (join)
+import qualified Data.ByteString.Char8     as B
+import           Data.List                 (find)
+import qualified Data.Text                 as T
+import           Data.Time.Format          (parseTime)
+import           System.IO                 (hPrint, hPutStr, stderr)
 
 
 data Error = Error String

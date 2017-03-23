@@ -1,14 +1,14 @@
+{-# LANGUAGE CPP                        #-}
 {-# LANGUAGE EmptyDataDecls             #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE PatternGuards              #-}
 {-# LANGUAGE QuasiQuotes                #-}
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeFamilies               #-}
-{-# LANGUAGE PatternGuards              #-}
-{-# LANGUAGE CPP                        #-}
 {-
 Copyright (C) - 2017 Róman Joost <roman@bromeco.de>
 
@@ -43,33 +43,38 @@ module GTFS.Database
         runDBWithoutLogging, nextServicesTimeWindow, searchStopCode)
        where
 
-import Data.Time.LocalTime ( TimeOfDay(..)
-                           , timeOfDayToTime
-                           , timeToTimeOfDay)
-import Data.Time.Clock (secondsToDiffTime, getCurrentTime, UTCTime(..), DiffTime)
-import Data.Time.Calendar ( Day(..))
+import           Data.Time.Calendar             (Day (..))
+import           Data.Time.Clock                (DiffTime, UTCTime (..),
+                                                 getCurrentTime,
+                                                 secondsToDiffTime)
+import           Data.Time.LocalTime            (TimeOfDay (..),
+                                                 timeOfDayToTime,
+                                                 timeToTimeOfDay)
 #if MIN_VERSION_time(1, 5, 0)
-import Data.Time.Format (defaultTimeLocale)
+import           Data.Time.Format               (defaultTimeLocale)
 #else
-import System.Locale (defaultTimeLocale)
+import           System.Locale                  (defaultTimeLocale)
 #endif
-import Data.Time.Format (formatTime)
-import Data.Functor ((<$>))
+import           Data.Functor                   ((<$>))
+import           Data.Time.Format               (formatTime)
 
-import Data.Maybe (fromMaybe)
-import Data.Int (Int64)
-import Control.Monad (liftM)
-import Control.Monad.IO.Class (liftIO, MonadIO)
-import Control.Monad.Trans.Reader (ReaderT, ask)
-import Control.Monad.Trans.Resource (runResourceT, MonadResource, ResourceT)
-import Control.Monad.Trans.Resource (MonadBaseControl)
-import Control.Monad.Logger (runNoLoggingT, runStderrLoggingT, MonadLoggerIO, NoLoggingT, LoggingT)
-import Database.Persist.TH
-import Database.Esqueleto
-import Data.List (stripPrefix)
-import System.Environment.XDG.BaseDir (getUserDataFile)
-import qualified Database.Persist.Sqlite as Sqlite
-import qualified Data.Text as T
+import           Control.Monad                  (liftM)
+import           Control.Monad.IO.Class         (MonadIO, liftIO)
+import           Control.Monad.Logger           (LoggingT, MonadLoggerIO,
+                                                 NoLoggingT, runNoLoggingT,
+                                                 runStderrLoggingT)
+import           Control.Monad.Trans.Reader     (ReaderT, ask)
+import           Control.Monad.Trans.Resource   (MonadResource, ResourceT,
+                                                 runResourceT)
+import           Control.Monad.Trans.Resource   (MonadBaseControl)
+import           Data.Int                       (Int64)
+import           Data.List                      (stripPrefix)
+import           Data.Maybe                     (fromMaybe)
+import qualified Data.Text                      as T
+import           Database.Esqueleto
+import qualified Database.Persist.Sqlite        as Sqlite
+import           Database.Persist.TH
+import           System.Environment.XDG.BaseDir (getUserDataFile)
 
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
@@ -145,7 +150,7 @@ userDatabaseFile = getUserDataFile "gtfs" "gtfs.sqlite"
 data StopSearchResult = StopSearchResult
     { resultStopName :: String
     , resultStopcode :: String
-    , resultStopURL :: Maybe String
+    , resultStopURL  :: Maybe String
     } deriving (Show)
 
 searchStopCode :: T.Text -> String -> IO [StopSearchResult]
@@ -198,7 +203,7 @@ getStopID stopC = select $ from $ \s -> do
 --
 data QueryTimeWindow = QueryTimeWindow
     { queryTimeWindowEarliest :: DiffTime
-    , queryTimeWindowLatest :: DiffTime
+    , queryTimeWindowLatest   :: DiffTime
     } deriving (Show)
 
 nextServicesTimeWindow :: QueryTimeWindow

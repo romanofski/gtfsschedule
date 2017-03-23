@@ -19,22 +19,26 @@ along with gtfsschedule.  If not, see <http://www.gnu.org/licenses/>.
 -}
 module CLI.Main where
 
-import CLI.Config
-import GTFS.Schedule
-       (getSchedulesByWalktime, printSchedule, getCurrentTimeOfDay,
-        sortSchedules, ScheduleConfig(..), defaultScheduleItemTemplate)
-import GTFS.Database (userDatabaseFile, searchStopCode, StopSearchResult(..))
-import GTFS.Realtime.Update (printOrUpdateDataset)
-import GTFS.Realtime.Message.Schedule (updateSchedulesWithRealtimeData)
-import CSV.Import (createNewDatabase)
+import           CLI.Config
+import           CSV.Import                     (createNewDatabase)
+import           GTFS.Database                  (StopSearchResult (..),
+                                                 searchStopCode,
+                                                 userDatabaseFile)
+import           GTFS.Realtime.Message.Schedule (updateSchedulesWithRealtimeData)
+import           GTFS.Realtime.Update           (printOrUpdateDataset)
+import           GTFS.Schedule                  (ScheduleConfig (..),
+                                                 defaultScheduleItemTemplate,
+                                                 getCurrentTimeOfDay,
+                                                 getSchedulesByWalktime,
+                                                 printSchedule, sortSchedules)
 
-import Options.Applicative.Extra (execParser, helper)
-import qualified Options.Applicative.Builder as Builder
+import qualified Options.Applicative.Builder    as Builder
+import           Options.Applicative.Extra      (execParser, helper)
 
-import Data.Maybe (fromMaybe)
-import Data.Monoid ((<>))
-import Control.Applicative ((<*>))
-import qualified Data.Text as T
+import           Control.Applicative            ((<*>))
+import           Data.Maybe                     (fromMaybe)
+import           Data.Monoid                    ((<>))
+import qualified Data.Text                      as T
 
 
 runSchedule :: String -> Command -> IO ()

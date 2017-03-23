@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
 {-
 Copyright (C) - 2017 Róman Joost <roman@bromeco.de>
 
@@ -22,32 +22,34 @@ along with gtfsschedule.  If not, see <http://www.gnu.org/licenses/>.
 -}
 module TestCSVImport (importTests) where
 
-import qualified CSV.Import as CSV
-import qualified GTFS.Database as DB
-import GTFS.Schedule
-       (getSchedule, TimeSpec(..), ScheduleItem(..), ScheduleState(..),
-        Stop(..), VehicleInformation(..))
+import qualified CSV.Import               as CSV
+import qualified GTFS.Database            as DB
+import           GTFS.Schedule            (ScheduleItem (..),
+                                           ScheduleState (..), Stop (..),
+                                           TimeSpec (..),
+                                           VehicleInformation (..), getSchedule)
 
-import Fixtures (withConcurrentTCPServer, serverHost)
+import           Fixtures                 (serverHost, withConcurrentTCPServer)
 
-import Data.Functor ((<$>))
-import Data.Time.LocalTime (TimeOfDay(..))
-import Data.Time.Clock (getCurrentTime, UTCTime(..))
-import Data.Time.Clock.POSIX (getPOSIXTime)
-import Test.Tasty.HUnit (testCase, (@?=))
-import Data.Time.Calendar (fromGregorian)
-import Test.Tasty (TestTree, testGroup)
+import           Data.Functor             ((<$>))
+import           Data.Time.Calendar       (fromGregorian)
+import           Data.Time.Clock          (UTCTime (..), getCurrentTime)
+import           Data.Time.Clock.POSIX    (getPOSIXTime)
+import           Data.Time.LocalTime      (TimeOfDay (..))
+import           Test.Tasty               (TestTree, testGroup)
+import           Test.Tasty.HUnit         (testCase, (@?=))
 
-import Data.Conduit.Network (AppData, appSink)
-import Data.Conduit (($$), yield)
-import Control.Exception.Lifted (onException)
-import System.Directory (getTemporaryDirectory, doesFileExist, removeFile)
-import Control.Monad.IO.Class (liftIO)
-import qualified Data.ByteString as BS
-import qualified Data.ByteString.Char8 as C8 (pack)
+import           Control.Exception.Lifted (onException)
+import           Control.Monad.IO.Class   (liftIO)
+import qualified Data.ByteString          as BS
+import qualified Data.ByteString.Char8    as C8 (pack)
+import           Data.Conduit             (yield, ($$))
+import           Data.Conduit.Network     (AppData, appSink)
+import           System.Directory         (doesFileExist, getTemporaryDirectory,
+                                           removeFile)
 
-import System.IO.Temp (withSystemTempFile)
-import qualified Data.Text as T
+import qualified Data.Text                as T
+import           System.IO.Temp           (withSystemTempFile)
 
 
 importTests ::

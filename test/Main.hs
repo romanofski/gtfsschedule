@@ -18,13 +18,13 @@ along with gtfsschedule.  If not, see <http://www.gnu.org/licenses/>.
 -}
 module Main where
 
-import TestRealtime (feedTests)
-import TestCSVImport (importTests)
-import TestUpdate (updateTests)
-import TestProperty (proptests)
-import TestSchedule (scheduleTests)
+import           TestCSVImport (importTests)
+import           TestProperty  (proptests)
+import           TestRealtime  (feedTests)
+import           TestSchedule  (scheduleTests)
+import           TestUpdate    (updateTests)
 
-import Test.Tasty (defaultMain, TestTree, testGroup)
+import           Test.Tasty    (TestTree, defaultMain, testGroup)
 
 tests ::
   TestTree

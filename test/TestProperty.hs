@@ -19,36 +19,30 @@ along with gtfsschedule.  If not, see <http://www.gnu.org/licenses/>.
 -}
 module TestProperty (proptests) where
 
-import Fixtures
+import           Fixtures
 
-import GTFS.Realtime.Message.Internal (makeVehicleInformation)
-import GTFS.Realtime.Message.Types (departureTimeWithDelay)
-import GTFS.Schedule
-       (ScheduleItem(..), ScheduleState(..), Stop(..),
-        VehicleInformation(..), sortSchedules, bumOffSeatTime)
+import           GTFS.Realtime.Message.Internal                                       (makeVehicleInformation)
+import           GTFS.Realtime.Message.Types                                          (departureTimeWithDelay)
+import           GTFS.Schedule                                                        (ScheduleItem (..), ScheduleState (..), Stop (..), VehicleInformation (..), bumOffSeatTime, sortSchedules)
 
-import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripDescriptor as TD
+import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.FeedEntity        as FE
+import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.FeedHeader        as FH
+import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.FeedMessage       as FM
+import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripDescriptor    as TD
 import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehicleDescriptor as VD
-import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.FeedEntity as FE
-import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.FeedHeader as FH
-import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.FeedMessage as FM
-import qualified
-       GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition
-       as VP
+import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition   as VP
 
-import Data.Time.LocalTime (TimeOfDay(..))
+import           Data.Time.LocalTime                                                  (TimeOfDay (..))
 
-import Text.ProtocolBuffers.Basic (uFromString)
+import           Text.ProtocolBuffers.Basic                                           (uFromString)
 
-import qualified Data.Sequence as Seq
-import Data.Foldable (toList)
+import           Data.Foldable                                                        (toList)
+import qualified Data.Sequence                                                        as Seq
 
-import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.QuickCheck
-       (testProperty, listOf1, elements, choose,
-        arbitraryBoundedEnum, Arbitrary(..), Gen)
+import           Test.Tasty                                                           (TestTree, testGroup)
+import           Test.Tasty.QuickCheck                                                (Arbitrary (..), Gen, arbitraryBoundedEnum, choose, elements, listOf1, testProperty)
 
-import Control.Applicative ((<*>), (<$>), pure)
+import           Control.Applicative                                                  (pure, (<$>), (<*>))
 
 
 proptests :: TestTree

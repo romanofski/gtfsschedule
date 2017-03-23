@@ -1,8 +1,8 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards   #-}
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE TupleSections #-}
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP               #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections     #-}
 {-
 Copyright (C) - 2017 Róman Joost <roman@bromeco.de>
 
@@ -35,33 +35,30 @@ module GTFS.Schedule
         defaultScheduleItemFormatter)
        where
 
-import qualified GTFS.Database as DB
+import qualified GTFS.Database           as DB
 
-import Control.Applicative ((<$>), pure)
-import Data.Traversable (traverse)
-import Data.List (sortBy)
-import Data.Ord (comparing)
+import           Control.Applicative     (pure, (<$>))
+import           Data.List               (sortBy)
+import           Data.Ord                (comparing)
+import           Data.Traversable        (traverse)
 
-import Data.Time.LocalTime ( utcToLocalTime
-                           , LocalTime(..)
-                           , TimeOfDay(..)
-                           , timeOfDayToTime
-                           , timeToTimeOfDay
-                           , TimeZone)
-import Data.Time.Calendar (Day)
+import           Data.Time.Calendar      (Day)
+import           Data.Time.LocalTime     (LocalTime (..), TimeOfDay (..),
+                                          TimeZone, timeOfDayToTime,
+                                          timeToTimeOfDay, utcToLocalTime)
 #if MIN_VERSION_time(1, 5, 0)
-import Data.Time.Format (defaultTimeLocale)
+import           Data.Time.Format        (defaultTimeLocale)
 #else
-import System.Locale (defaultTimeLocale)
+import           System.Locale           (defaultTimeLocale)
 #endif
-import Data.Time.Format (formatTime)
-import Data.Time (getCurrentTime, getCurrentTimeZone)
-import Data.Time.Clock (secondsToDiffTime, DiffTime, UTCTime)
-import Data.Maybe (fromMaybe)
-import qualified Data.Text as T
-import Database.Esqueleto (unValue)
+import           Data.Maybe              (fromMaybe)
+import qualified Data.Text               as T
+import           Data.Time               (getCurrentTime, getCurrentTimeZone)
+import           Data.Time.Clock         (DiffTime, UTCTime, secondsToDiffTime)
+import           Data.Time.Format        (formatTime)
+import           Database.Esqueleto      (unValue)
 import qualified Database.Persist.Sqlite as Sqlite
-import Text.StringTemplate (newSTMP, render, setManyAttrib)
+import           Text.StringTemplate     (newSTMP, render, setManyAttrib)
 
 
 -- | A stop which takes into account the time it takes to reach it
@@ -73,8 +70,8 @@ import Text.StringTemplate (newSTMP, render, setManyAttrib)
 -- Therefore, internally everything falls back to the stopId.
 data Stop = Stop
     { stopIdentifier :: String
-    , stopWalktime :: Integer
-    , stopName :: String
+    , stopWalktime   :: Integer
+    , stopName       :: String
     } deriving (Show,Eq,Ord)
 
 -- | A poor mans data type to express the state of the service
@@ -92,13 +89,13 @@ data VehicleInformation = VehicleInformation
 
 -- | One entity giving information about the departure of a service
 data ScheduleItem = ScheduleItem
-    { tripId :: String
-    , stop :: Stop
-    , serviceName :: String  -- ^ short service name
-    , scheduledDepartureTime :: TimeOfDay  -- ^ the time this service departure was originally scheduled
-    , departureDelay :: Integer  -- ^ delay retrieved from the realtime feed if available
-    , departureTime :: TimeOfDay  -- ^ departure time including the realtime update if available
-    , scheduleType :: ScheduleState
+    { tripId                         :: String
+    , stop                           :: Stop
+    , serviceName                    :: String  -- ^ short service name
+    , scheduledDepartureTime         :: TimeOfDay  -- ^ the time this service departure was originally scheduled
+    , departureDelay                 :: Integer  -- ^ delay retrieved from the realtime feed if available
+    , departureTime                  :: TimeOfDay  -- ^ departure time including the realtime update if available
+    , scheduleType                   :: ScheduleState
     , scheduleItemVehicleInformation :: VehicleInformation
     } deriving (Show,Eq,Ord)
 
@@ -176,7 +173,7 @@ printSchedule xs cfg =
     xs
 
 data ScheduleConfig = ScheduleConfig
-    { scheduleTimeOfDay :: TimeOfDay
+    { scheduleTimeOfDay    :: TimeOfDay
     , scheduleItemTemplate :: T.Text
     } deriving (Show)
 

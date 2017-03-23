@@ -20,35 +20,38 @@ along with gtfsschedule.  If not, see <http://www.gnu.org/licenses/>.
 {- | This module holds configuration types and functions to read from a configuration file. -}
 module CLI.Config where
 
-import GTFS.Schedule (Stop(..), defaultScheduleItemTemplate)
+import           GTFS.Schedule                        (Stop (..), defaultScheduleItemTemplate)
 
-import Data.Ini (readIniFile, parseIni, lookupValue, Ini)
+import           Data.Ini                             (Ini, lookupValue,
+                                                       parseIni, readIniFile)
 
-import Control.Applicative ((<$>), (<*>), (<|>), pure, some, optional)
-import Data.List (findIndex)
-import Data.Monoid ((<>))
+import           Control.Applicative                  (optional, pure, some,
+                                                       (<$>), (<*>), (<|>))
+import           Data.List                            (findIndex)
+import           Data.Monoid                          ((<>))
 
-import Control.Monad.Reader (ask, local)
+import           Control.Monad.Reader                 (ask, local)
 
-import Options.Applicative.Builder.Internal (HasValue, Mod)
-import qualified Options.Applicative.Builder as Builder
-import Options.Applicative.Builder (
-  long, help, argument, metavar, flag, str, info, short, auto)
-import Options.Applicative.Types (Parser, ReadM(..))
+import           Options.Applicative.Builder          (argument, auto, flag,
+                                                       help, info, long,
+                                                       metavar, short, str)
+import qualified Options.Applicative.Builder          as Builder
+import           Options.Applicative.Builder.Internal (HasValue, Mod)
+import           Options.Applicative.Types            (Parser, ReadM (..))
 
-import System.Environment.XDG.BaseDir (getUserConfigFile)
-import System.Directory (doesFileExist)
-import qualified Data.Text as T
+import qualified Data.Text                            as T
+import           System.Directory                     (doesFileExist)
+import           System.Environment.XDG.BaseDir       (getUserConfigFile)
 
 
 -- | Command line options
 data Command
-    = Monitor { stops :: [Stop]
-              , realtime :: Bool
-              , autoUpdate :: Bool
-              , limit :: Maybe Integer
-              , staticDatasetURL :: Maybe T.Text
-              , realtimeFeedURL :: Maybe T.Text
+    = Monitor { stops                :: [Stop]
+              , realtime             :: Bool
+              , autoUpdate           :: Bool
+              , limit                :: Maybe Integer
+              , staticDatasetURL     :: Maybe T.Text
+              , realtimeFeedURL      :: Maybe T.Text
               , scheduleItemTemplate :: Maybe T.Text}
     | Setup { staticDatasetURL :: Maybe T.Text }
     | Search { searchString :: String }

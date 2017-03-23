@@ -19,25 +19,26 @@ along with gtfsschedule.  If not, see <http://www.gnu.org/licenses/>.
 -}
 module TestSchedule (scheduleTests) where
 
-import Fixtures (testScheduleItem)
+import           Fixtures            (testScheduleItem)
 
-import GTFS.Schedule
-       (ScheduleItem(..), ScheduleState(..), TimeSpec(..),
-        ScheduleConfig(..), Stop(..), VehicleInformation(..),
-        minutesToDeparture, printSchedule, humanReadableDelay, getSchedule,
-        defaultScheduleConfig)
-import qualified CSV.Import as CSV
+import qualified CSV.Import          as CSV
+import           GTFS.Schedule       (ScheduleConfig (..), ScheduleItem (..),
+                                      ScheduleState (..), Stop (..),
+                                      TimeSpec (..), VehicleInformation (..),
+                                      defaultScheduleConfig, getSchedule,
+                                      humanReadableDelay, minutesToDeparture,
+                                      printSchedule)
 
-import Control.Applicative ((<$>))
+import           Control.Applicative ((<$>))
 
-import Test.Tasty (TestTree, TestName, testGroup)
-import Test.Tasty.HUnit (testCase, (@?=))
+import           Test.Tasty          (TestName, TestTree, testGroup)
+import           Test.Tasty.HUnit    (testCase, (@?=))
 
-import Data.Time.LocalTime (TimeOfDay(..))
-import Data.Time.Calendar (fromGregorian)
-import System.IO.Temp (withSystemTempFile)
-import System.IO.Silently (capture_)
-import System.Directory (getCurrentDirectory)
+import           Data.Time.Calendar  (fromGregorian)
+import           Data.Time.LocalTime (TimeOfDay (..))
+import           System.Directory    (getCurrentDirectory)
+import           System.IO.Silently  (capture_)
+import           System.IO.Temp      (withSystemTempFile)
 
 
 scheduleTests ::
@@ -154,10 +155,10 @@ makeDatabaseImportTest (TestInput name csvdatadir scode timespec expected) =
              schedule @?= expected)
 
 
-data TestInput = TestInput { testName :: String
-                           , csvdatadirectory :: String
-                           , stop' :: Stop
-                           , now :: TimeSpec
+data TestInput = TestInput { testName             :: String
+                           , csvdatadirectory     :: String
+                           , stop'                :: Stop
+                           , now                  :: TimeSpec
                            , testExpectedSchedule :: [ScheduleItem]
                            }
 

@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-
 Copyright (C) - 2017 Róman Joost <roman@bromeco.de>
@@ -20,25 +20,23 @@ along with gtfsschedule.  If not, see <http://www.gnu.org/licenses/>.
 -}
 module CSV.Import.Trip where
 
-import CSV.Import.Util (maybeToPersist)
+import           CSV.Import.Util  (maybeToPersist)
 
-import Data.Csv ( FromNamedRecord
-                , DefaultOrdered
-                )
-import GHC.Generics hiding (from)
+import           Data.Csv         (DefaultOrdered, FromNamedRecord)
+import           GHC.Generics     hiding (from)
 
-import Data.Int (Int64)
-import Database.Persist
-import qualified Data.Text as T
+import           Data.Int         (Int64)
+import qualified Data.Text        as T
+import           Database.Persist
 
 
-data Trip = Trip { route_id :: !T.Text
-                 , service_id :: !T.Text
-                 , trip_id :: !T.Text
+data Trip = Trip { route_id      :: !T.Text
+                 , service_id    :: !T.Text
+                 , trip_id       :: !T.Text
                  , trip_headsign :: Maybe T.Text
-                 , direction_id :: Maybe Int64
-                 , block_id :: Maybe T.Text
-                 , shape_id :: Maybe T.Text
+                 , direction_id  :: Maybe Int64
+                 , block_id      :: Maybe T.Text
+                 , shape_id      :: Maybe T.Text
                  }
   deriving (Eq, Generic, Show)
 

@@ -26,37 +26,38 @@ See also: https://developers.google.com/transit/gtfs/reference/
 -}
 module CSV.Import (createNewDatabase, runImport) where
 
-import qualified CSV.Import.Route as CSVRoute
-import qualified CSV.Import.Trip as CSVTrip
-import qualified CSV.Import.Calendar as CSVCalendar
-import qualified CSV.Import.Stop as CSVStop
-import qualified CSV.Import.StopTime as CSVStopTime
+import qualified CSV.Import.Calendar          as CSVCalendar
+import qualified CSV.Import.Route             as CSVRoute
+import qualified CSV.Import.Stop              as CSVStop
+import qualified CSV.Import.StopTime          as CSVStopTime
+import qualified CSV.Import.Trip              as CSVTrip
 
-import qualified GTFS.Database as DB
+import qualified GTFS.Database                as DB
 
-import qualified Data.ByteString.Lazy as B
-import Data.Csv.Streaming (decodeByName)
-import Data.Csv (FromNamedRecord)
+import qualified Data.ByteString.Lazy         as B
+import           Data.Csv                     (FromNamedRecord)
+import           Data.Csv.Streaming           (decodeByName)
 
-import Network.HTTP.Conduit (responseBody, http, parseUrl, newManager)
-import Network.HTTP.Client.Conduit (defaultManagerSettings)
-import Prelude hiding (mapM_)
-import Data.Foldable (mapM_)
-import Data.Conduit (($$+-))
-import Data.Conduit.Binary (sinkFile)
+import           Data.Conduit                 (($$+-))
+import           Data.Conduit.Binary          (sinkFile)
+import           Data.Foldable                (mapM_)
+import           Network.HTTP.Client.Conduit  (defaultManagerSettings)
+import           Network.HTTP.Conduit         (http, newManager, parseUrl,
+                                               responseBody)
+import           Prelude                      hiding (mapM_)
 
-import System.IO (hPutStr, stderr)
-import System.IO.Temp (withSystemTempDirectory)
-import System.Directory (renameFile)
-import Control.Monad.Trans.Reader (ReaderT)
-import Control.Monad.IO.Class (liftIO, MonadIO)
-import Control.Monad.Trans.Resource (MonadResource, runResourceT)
-import Database.Esqueleto (PersistValue(..))
-import System.Directory (createDirectoryIfMissing)
-import qualified Filesystem.Path.CurrentOS as Path
-import qualified Database.Persist.Sqlite as Sqlite
-import qualified Data.Text as T
-import qualified Codec.Archive.Zip as Zip
+import qualified Codec.Archive.Zip            as Zip
+import           Control.Monad.IO.Class       (MonadIO, liftIO)
+import           Control.Monad.Trans.Reader   (ReaderT)
+import           Control.Monad.Trans.Resource (MonadResource, runResourceT)
+import qualified Data.Text                    as T
+import           Database.Esqueleto           (PersistValue (..))
+import qualified Database.Persist.Sqlite      as Sqlite
+import qualified Filesystem.Path.CurrentOS    as Path
+import           System.Directory             (renameFile)
+import           System.Directory             (createDirectoryIfMissing)
+import           System.IO                    (hPutStr, stderr)
+import           System.IO.Temp               (withSystemTempDirectory)
 
 
 datasetZipFilename :: String

@@ -17,17 +17,12 @@ You should have received a copy of the GNU General Public License
 along with gtfsschedule.  If not, see <http://www.gnu.org/licenses/>.
 -}
 module GTFS.Realtime.Message.Internal where
-import GTFS.Schedule
-       (VehicleInformation(..))
-import qualified
-       GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition
-       as VP
-import GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition.CongestionLevel
-       (CongestionLevel)
-import GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition.OccupancyStatus
-       (OccupancyStatus)
+import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition                 as VP
+import           GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition.CongestionLevel (CongestionLevel)
+import           GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition.OccupancyStatus (OccupancyStatus)
+import           GTFS.Schedule                                                                      (VehicleInformation (..))
 
-import qualified Text.ProtocolBuffers.Header as P'
+import qualified Text.ProtocolBuffers.Header                                                        as P'
 
 makeVehicleInformation ::
   VP.VehiclePosition

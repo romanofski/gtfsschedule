@@ -1,6 +1,6 @@
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
 {-
 Copyright (C) - 2017 Róman Joost <roman@bromeco.de>
 
@@ -21,41 +21,40 @@ along with gtfsschedule.  If not, see <http://www.gnu.org/licenses/>.
 -}
 module Fixtures where
 
-import GTFS.Schedule
-       (ScheduleItem(..), ScheduleState(..), Stop(..), VehicleInformation(..))
-import GTFS.Realtime.Message.Types (departureTimeWithDelay)
+import           GTFS.Realtime.Message.Types                                                                       (departureTimeWithDelay)
+import           GTFS.Schedule                                                                                     (ScheduleItem (..), ScheduleState (..), Stop (..), VehicleInformation (..))
 
-import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripDescriptor as TD
-import GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripUpdate (TripUpdate(..))
-import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripUpdate.StopTimeUpdate as STU
+import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.FeedEntity                                     as FE
+import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.FeedHeader                                     as FH
+import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.FeedMessage                                    as FM
+import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripDescriptor                                 as TD
+import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripDescriptor.ScheduleRelationship            as TUSR
+import           GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripUpdate                                     (TripUpdate (..))
+import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripUpdate.StopTimeEvent                       as STE
+import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripUpdate.StopTimeUpdate                      as STU
 import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripUpdate.StopTimeUpdate.ScheduleRelationship as STUSR
-import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripUpdate.StopTimeEvent as STE
-import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripDescriptor.ScheduleRelationship as TUSR
-import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition as VP
-import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition.CongestionLevel as VPCL
-import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition.OccupancyStatus as VPOS
-import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.FeedEntity as FE
-import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.FeedHeader as FH
-import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.FeedMessage as FM
+import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition                                as VP
+import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition.CongestionLevel                as VPCL
+import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition.OccupancyStatus                as VPOS
 
-import Data.Time.LocalTime (TimeOfDay(..), timeOfDayToTime)
+import           Data.Time.LocalTime                                                                               (TimeOfDay (..), timeOfDayToTime)
 
-import Text.ProtocolBuffers.Extensions (ExtField(..))
-import Text.ProtocolBuffers.Basic (uFromString)
-import Text.ProtocolBuffers.Unknown (UnknownField(..))
+import           Text.ProtocolBuffers.Basic                                                                        (uFromString)
+import           Text.ProtocolBuffers.Extensions                                                                   (ExtField (..))
+import           Text.ProtocolBuffers.Unknown                                                                      (UnknownField (..))
 
-import Control.Concurrent (forkIO, takeMVar, putMVar, newEmptyMVar, killThread)
-import Data.Conduit.Network (runTCPServer, serverSettings, ServerSettings, AppData)
-import Data.Streaming.Network (bindPortTCP, setAfterBind)
-import Network.Socket (sClose)
-import qualified Data.IORef as I
-import Control.Exception.Lifted (IOException, try, onException, bracket)
-import System.IO.Unsafe (unsafePerformIO)
+import           Control.Concurrent                                                                                (forkIO, killThread, newEmptyMVar, putMVar, takeMVar)
+import           Control.Exception.Lifted                                                                          (IOException, bracket, onException, try)
+import           Data.Conduit.Network                                                                              (AppData, ServerSettings, runTCPServer, serverSettings)
+import qualified Data.IORef                                                                                        as I
+import           Data.Streaming.Network                                                                            (bindPortTCP, setAfterBind)
+import           Network.Socket                                                                                    (sClose)
+import           System.IO.Unsafe                                                                                  (unsafePerformIO)
 
-import qualified Data.Map.Lazy as Map
-import Data.Sequence (empty, Seq)
+import qualified Data.Map.Lazy                                                                                     as Map
+import           Data.Sequence                                                                                     (Seq, empty)
 
-import Data.Functor ((<$>))
+import           Data.Functor                                                                                      ((<$>))
 
 serverHost :: String
 serverHost = "127.0.0.1"
