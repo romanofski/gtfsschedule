@@ -4,7 +4,6 @@ module TestProperty (proptests) where
 import Fixtures
 
 import GTFS.Realtime.Message.Internal (makeVehicleInformation)
-import GTFS.Realtime.Message.Schedule (updateSchedule)
 import GTFS.Realtime.Message.Types (departureTimeWithDelay)
 import GTFS.Schedule
        (ScheduleItem(..), ScheduleState(..), Stop(..),
@@ -25,7 +24,6 @@ import Text.ProtocolBuffers.Basic (uFromString)
 
 import qualified Data.Sequence as Seq
 import Data.Foldable (toList)
-import Data.List (nub)
 
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.QuickCheck
@@ -40,7 +38,6 @@ proptests =
     testGroup
         "property tests"
         [ testSortSchedules
-        , testUpdateSchedulesKeepsLength
         , testVehicleInformationIsPercentage]
 
 
@@ -56,13 +53,6 @@ prop_VehicleInformationIsPercentage vp = check $ makeVehicleInformation vp
         check (VehicleInformation (Just x) Nothing) = x <= 100 && x >= 0
         check (VehicleInformation Nothing (Just x)) = x <= 100 && x >= 0
         check (VehicleInformation Nothing Nothing) = True
-
-testUpdateSchedulesKeepsLength :: TestTree
-testUpdateSchedulesKeepsLength =
-    testProperty
-        "don't discard schedule items when updating from feed"
-        (\schedule fm ->
-              (length (updateSchedule fm schedule) == length (schedule)))
 
 
 testSortSchedules :: TestTree
