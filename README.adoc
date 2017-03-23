@@ -41,6 +41,13 @@ in your local folder (`~/.local`). Make sure it is in your `$PATH`.
 Experimental packages are available for Fedora 24 via
 https://copr.fedorainfracloud.org/coprs/romanofski/gtfsschedule/[copr].
 
+=== Credits
+
+Without the help this software would have not been possible to build:
+
+* Fraser Tweedale
+* #BFPG
+
 include::ChangeLog.adoc[]
 
 == Man Page
