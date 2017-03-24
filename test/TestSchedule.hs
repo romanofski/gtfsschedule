@@ -19,33 +19,37 @@ along with gtfsschedule.  If not, see <http://www.gnu.org/licenses/>.
 -}
 module TestSchedule (scheduleTests) where
 
-import           Fixtures            (testScheduleItem)
+import           Fixtures                 (cleanUpIfExist,
+                                           generateTestUserDBFilePath,
+                                           testScheduleItem)
 
-import qualified CSV.Import          as CSV
-import           GTFS.Schedule       (ScheduleConfig (..), ScheduleItem (..),
-                                      ScheduleState (..), Stop (..),
-                                      TimeSpec (..), VehicleInformation (..),
-                                      defaultScheduleConfig, getSchedule,
-                                      humanReadableDelay, minutesToDeparture,
-                                      printSchedule)
+import qualified CSV.Import               as CSV
+import           GTFS.Schedule            (ScheduleConfig (..),
+                                           ScheduleItem (..),
+                                           ScheduleState (..), Stop (..),
+                                           TimeSpec (..),
+                                           VehicleInformation (..),
+                                           defaultScheduleConfig, getSchedule,
+                                           humanReadableDelay,
+                                           minutesToDeparture, printSchedule)
 
-import           Control.Applicative ((<$>))
+import           Control.Applicative      ((<$>))
 
-import           Test.Tasty          (TestName, TestTree, testGroup)
-import           Test.Tasty.HUnit    (testCase, (@?=))
+import           Control.Exception.Lifted (bracket)
+import           Test.Tasty               (TestName, TestTree, testGroup)
+import           Test.Tasty.HUnit         (testCase, (@?=))
 
-import           Data.Time.Calendar  (fromGregorian)
-import           Data.Time.LocalTime (TimeOfDay (..))
-import           System.Directory    (getCurrentDirectory)
-import           System.IO.Silently  (capture_)
-import           System.IO.Temp      (withSystemTempFile)
+import           Data.Time.Calendar       (fromGregorian)
+import           Data.Time.LocalTime      (TimeOfDay (..))
+import           System.Directory         (getCurrentDirectory)
+import           System.IO.Silently       (capture_)
 
 
 scheduleTests ::
   TestTree
 scheduleTests =
     testGroup
-        "realtime feed Tests"
+        "realtime_feed_tests"
         [ testMinutesToDeparture
         , testFormatScheduleItem
         , testDepartures
@@ -144,15 +148,16 @@ makeDatabaseImportTest ::
   TestInput
   -> TestTree
 makeDatabaseImportTest (TestInput name csvdatadir scode timespec expected) =
-  testCase name $
-  do withSystemTempFile
-       "GTFSTest"
-       (\tmpfile _ ->
-          do
-             cwd <- getCurrentDirectory
-             CSV.runImport tmpfile $ concat [cwd, "/", "test", "/", "data", "/", csvdatadir]
-             schedule <- getSchedule tmpfile scode timespec 3
-             schedule @?= expected)
+    testCase name $
+    bracket
+        (do generateTestUserDBFilePath "departureTestWithImports")
+        cleanUpIfExist
+        (\dbfile ->
+              do cwd <- getCurrentDirectory
+                 CSV.runImport dbfile $
+                     concat [cwd, "/", "test", "/", "data", "/", csvdatadir]
+                 schedule <- getSchedule dbfile scode timespec 3
+                 schedule @?= expected)
 
 
 data TestInput = TestInput { testName             :: String
@@ -177,6 +182,32 @@ testDepartures =
         }
       , now = TimeSpec (TimeOfDay 8 5 0) (fromGregorian 2015 2 7)
       , testExpectedSchedule = []
+      }
+    , TestInput
+      { testName = "no departure because service ends at stop"
+      , csvdatadirectory = "servicefinalstop"
+      , stop' = Stop
+        { stopIdentifier = "600019"
+        , stopWalktime = 0
+        , stopName = ""
+        }
+      , now = TimeSpec (TimeOfDay 7 57 0) (fromGregorian 2015 1 1)
+      , testExpectedSchedule = [ ScheduleItem
+                                 { tripId = "QF0816-22"
+                                 , stop = Stop
+                                   { stopIdentifier = "600019"
+                                   , stopWalktime = 0
+                                   , stopName = "not relevant"
+                                   }
+                                 , serviceName = "42 not relevant"
+                                 , scheduledDepartureTime = TimeOfDay 8 6 22
+                                 , departureDelay = 0
+                                 , departureTime = TimeOfDay 8 6 22
+                                 , scheduleType = SCHEDULED
+                                 , scheduleItemVehicleInformation = VehicleInformation
+                                       Nothing
+                                       Nothing
+                                 }]
       }
     , TestInput
       { testName = "no departure because time is past all scheduled services"
@@ -210,7 +241,9 @@ testDepartures =
                                  , departureDelay = 0
                                  , departureTime = TimeOfDay 1 1 0
                                  , scheduleType = SCHEDULED
-                                 , scheduleItemVehicleInformation = VehicleInformation Nothing Nothing
+                                 , scheduleItemVehicleInformation = VehicleInformation
+                                       Nothing
+                                       Nothing
                                  }
                                , ScheduleItem
                                  { tripId = "2"
@@ -219,12 +252,14 @@ testDepartures =
                                    , stopWalktime = 0
                                    , stopName = "not relevant"
                                    }
-                                 , serviceName = "66 Graveyard Express"
+                                 , serviceName = "67 Hell Express"
                                  , scheduledDepartureTime = TimeOfDay 2 1 0
                                  , departureDelay = 0
                                  , departureTime = TimeOfDay 2 1 0
                                  , scheduleType = SCHEDULED
-                                 , scheduleItemVehicleInformation = VehicleInformation Nothing Nothing
+                                 , scheduleItemVehicleInformation = VehicleInformation
+                                       Nothing
+                                       Nothing
                                  }]
       }
     , TestInput
@@ -237,20 +272,6 @@ testDepartures =
         }
       , now = TimeSpec (TimeOfDay 8 5 0) (fromGregorian 2015 1 28)
       , testExpectedSchedule = [ ScheduleItem
-                                 { tripId = "QF0815-00"
-                                 , stop = Stop
-                                   { stopIdentifier = "600029"
-                                   , stopWalktime = 0
-                                   , stopName = "not relevant"
-                                   }
-                                 , serviceName = "66 not relevant"
-                                 , scheduledDepartureTime = TimeOfDay 8 5 0
-                                 , departureDelay = 0
-                                 , departureTime = TimeOfDay 8 5 0
-                                 , scheduleType = SCHEDULED
-                                 , scheduleItemVehicleInformation = VehicleInformation Nothing Nothing
-                                 }
-                               , ScheduleItem
                                  { tripId = "QF0815-00-Ekka"
                                  , stop = Stop
                                    { stopIdentifier = "600029"
@@ -262,7 +283,9 @@ testDepartures =
                                  , departureDelay = 0
                                  , departureTime = TimeOfDay 8 5 33
                                  , scheduleType = SCHEDULED
-                                 , scheduleItemVehicleInformation = VehicleInformation Nothing Nothing
+                                 , scheduleItemVehicleInformation = VehicleInformation
+                                       Nothing
+                                       Nothing
                                  }
                                , ScheduleItem
                                  { tripId = "QF0815-00"
@@ -272,11 +295,13 @@ testDepartures =
                                    , stopName = "not relevant"
                                    }
                                  , serviceName = "66 not relevant"
-                                 , scheduledDepartureTime = TimeOfDay 8 21 33
+                                 , scheduledDepartureTime = TimeOfDay 8 8 0
                                  , departureDelay = 0
-                                 , departureTime = TimeOfDay 8 21 33
+                                 , departureTime = TimeOfDay 8 8 0
                                  , scheduleType = SCHEDULED
-                                 , scheduleItemVehicleInformation = VehicleInformation Nothing Nothing
+                                 , scheduleItemVehicleInformation = VehicleInformation
+                                       Nothing
+                                       Nothing
                                  }]
       }
     , TestInput
@@ -300,6 +325,8 @@ testDepartures =
                                  , departureDelay = 0
                                  , departureTime = TimeOfDay 8 5 33
                                  , scheduleType = SCHEDULED
-                                 , scheduleItemVehicleInformation = VehicleInformation Nothing Nothing
+                                 , scheduleItemVehicleInformation = VehicleInformation
+                                       Nothing
+                                       Nothing
                                  }]
       }]

@@ -21,6 +21,7 @@ along with gtfsschedule.  If not, see <http://www.gnu.org/licenses/>.
 -}
 module Fixtures where
 
+import           Data.Time.Clock.POSIX                                                                             (getPOSIXTime)
 import           GTFS.Realtime.Message.Types                                                                       (departureTimeWithDelay)
 import           GTFS.Schedule                                                                                     (ScheduleItem (..), ScheduleState (..), Stop (..), VehicleInformation (..))
 
@@ -36,6 +37,7 @@ import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripUpdate.S
 import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition                                as VP
 import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition.CongestionLevel                as VPCL
 import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition.OccupancyStatus                as VPOS
+import           System.Directory                                                                                  (createDirectoryIfMissing, doesFileExist, getTemporaryDirectory, removeFile)
 
 import           Data.Time.LocalTime                                                                               (TimeOfDay (..), timeOfDayToTime)
 
@@ -91,6 +93,29 @@ withConcurrentTCPServer app f = do
         (forkIO $ runTCPServer settings app `onException` start)
         killThread
         (const $ takeMVar baton >> f port)
+
+generateTestUserDBFilePath :: String -> IO FilePath
+generateTestUserDBFilePath template = do
+  tmpdir <- getTemporaryDirectory
+  dir <- generateName template
+  dbfile <- generateName template
+  let dirtree = concatMap (\x -> concat ["/", x]) [tmpdir, dir]
+  let newdbfile = dirtree ++ "/" ++ dbfile
+  createDirectoryIfMissing True dirtree
+  return newdbfile
+
+generateName :: String -> IO String
+generateName template = do
+  time <- round <$> getPOSIXTime
+  return $ template ++ (show time)
+
+cleanUpIfExist :: FilePath -> IO ()
+cleanUpIfExist fp = do
+    fpExists <- doesFileExist fp
+    if fpExists
+        then removeFile fp
+        else return ()
+
 
 testScheduleItem :: String -> TimeOfDay -> Integer -> Integer -> ScheduleItem
 testScheduleItem sName depTime depDelay walktime = ScheduleItem

@@ -22,6 +22,8 @@ along with gtfsschedule.  If not, see <http://www.gnu.org/licenses/>.
 -}
 module TestCSVImport (importTests) where
 
+import           Fixtures
+
 import qualified CSV.Import               as CSV
 import qualified GTFS.Database            as DB
 import           GTFS.Schedule            (ScheduleItem (..),
@@ -29,12 +31,9 @@ import           GTFS.Schedule            (ScheduleItem (..),
                                            TimeSpec (..),
                                            VehicleInformation (..), getSchedule)
 
-import           Fixtures                 (serverHost, withConcurrentTCPServer)
-
 import           Data.Functor             ((<$>))
 import           Data.Time.Calendar       (fromGregorian)
 import           Data.Time.Clock          (UTCTime (..), getCurrentTime)
-import           Data.Time.Clock.POSIX    (getPOSIXTime)
 import           Data.Time.LocalTime      (TimeOfDay (..))
 import           Test.Tasty               (TestTree, testGroup)
 import           Test.Tasty.HUnit         (testCase, (@?=))
@@ -45,8 +44,6 @@ import qualified Data.ByteString          as BS
 import qualified Data.ByteString.Char8    as C8 (pack)
 import           Data.Conduit             (yield, ($$))
 import           Data.Conduit.Network     (AppData, appSink)
-import           System.Directory         (doesFileExist, getTemporaryDirectory,
-                                           removeFile)
 
 import qualified Data.Text                as T
 import           System.IO.Temp           (withSystemTempFile)
@@ -79,7 +76,7 @@ testImportWithExistingDBFile =
                                  , stopName = ""
                                  }
                                  (TimeSpec
-                                      (TimeOfDay 8 5 0)
+                                      (TimeOfDay 7 50 0)
                                       (fromGregorian 2015 1 28))
                                  3
                          schedule @?=
@@ -96,20 +93,6 @@ testImportWithExistingDBFile =
                                , departureTime = (TimeOfDay 8 5 0)
                                , scheduleType = SCHEDULED
                                , scheduleItemVehicleInformation = VehicleInformation Nothing Nothing
-                               }
-                             , ScheduleItem
-                               { tripId = "QF0815-00"
-                               , stop = Stop
-                                 { stopIdentifier = "600029"
-                                 , stopWalktime = 7
-                                 , stopName = "not relevant"
-                                 }
-                               , serviceName = "66 not relevant"
-                               , scheduledDepartureTime = (TimeOfDay 8 21 33)
-                               , departureDelay = 0
-                               , departureTime = (TimeOfDay 8 21 33)
-                               , scheduleType = SCHEDULED
-                               , scheduleItemVehicleInformation = VehicleInformation Nothing Nothing
                                }])
 
 
@@ -118,7 +101,7 @@ testImportWithoutExistingDBFile =
     testCase "imports by creating DB file" $
     withConcurrentTCPServer withHTTPAppData $
     \port ->
-         do newdbfile <- generateTestUserDBFilePath
+         do newdbfile <- generateTestUserDBFilePath "importsByCreatingDBfile"
             onException (runImport port newdbfile) (cleanUpIfExist newdbfile)
             now <- getCurrentTime
             day <- DB.getLastUpdatedDatabase (T.pack newdbfile)
@@ -128,34 +111,11 @@ testImportWithoutExistingDBFile =
         let url = concat ["http://", serverHost, ":", show p]
         CSV.createNewDatabase url userdbfile
 
-
-generateTestUserDBFilePath :: IO FilePath
-generateTestUserDBFilePath = do
-  tmpdir <- getTemporaryDirectory
-  dir <- generateName
-  dbfile <- generateName
-  let dirtree = concatMap (\x -> concat ["/", x]) [dir, dbfile]
-  let newdbfile = tmpdir ++ dirtree
-  return newdbfile
-
-generateName :: IO String
-generateName = do
-  time <- round <$> getPOSIXTime
-  return $ template ++ (show time)
-    where template = "importest"
-
-cleanUpIfExist :: FilePath -> IO ()
-cleanUpIfExist fp = do
-    fpExists <- doesFileExist fp
-    if fpExists
-        then removeFile fp
-        else return ()
-
 withHTTPAppData :: AppData -> IO ()
 withHTTPAppData appData = src $$ appSink appData
   where
     src = do
       yield "HTTP/1.1 200 OK\r\nContent-Type: application/x-zip-compressed\r\n"
-      contents <- liftIO $ BS.readFile $ concat ["test", "/", "data", "/", "regular.zip"]
+      contents <- liftIO $ BS.readFile $ concat ["test", "/", "data", "/", "importtest.zip"]
       let clength = BS.concat ["Content-Length: ", (C8.pack $ show $ BS.length contents), "\r\n"]
       yield $ BS.concat [clength, "\r\n", contents]

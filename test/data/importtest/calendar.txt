@@ -1,3 +1,2 @@
 service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,start_date,end_date
-GY1,1,1,1,1,1,1,1,20110101,20150201
-GY2,1,1,1,1,1,1,1,20110101,20150201
+QF0815,1,1,1,1,1,1,1,20110101,20150201

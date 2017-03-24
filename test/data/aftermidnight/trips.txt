@@ -1,3 +1,3 @@
 route_id,service_id,trip_id,trip_headsign,direction_id,block_id,shape_id
 1,GY1,1,"Graveyard Express",,,
-1,GY1,2,"Graveyard Express",1,test,test
+2,GY2,2,"Hell Express",1,test,test

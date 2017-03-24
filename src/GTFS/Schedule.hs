@@ -38,6 +38,7 @@ module GTFS.Schedule
 import qualified GTFS.Database           as DB
 
 import           Control.Applicative     (pure, (<$>))
+import           Control.Monad           (filterM)
 import           Data.List               (sortBy)
 import           Data.Ord                (comparing)
 import           Data.Traversable        (traverse)
@@ -260,10 +261,10 @@ secondsToDeparture now delay = timeOfDayToTime now + delay
 
 
 makeSchedule ::
-  Stop
-  -> [(Sqlite.Entity DB.StopTime, Sqlite.Entity DB.Trip, Sqlite.Entity DB.Route, Sqlite.Entity DB.Stop)]
+  [(Sqlite.Entity DB.StopTime, Sqlite.Entity DB.Trip, Sqlite.Entity DB.Route, Sqlite.Entity DB.Stop)]
+  -> Stop
   -> [ScheduleItem]
-makeSchedule s stops =
+makeSchedule stops s =
     (\(x,y,z,a) ->
           makeItem (Sqlite.entityVal x, Sqlite.entityVal y, Sqlite.entityVal z, Sqlite.entityVal a)) <$>
     stops
@@ -293,8 +294,8 @@ nextDepartures ::
   -> IO [ScheduleItem]
 nextDepartures connstr s (TimeSpec earliest day) l = DB.runDBWithoutLogging connstr $ do
   sID <- DB.getStopID (stopIdentifier s)
-  stops <- DB.getNextDepartures (firstStopID sID) earliest day l
-  return $ makeSchedule s stops
+  stops <- filterM DB.isNotFinalStop =<< DB.getNextDepartures (firstStopID sID) earliest day l
+  return $ makeSchedule stops s
     where
       firstStopID xs = fromMaybe (stopIdentifier s) (safeHead $ unValue <$> xs)
 

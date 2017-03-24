@@ -38,7 +38,7 @@ module GTFS.Database
         Calendar(..), CalendarId, Stop(..), StopId, Route(..), RouteId,
         UpdateType(..), QueryTimeWindow(..), StopSearchResult(..),
         migrateAll, userDatabaseFile, getStopID, getNextDepartures,
-        getLastUpdatedDatabase, prepareDatabaseForUpdate,
+        isNotFinalStop, getLastUpdatedDatabase, prepareDatabaseForUpdate,
         addDatabaseIndices, prepareStmt, rawInsert, runDBWithLogging,
         runDBWithoutLogging, nextServicesTimeWindow, searchStopCode)
        where
@@ -189,6 +189,24 @@ weekdayToSQLExp weekday
   | Just _ <- stripPrefix "Saturday" weekday = CalendarSaturday
   | Just _ <- stripPrefix "Sunday" weekday = CalendarSunday
   | otherwise = error "That should never happen"
+
+isNotFinalStop ::
+  (MonadLoggerIO m, MonadResource m)
+  => (Sqlite.Entity StopTime, Sqlite.Entity Trip, Sqlite.Entity Route, Sqlite.Entity Stop)
+  -> ReaderT Sqlite.SqlBackend m Bool
+isNotFinalStop (st,_,_,_) = do
+    stoptimes <-
+        select $
+        from $
+        \stoptime ->
+             do where_
+                    (stoptime ^. StopTimeTripId ==.
+                     (val (stopTimeTripId $ Sqlite.entityVal st)) &&.
+                     stoptime ^.
+                     StopTimeStopSequence >.
+                     (val (stopTimeStopSequence $ entityVal st)))
+                return stoptime
+    return $ length(stoptimes) > 0
 
 -- | Returns the stop id for a given stop code
 getStopID ::

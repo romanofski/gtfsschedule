@@ -1,0 +1,3 @@
+route_id,route_short_name,route_long_name,route_desc,route_type,route_url,route_color,route_text_color
+22-0815,66,"Hell",,6,http://foo.test/travel-information/network-information/hyperloops/T/22,71BF5B,000000
+22-0816,42,"Magic",,6,http://foo.test/travel-information/network-information/hyperloops/T/22,66CF5B,000000
