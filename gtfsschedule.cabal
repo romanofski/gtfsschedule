@@ -113,6 +113,7 @@ test-suite unit-tests
                        Fixtures
                        TestUpdate
                        TestProperty
+                       TestSchedule
   build-depends:       base
                      , gtfsschedule
                      , tasty-hunit
