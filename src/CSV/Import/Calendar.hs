@@ -1,5 +1,7 @@
 {-# LANGUAGE CPP               #-}
 {-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-
 Copyright (C) - 2017 Róman Joost <roman@bromeco.de>
@@ -23,7 +25,7 @@ module CSV.Import.Calendar where
 
 import           Control.Monad         (mzero)
 import           Data.Csv              (DefaultOrdered, FromField,
-                                        FromNamedRecord, parseField)
+                                        FromNamedRecord(..), parseField, (.:))
 #if MIN_VERSION_time(1, 5, 0)
 import           Data.Time.Format      (defaultTimeLocale)
 #else
@@ -46,18 +48,31 @@ data Calendar = Calendar { service_id :: !T.Text
                          , friday     :: !Int
                          , saturday   :: !Int
                          , sunday     :: !Int
-                         , start_date :: !Day
-                         , end_date   :: !Day
+                         , start_date :: CSVDay
+                         , end_date   :: CSVDay
                          }
   deriving (Eq, Generic, Show)
 
-instance FromNamedRecord Calendar
+instance FromNamedRecord Calendar where
+    parseNamedRecord m =
+        Calendar <$> m .: "service_id" <*> m .: "monday" <*> m .: "tuesday" <*>
+        m .: "wednesday" <*>
+        m .: "thursday" <*>
+        m .: "friday" <*>
+        m .: "saturday" <*>
+        m .: "sunday" <*>
+        m .: "start_date" <*>
+        m .: "end_date"
+
 instance DefaultOrdered Calendar
 
--- 20160912
-instance FromField Day where
+-- Wrapper to avoid orphaned instances (see #29)
+-- Format: 20160912
+newtype CSVDay = CSVDay { unWrapDay :: Day } deriving (Eq, Show)
+
+instance FromField CSVDay where
   parseField str = case (parseTime defaultTimeLocale "%Y%m%d" (B.unpack str)) of
-    Just d -> return d
+    Just d -> return $ CSVDay d
     Nothing -> mzero
 
 toBool ::
@@ -81,6 +96,6 @@ convertToValues r = [ PersistText $ service_id r
                     , PersistBool $ toBool $ friday r
                     , PersistBool $ toBool $ saturday r
                     , PersistBool $ toBool $ sunday r
-                    , PersistDay $ start_date r
-                    , PersistDay $ end_date r
+                    , PersistDay $ unWrapDay $ start_date r
+                    , PersistDay $ unWrapDay $ end_date r
                     ]
