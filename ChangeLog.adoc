@@ -1,12 +1,18 @@
 == ChangeLog
 
-=== 0.8.0.0 (unreleased)
+=== 0.8.0.0 (01-04-2017)
 
 Major changes:
 
 * Now supports to show congestion level and occupancy status if the realtime
   feed provides it.
-* The gtfsschedule tool will not show services which end at the monitored stop (issue 17)
+* The gtfsschedule tool will not show services which end at the monitored stop (#17)
+
+Bugfixes:
+
+* *$scheduledDepartureTime$* falsely returned the delay in minutes instead of
+   the actual time. The delay is now mapped to *$readableDelay$* and the field
+   returns the right time.
 
 === 0.7.0.0 (23-02-2017)
 
