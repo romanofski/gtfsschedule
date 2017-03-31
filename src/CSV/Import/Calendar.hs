@@ -25,7 +25,7 @@ module CSV.Import.Calendar where
 
 import           Control.Monad         (mzero)
 import           Data.Csv              (DefaultOrdered, FromField,
-                                        FromNamedRecord(..), parseField, (.:))
+                                        FromNamedRecord (..), parseField, (.:))
 #if MIN_VERSION_time(1, 5, 0)
 import           Data.Time.Format      (defaultTimeLocale)
 #else
@@ -35,6 +35,7 @@ import           Data.Time.Calendar    (Day)
 import           Data.Time.Format      (parseTime)
 import           GHC.Generics
 
+import           Control.Applicative   ((<*>), (<$>))
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Text             as T
 import           Database.Persist      (PersistValue (..))
