@@ -16,6 +16,18 @@ particular stop.
 The command shows remaining minutes in order to leave the current spot
 (e.g. office) to minimize the waiting time at the bus or train stop.
 
+== Features
+
+Note that most of these features have never been tested with a wide range of
+audience, so take this list with a grain of salt:
+
+* automatically sets up the static data set
+* automatically update the static data set to keep an always up-to-date schedule
+* real time updates supported (some features are not supported by the actual real time feeds):
+** delays
+** congestion information
+** occupancy status
+
 == Non Goals
 
 * a route planner
