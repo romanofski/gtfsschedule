@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC  -fno-warn-orphans #-}
 {-
 Copyright (C) - 2017 Róman Joost <roman@bromeco.de>
@@ -81,9 +82,12 @@ propOrderedSchedule (x:y:rest) = (bumOffSeatTime x) <= (bumOffSeatTime y) && pro
 
 -- TODO: remove me if you upgrade to Quickcheck >= 2.8.2
 --
+#if MIN_VERSION_QuickCheck(2, 8, 2)
+#else
 instance Arbitrary a => Arbitrary (Seq.Seq a) where
   arbitrary = Seq.fromList <$> arbitrary
   shrink = map Seq.fromList . shrink . toList
+#endif
 
 instance Arbitrary FM.FeedMessage where
     arbitrary =
