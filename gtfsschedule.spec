@@ -6,7 +6,7 @@
 %global with_tests 1
 
 Name:           %{pkg_name}
-Version:        0.7.0.0
+Version:        0.8.0.0
 Release:        1%{?dist}
 Summary:        Be on time for your next public transport service
 
@@ -135,6 +135,9 @@ install -m 0644 -p -D man/gtfsschedule.1 %{buildroot}%{_mandir}/man1/gtfsschedul
 
 
 %changelog
+* Sat Apr 1 2017 Róman Joost <roman@bromeco.de> - 0.8.0.0-1
+- 0.8 release
+
 * Thu Feb 23 2017 Róman Joost <roman@bromeco.de> - 0.7.0.0-1
 - 0.7 release
 
