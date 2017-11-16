@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP               #-}
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -26,13 +25,9 @@ module CSV.Import.Calendar where
 import           Control.Monad         (mzero)
 import           Data.Csv              (DefaultOrdered, FromField,
                                         FromNamedRecord (..), parseField, (.:))
-#if MIN_VERSION_time(1, 5, 0)
 import           Data.Time.Format      (defaultTimeLocale)
-#else
-import           System.Locale         (defaultTimeLocale)
-#endif
 import           Data.Time.Calendar    (Day)
-import           Data.Time.Format      (parseTime)
+import           Data.Time.Format      (parseTimeM)
 import           GHC.Generics
 
 import           Control.Applicative   ((<*>), (<$>))
@@ -72,7 +67,7 @@ instance DefaultOrdered Calendar
 newtype CSVDay = CSVDay { unWrapDay :: Day } deriving (Eq, Show)
 
 instance FromField CSVDay where
-  parseField str = case (parseTime defaultTimeLocale "%Y%m%d" (B.unpack str)) of
+  parseField str = case (parseTimeM True defaultTimeLocale "%Y%m%d" (B.unpack str)) of
     Just d -> return $ CSVDay d
     Nothing -> mzero
 

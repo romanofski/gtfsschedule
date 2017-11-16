@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
@@ -50,7 +51,7 @@ import           Control.Exception.Lifted                                       
 import           Data.Conduit.Network                                                                              (AppData, ServerSettings, runTCPServer, serverSettings)
 import qualified Data.IORef                                                                                        as I
 import           Data.Streaming.Network                                                                            (bindPortTCP, setAfterBind)
-import           Network.Socket                                                                                    (sClose)
+import           Network.Socket                                                                                    (close)
 import           System.IO.Unsafe                                                                                  (unsafePerformIO)
 
 import qualified Data.Map.Lazy                                                                                     as Map
@@ -75,7 +76,7 @@ getPort = do
     case esocket of
         Left (_ :: IOException) -> getPort
         Right socket -> do
-            sClose socket
+            close socket
             return port
 
 --

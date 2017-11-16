@@ -35,17 +35,13 @@ import           Data.Functor              ((<$>))
 import           Data.Time.Calendar        (Day)
 import           Network.HTTP.Conduit
 import           Network.HTTP.Types.Header (ResponseHeaders, hLastModified)
-#if MIN_VERSION_time(1, 5, 0)
 import           Data.Time.Format          (defaultTimeLocale)
-#else
-import           System.Locale             (defaultTimeLocale)
-#endif
 import qualified Control.Exception         as E
 import           Control.Monad             (join)
 import qualified Data.ByteString.Char8     as B
 import           Data.List                 (find)
 import qualified Data.Text                 as T
-import           Data.Time.Format          (parseTime)
+import           Data.Time.Format          (parseTimeM)
 import           System.IO                 (hPrint, hPutStr, stderr)
 
 
@@ -127,13 +123,13 @@ getHeadersForDataset ::
   String
   -> IO ResponseHeaders
 getHeadersForDataset url = do
-  initReq <- parseUrl url
+  initReq <- parseRequest url
   let request = initReq { method = "HEAD" }
-  manager <- newManager conduitManagerSettings
+  manager <- newManager tlsManagerSettings
   response <- httpLbs request manager
   return $ responseHeaders response
 
 getLastModified ::
   ResponseHeaders
   -> Maybe Day
-getLastModified h = join $ (\x -> parseTime defaultTimeLocale "%a, %d %b %Y %T %Z" $ B.unpack $ snd x) <$> find (\(n,_) -> n == hLastModified) h
+getLastModified h = join $ (\x -> parseTimeM True defaultTimeLocale "%a, %d %b %Y %T %Z" $ B.unpack $ snd x) <$> find (\(n,_) -> n == hLastModified) h
