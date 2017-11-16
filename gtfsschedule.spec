@@ -47,10 +47,7 @@ BuildRequires:  ghc-zip-archive-devel
 BuildRequires:  ghc-ini-devel
 BuildRequires:  ghc-HStringTemplate-devel
 BuildRequires:  asciidoc
-
-%if 0%{?fedora} <= 24
 BuildRequires:  ghc-bifunctors-devel
-%endif
 
 %if %{with tests}
 BuildRequires:  ghc-lifted-base-devel

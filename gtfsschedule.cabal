@@ -68,11 +68,11 @@ library
                      , persistent
                      , containers
                      , mtl
-                     , persistent-sqlite <= 2.2
-                     , persistent-template <= 2.1.5
+                     , persistent-sqlite
+                     , persistent-template
                      , esqueleto
                      , xdg-basedir
-                     , http-conduit <= 2.1.8
+                     , http-conduit
                      , conduit
                      , conduit-extra >= 1.1
                      , http-types
