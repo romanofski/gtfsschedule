@@ -37,11 +37,9 @@ import           Data.Time.LocalTime                                            
 
 import           Text.ProtocolBuffers.Basic                                           (uFromString)
 
-import           Data.Foldable                                                        (toList)
-import qualified Data.Sequence                                                        as Seq
-
+import           Test.QuickCheck                                                      (Gen)
 import           Test.Tasty                                                           (TestTree, testGroup)
-import           Test.Tasty.QuickCheck                                                (Arbitrary (..), Gen, arbitraryBoundedEnum, choose, elements, listOf1, testProperty)
+import           Test.Tasty.QuickCheck                                                (Arbitrary (..), arbitraryBoundedEnum, choose, elements, listOf1, testProperty)
 
 import           Control.Applicative                                                  (pure, (<$>), (<*>))
 
@@ -78,16 +76,6 @@ propOrderedSchedule :: [ScheduleItem] -> Bool
 propOrderedSchedule [] = True
 propOrderedSchedule [_] = True
 propOrderedSchedule (x:y:rest) = (bumOffSeatTime x) <= (bumOffSeatTime y) && propOrderedSchedule rest
-
-
--- TODO: remove me if you upgrade to Quickcheck >= 2.8.2
---
-#if MIN_VERSION_QuickCheck(2, 8, 2)
-#else
-instance Arbitrary a => Arbitrary (Seq.Seq a) where
-  arbitrary = Seq.fromList <$> arbitrary
-  shrink = map Seq.fromList . shrink . toList
-#endif
 
 instance Arbitrary FM.FeedMessage where
     arbitrary =
