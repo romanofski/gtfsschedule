@@ -38,7 +38,7 @@ import qualified Data.ByteString.Lazy         as B
 import           Data.Csv                     (FromNamedRecord)
 import           Data.Csv.Streaming           (decodeByName)
 
-import           Data.Conduit                 (($$+-), sealConduitT)
+import           Data.Conduit                 (($$+-), newResumableSource)
 import           Data.Conduit.Binary          (sinkFile)
 import           Data.Foldable                (mapM_)
 import           Network.HTTP.Client.Conduit  (defaultManagerSettings)
@@ -126,7 +126,7 @@ downloadStaticDataset url downloadDir = runResourceT $ do
   manager <- liftIO $ newManager defaultManagerSettings
   request <- liftIO $ parseUrl url
   response <- http request manager
-  (sealConduitT $ responseBody response) $$+- sinkFile downloadfp
+  (newResumableSource $ responseBody response) $$+- sinkFile downloadfp
   return downloadDir
     where downloadfp = (concat [downloadDir, "/", datasetZipFilename])
 
