@@ -63,10 +63,11 @@ import           Control.Monad.IO.Class         (MonadIO, liftIO)
 import           Control.Monad.Logger           (LoggingT, MonadLoggerIO,
                                                  NoLoggingT, runNoLoggingT,
                                                  runStderrLoggingT)
+import           Control.Monad.IO.Unlift        (MonadUnliftIO)
 import           Control.Monad.Trans.Reader     (ReaderT, ask)
 import           Control.Monad.Trans.Resource   (MonadResource, ResourceT,
                                                  runResourceT)
-import           Control.Monad.Trans.Resource   (MonadBaseControl)
+import           Control.Monad.Trans.Control    (MonadBaseControl)
 import           Data.Int                       (Int64)
 import           Data.List                      (stripPrefix)
 import           Data.Maybe                     (fromMaybe)
@@ -335,13 +336,13 @@ rawInsert stmt vals = do
   return res
 
 runDBWithLogging ::
-  (MonadIO m, MonadBaseControl IO m)
+  (MonadUnliftIO m, MonadBaseControl IO m)
   => T.Text
   -> SqlPersistT (LoggingT (ResourceT m)) a -> m a
 runDBWithLogging dbName = runResourceT . runStderrLoggingT . Sqlite.withSqliteConn dbName . Sqlite.runSqlConn
 
 runDBWithoutLogging ::
-  (MonadIO m, MonadBaseControl IO m)
+  (MonadUnliftIO m, MonadBaseControl IO m)
   => T.Text
   -> SqlPersistT (NoLoggingT (ResourceT m)) a -> m a
 runDBWithoutLogging dbName = runResourceT . runNoLoggingT . Sqlite.withSqliteConn dbName . Sqlite.runSqlConn
