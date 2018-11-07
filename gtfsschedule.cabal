@@ -84,6 +84,8 @@ library
                      , ini
                      , optparse-applicative
                      , HStringTemplate
+                     , monad-control
+                     , unliftio-core
   if impl(ghc < 7.10)
     build-depends:
       bifunctors >= 4.0
