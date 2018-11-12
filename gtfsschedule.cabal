@@ -73,6 +73,7 @@ library
                      , esqueleto
                      , xdg-basedir
                      , http-conduit
+                     , http-client
                      , conduit
                      , conduit-extra >= 1.1
                      , http-types
