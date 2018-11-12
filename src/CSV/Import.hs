@@ -42,8 +42,8 @@ import           Data.Conduit                 (($$+-), newResumableSource)
 import           Data.Conduit.Binary          (sinkFile)
 import           Data.Foldable                (mapM_)
 import           Network.HTTP.Client.Conduit  (defaultManagerSettings)
-import           Network.HTTP.Conduit         (http, newManager, parseUrl,
-                                               responseBody)
+import           Network.HTTP.Client          (parseRequest)
+import           Network.HTTP.Conduit         (http, newManager, responseBody)
 import           Prelude                      hiding (mapM_)
 
 import qualified Codec.Archive.Zip            as Zip
@@ -124,7 +124,7 @@ downloadStaticDataset ::
   -> IO (FilePath)
 downloadStaticDataset url downloadDir = runResourceT $ do
   manager <- liftIO $ newManager defaultManagerSettings
-  request <- liftIO $ parseUrl url
+  request <- liftIO $ parseRequest url
   response <- http request manager
   (newResumableSource $ responseBody response) $$+- sinkFile downloadfp
   return downloadDir
