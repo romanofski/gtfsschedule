@@ -6,13 +6,13 @@
 %global with_tests 1
 
 Name:           %{pkg_name}
-Version:        0.8.0.0
+Version:        0.8.1.0
 Release:        1%{?dist}
 Summary:        Be on time for your next public transport service
 
 License:        GPLv3+
-Url:            https://hackage.haskell.org/package/%{name}
-Source0:        https://hackage.haskell.org/package/%{name}-%{version}/%{name}-%{version}.tar.gz
+Url:            https://github.com/romanofski/%{name}
+Source0:        https://github.com/romanofski/%{name}/archive/%{version}.tar.gz
 
 BuildRequires:  ghc-Cabal-devel
 BuildRequires:  ghc-rpm-macros
@@ -132,6 +132,9 @@ install -m 0644 -p -D man/gtfsschedule.1 %{buildroot}%{_mandir}/man1/gtfsschedul
 
 
 %changelog
+* Sat Nov 17 2018 Róman Joost <roman@bromeco.de> - 0.8.1.0-1
+- 0.8.1 release
+
 * Sat Apr 1 2017 Róman Joost <roman@bromeco.de> - 0.8.0.0-1
 - 0.8 release
 
