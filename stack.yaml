@@ -13,7 +13,8 @@ extra-deps:
 - persistent-2.7.3.1
 - persistent-sqlite-2.6.4
 - conduit-extra-1.2.3.2
-- conduit-1.2.13.1
+- conduit-1.2.12.1
+- http-conduit-2.2.4
 - resourcet-1.1.11
 
 # Override default flag values for local packages and extra-deps
