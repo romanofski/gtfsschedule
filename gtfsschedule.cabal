@@ -1,5 +1,5 @@
 name:                gtfsschedule
-version:             0.8.0.0
+version:             0.8.1.0
 synopsis:            Be on time for your next public transport service
 description:         Please see README.md
 homepage:            http://github.com/romanofski/gtfsschedule#readme
@@ -72,10 +72,10 @@ library
                      , persistent-template
                      , esqueleto
                      , xdg-basedir
-                     , http-conduit
+                     , http-conduit >= 2.2.0
                      , http-client
-                     , conduit
                      , conduit-extra >= 1.1
+                     , conduit > 1.2
                      , http-types
                      , cassava >= 0.4.5.0
                      , zip-archive
