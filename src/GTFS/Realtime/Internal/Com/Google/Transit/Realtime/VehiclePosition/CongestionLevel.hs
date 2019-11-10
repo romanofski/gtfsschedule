@@ -1,9 +1,10 @@
-{-# LANGUAGE BangPatterns, DeriveDataTypeable, FlexibleInstances, MultiParamTypeClasses #-}
+{-# LANGUAGE BangPatterns, DeriveDataTypeable, DeriveGeneric, FlexibleInstances, MultiParamTypeClasses, OverloadedStrings #-}
 {-# OPTIONS_GHC  -fno-warn-unused-imports #-}
 module GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition.CongestionLevel (CongestionLevel(..)) where
 import Prelude ((+), (/), (.))
 import qualified Prelude as Prelude'
 import qualified Data.Typeable as Prelude'
+import qualified GHC.Generics as Prelude'
 import qualified Data.Data as Prelude'
 import qualified Text.ProtocolBuffers.Header as P'
 
@@ -12,7 +13,8 @@ data CongestionLevel = UNKNOWN_CONGESTION_LEVEL
                      | STOP_AND_GO
                      | CONGESTION
                      | SEVERE_CONGESTION
-                     deriving (Prelude'.Read, Prelude'.Show, Prelude'.Eq, Prelude'.Ord, Prelude'.Typeable, Prelude'.Data)
+                       deriving (Prelude'.Read, Prelude'.Show, Prelude'.Eq, Prelude'.Ord, Prelude'.Typeable, Prelude'.Data,
+                                 Prelude'.Generic)
 
 instance P'.Mergeable CongestionLevel
 
@@ -81,6 +83,7 @@ instance P'.ReflectEnum CongestionLevel where
         "CongestionLevel")
       ["GTFS", "Realtime", "Internal", "Com", "Google", "Transit", "Realtime", "VehiclePosition", "CongestionLevel.hs"]
       [(0, "UNKNOWN_CONGESTION_LEVEL"), (1, "RUNNING_SMOOTHLY"), (2, "STOP_AND_GO"), (3, "CONGESTION"), (4, "SEVERE_CONGESTION")]
+      Prelude'.False
 
 instance P'.TextType CongestionLevel where
   tellT = P'.tellShow

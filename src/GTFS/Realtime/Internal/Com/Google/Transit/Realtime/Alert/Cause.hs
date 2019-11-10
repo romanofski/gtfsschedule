@@ -1,9 +1,10 @@
-{-# LANGUAGE BangPatterns, DeriveDataTypeable, FlexibleInstances, MultiParamTypeClasses #-}
+{-# LANGUAGE BangPatterns, DeriveDataTypeable, DeriveGeneric, FlexibleInstances, MultiParamTypeClasses, OverloadedStrings #-}
 {-# OPTIONS_GHC  -fno-warn-unused-imports #-}
 module GTFS.Realtime.Internal.Com.Google.Transit.Realtime.Alert.Cause (Cause(..)) where
 import Prelude ((+), (/), (.))
 import qualified Prelude as Prelude'
 import qualified Data.Typeable as Prelude'
+import qualified GHC.Generics as Prelude'
 import qualified Data.Data as Prelude'
 import qualified Text.ProtocolBuffers.Header as P'
 
@@ -19,7 +20,7 @@ data Cause = UNKNOWN_CAUSE
            | CONSTRUCTION
            | POLICE_ACTIVITY
            | MEDICAL_EMERGENCY
-           deriving (Prelude'.Read, Prelude'.Show, Prelude'.Eq, Prelude'.Ord, Prelude'.Typeable, Prelude'.Data)
+             deriving (Prelude'.Read, Prelude'.Show, Prelude'.Eq, Prelude'.Ord, Prelude'.Typeable, Prelude'.Data, Prelude'.Generic)
 
 instance P'.Mergeable Cause
 
@@ -117,6 +118,7 @@ instance P'.ReflectEnum Cause where
       ["GTFS", "Realtime", "Internal", "Com", "Google", "Transit", "Realtime", "Alert", "Cause.hs"]
       [(1, "UNKNOWN_CAUSE"), (2, "OTHER_CAUSE"), (3, "TECHNICAL_PROBLEM"), (4, "STRIKE"), (5, "DEMONSTRATION"), (6, "ACCIDENT"),
        (7, "HOLIDAY"), (8, "WEATHER"), (9, "MAINTENANCE"), (10, "CONSTRUCTION"), (11, "POLICE_ACTIVITY"), (12, "MEDICAL_EMERGENCY")]
+      Prelude'.False
 
 instance P'.TextType Cause where
   tellT = P'.tellShow

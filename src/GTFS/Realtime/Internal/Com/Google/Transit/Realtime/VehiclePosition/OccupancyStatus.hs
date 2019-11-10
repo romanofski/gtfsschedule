@@ -1,9 +1,10 @@
-{-# LANGUAGE BangPatterns, DeriveDataTypeable, FlexibleInstances, MultiParamTypeClasses #-}
+{-# LANGUAGE BangPatterns, DeriveDataTypeable, DeriveGeneric, FlexibleInstances, MultiParamTypeClasses, OverloadedStrings #-}
 {-# OPTIONS_GHC  -fno-warn-unused-imports #-}
 module GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition.OccupancyStatus (OccupancyStatus(..)) where
 import Prelude ((+), (/), (.))
 import qualified Prelude as Prelude'
 import qualified Data.Typeable as Prelude'
+import qualified GHC.Generics as Prelude'
 import qualified Data.Data as Prelude'
 import qualified Text.ProtocolBuffers.Header as P'
 
@@ -14,7 +15,8 @@ data OccupancyStatus = EMPTY
                      | CRUSHED_STANDING_ROOM_ONLY
                      | FULL
                      | NOT_ACCEPTING_PASSENGERS
-                     deriving (Prelude'.Read, Prelude'.Show, Prelude'.Eq, Prelude'.Ord, Prelude'.Typeable, Prelude'.Data)
+                       deriving (Prelude'.Read, Prelude'.Show, Prelude'.Eq, Prelude'.Ord, Prelude'.Typeable, Prelude'.Data,
+                                 Prelude'.Generic)
 
 instance P'.Mergeable OccupancyStatus
 
@@ -93,6 +95,7 @@ instance P'.ReflectEnum OccupancyStatus where
       ["GTFS", "Realtime", "Internal", "Com", "Google", "Transit", "Realtime", "VehiclePosition", "OccupancyStatus.hs"]
       [(0, "EMPTY"), (1, "MANY_SEATS_AVAILABLE"), (2, "FEW_SEATS_AVAILABLE"), (3, "STANDING_ROOM_ONLY"),
        (4, "CRUSHED_STANDING_ROOM_ONLY"), (5, "FULL"), (6, "NOT_ACCEPTING_PASSENGERS")]
+      Prelude'.False
 
 instance P'.TextType OccupancyStatus where
   tellT = P'.tellShow
