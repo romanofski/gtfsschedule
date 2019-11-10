@@ -1,9 +1,10 @@
-{-# LANGUAGE BangPatterns, DeriveDataTypeable, FlexibleInstances, MultiParamTypeClasses #-}
+{-# LANGUAGE BangPatterns, DeriveDataTypeable, DeriveGeneric, FlexibleInstances, MultiParamTypeClasses, OverloadedStrings #-}
 {-# OPTIONS_GHC  -fno-warn-unused-imports #-}
 module GTFS.Realtime.Internal.Com.Google.Transit.Realtime.FeedHeader (FeedHeader(..)) where
-import Prelude ((+), (/), (==), (<=), (&&))
+import Prelude ((+), (/), (++), (.), (==), (<=), (&&))
 import qualified Prelude as Prelude'
 import qualified Data.Typeable as Prelude'
+import qualified GHC.Generics as Prelude'
 import qualified Data.Data as Prelude'
 import qualified Text.ProtocolBuffers.Header as P'
 import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.FeedHeader.Incrementality
@@ -12,7 +13,7 @@ import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.FeedHeader.I
 data FeedHeader = FeedHeader{gtfs_realtime_version :: !(P'.Utf8),
                              incrementality :: !(P'.Maybe Com.Google.Transit.Realtime.FeedHeader.Incrementality),
                              timestamp :: !(P'.Maybe P'.Word64), ext'field :: !(P'.ExtField), unknown'field :: !(P'.UnknownField)}
-                deriving (Prelude'.Show, Prelude'.Eq, Prelude'.Ord, Prelude'.Typeable, Prelude'.Data)
+                  deriving (Prelude'.Show, Prelude'.Eq, Prelude'.Ord, Prelude'.Typeable, Prelude'.Data, Prelude'.Generic)
 
 instance P'.ExtendMessage FeedHeader where
   getExtField = ext'field
@@ -42,25 +43,27 @@ instance P'.Wire FeedHeader where
         calc'Size
          = (P'.wireSizeReq 1 9 x'1 + P'.wireSizeOpt 1 14 x'2 + P'.wireSizeOpt 1 4 x'3 + P'.wireSizeExtField x'4 +
              P'.wireSizeUnknownField x'5)
-  wirePut ft' self'@(FeedHeader x'1 x'2 x'3 x'4 x'5)
+  wirePutWithSize ft' self'@(FeedHeader x'1 x'2 x'3 x'4 x'5)
    = case ft' of
        10 -> put'Fields
-       11 -> do
-               P'.putSize (P'.wireSize 10 self')
-               put'Fields
+       11 -> put'FieldsSized
        _ -> P'.wirePutErr ft' self'
     where
         put'Fields
-         = do
-             P'.wirePutReq 10 9 x'1
-             P'.wirePutOpt 16 14 x'2
-             P'.wirePutOpt 24 4 x'3
-             P'.wirePutExtField x'4
-             P'.wirePutUnknownField x'5
+         = P'.sequencePutWithSize
+            [P'.wirePutReqWithSize 10 9 x'1, P'.wirePutOptWithSize 16 14 x'2, P'.wirePutOptWithSize 24 4 x'3,
+             P'.wirePutExtFieldWithSize x'4, P'.wirePutUnknownFieldWithSize x'5]
+        put'FieldsSized
+         = let size' = Prelude'.fst (P'.runPutM put'Fields)
+               put'Size
+                = do
+                    P'.putSize size'
+                    Prelude'.return (P'.size'WireSize size')
+            in P'.sequencePutWithSize [put'Size, put'Fields]
   wireGet ft'
    = case ft' of
-       10 -> P'.getBareMessageWith (P'.catch'Unknown update'Self)
-       11 -> P'.getMessageWith (P'.catch'Unknown update'Self)
+       10 -> P'.getBareMessageWith (P'.catch'Unknown' P'.loadUnknown update'Self)
+       11 -> P'.getMessageWith (P'.catch'Unknown' P'.loadUnknown update'Self)
        _ -> P'.wireGetErr ft'
     where
         update'Self wire'Tag old'Self
@@ -81,7 +84,7 @@ instance P'.ReflectDescriptor FeedHeader where
   getMessageInfo _ = P'.GetMessageInfo (P'.fromDistinctAscList [10]) (P'.fromDistinctAscList [10, 16, 24])
   reflectDescriptorInfo _
    = Prelude'.read
-      "DescriptorInfo {descName = ProtoName {protobufName = FIName \".transit_realtime.FeedHeader\", haskellPrefix = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\"], baseName = MName \"FeedHeader\"}, descFilePath = [\"GTFS\",\"Realtime\",\"Internal\",\"Com\",\"Google\",\"Transit\",\"Realtime\",\"FeedHeader.hs\"], isGroup = False, fields = fromList [FieldInfo {fieldName = ProtoFName {protobufName' = FIName \".transit_realtime.FeedHeader.gtfs_realtime_version\", haskellPrefix' = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule' = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\",MName \"FeedHeader\"], baseName' = FName \"gtfs_realtime_version\", baseNamePrefix' = \"\"}, fieldNumber = FieldId {getFieldId = 1}, wireTag = WireTag {getWireTag = 10}, packedTag = Nothing, wireTagLength = 1, isPacked = False, isRequired = True, canRepeat = False, mightPack = False, typeCode = FieldType {getFieldType = 9}, typeName = Nothing, hsRawDefault = Nothing, hsDefault = Nothing},FieldInfo {fieldName = ProtoFName {protobufName' = FIName \".transit_realtime.FeedHeader.incrementality\", haskellPrefix' = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule' = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\",MName \"FeedHeader\"], baseName' = FName \"incrementality\", baseNamePrefix' = \"\"}, fieldNumber = FieldId {getFieldId = 2}, wireTag = WireTag {getWireTag = 16}, packedTag = Nothing, wireTagLength = 1, isPacked = False, isRequired = False, canRepeat = False, mightPack = False, typeCode = FieldType {getFieldType = 14}, typeName = Just (ProtoName {protobufName = FIName \".transit_realtime.FeedHeader.Incrementality\", haskellPrefix = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\",MName \"FeedHeader\"], baseName = MName \"Incrementality\"}), hsRawDefault = Just \"FULL_DATASET\", hsDefault = Just (HsDef'Enum \"FULL_DATASET\")},FieldInfo {fieldName = ProtoFName {protobufName' = FIName \".transit_realtime.FeedHeader.timestamp\", haskellPrefix' = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule' = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\",MName \"FeedHeader\"], baseName' = FName \"timestamp\", baseNamePrefix' = \"\"}, fieldNumber = FieldId {getFieldId = 3}, wireTag = WireTag {getWireTag = 24}, packedTag = Nothing, wireTagLength = 1, isPacked = False, isRequired = False, canRepeat = False, mightPack = False, typeCode = FieldType {getFieldType = 4}, typeName = Nothing, hsRawDefault = Nothing, hsDefault = Nothing}], keys = fromList [], extRanges = [(FieldId {getFieldId = 1000},FieldId {getFieldId = 1999})], knownKeys = fromList [], storeUnknown = True, lazyFields = False, makeLenses = False}"
+      "DescriptorInfo {descName = ProtoName {protobufName = FIName \".transit_realtime.FeedHeader\", haskellPrefix = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\"], baseName = MName \"FeedHeader\"}, descFilePath = [\"GTFS\",\"Realtime\",\"Internal\",\"Com\",\"Google\",\"Transit\",\"Realtime\",\"FeedHeader.hs\"], isGroup = False, fields = fromList [FieldInfo {fieldName = ProtoFName {protobufName' = FIName \".transit_realtime.FeedHeader.gtfs_realtime_version\", haskellPrefix' = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule' = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\",MName \"FeedHeader\"], baseName' = FName \"gtfs_realtime_version\", baseNamePrefix' = \"\"}, fieldNumber = FieldId {getFieldId = 1}, wireTag = WireTag {getWireTag = 10}, packedTag = Nothing, wireTagLength = 1, isPacked = False, isRequired = True, canRepeat = False, mightPack = False, typeCode = FieldType {getFieldType = 9}, typeName = Nothing, hsRawDefault = Nothing, hsDefault = Nothing},FieldInfo {fieldName = ProtoFName {protobufName' = FIName \".transit_realtime.FeedHeader.incrementality\", haskellPrefix' = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule' = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\",MName \"FeedHeader\"], baseName' = FName \"incrementality\", baseNamePrefix' = \"\"}, fieldNumber = FieldId {getFieldId = 2}, wireTag = WireTag {getWireTag = 16}, packedTag = Nothing, wireTagLength = 1, isPacked = False, isRequired = False, canRepeat = False, mightPack = False, typeCode = FieldType {getFieldType = 14}, typeName = Just (ProtoName {protobufName = FIName \".transit_realtime.FeedHeader.Incrementality\", haskellPrefix = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\",MName \"FeedHeader\"], baseName = MName \"Incrementality\"}), hsRawDefault = Just \"FULL_DATASET\", hsDefault = Just (HsDef'Enum \"FULL_DATASET\")},FieldInfo {fieldName = ProtoFName {protobufName' = FIName \".transit_realtime.FeedHeader.timestamp\", haskellPrefix' = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule' = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\",MName \"FeedHeader\"], baseName' = FName \"timestamp\", baseNamePrefix' = \"\"}, fieldNumber = FieldId {getFieldId = 3}, wireTag = WireTag {getWireTag = 24}, packedTag = Nothing, wireTagLength = 1, isPacked = False, isRequired = False, canRepeat = False, mightPack = False, typeCode = FieldType {getFieldType = 4}, typeName = Nothing, hsRawDefault = Nothing, hsDefault = Nothing}], descOneofs = fromList [], keys = fromList [], extRanges = [(FieldId {getFieldId = 1000},FieldId {getFieldId = 1999})], knownKeys = fromList [], storeUnknown = True, lazyFields = False, makeLenses = False, jsonInstances = False}"
 
 instance P'.TextType FeedHeader where
   tellT = P'.tellSubMessage

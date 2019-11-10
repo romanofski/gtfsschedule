@@ -1,9 +1,10 @@
-{-# LANGUAGE BangPatterns, DeriveDataTypeable, FlexibleInstances, MultiParamTypeClasses #-}
+{-# LANGUAGE BangPatterns, DeriveDataTypeable, DeriveGeneric, FlexibleInstances, MultiParamTypeClasses, OverloadedStrings #-}
 {-# OPTIONS_GHC  -fno-warn-unused-imports #-}
 module GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripDescriptor.ScheduleRelationship (ScheduleRelationship(..)) where
 import Prelude ((+), (/), (.))
 import qualified Prelude as Prelude'
 import qualified Data.Typeable as Prelude'
+import qualified GHC.Generics as Prelude'
 import qualified Data.Data as Prelude'
 import qualified Text.ProtocolBuffers.Header as P'
 
@@ -11,7 +12,8 @@ data ScheduleRelationship = SCHEDULED
                           | ADDED
                           | UNSCHEDULED
                           | CANCELED
-                          deriving (Prelude'.Read, Prelude'.Show, Prelude'.Eq, Prelude'.Ord, Prelude'.Typeable, Prelude'.Data)
+                            deriving (Prelude'.Read, Prelude'.Show, Prelude'.Eq, Prelude'.Ord, Prelude'.Typeable, Prelude'.Data,
+                                      Prelude'.Generic)
 
 instance P'.Mergeable ScheduleRelationship
 
@@ -74,6 +76,7 @@ instance P'.ReflectEnum ScheduleRelationship where
         "ScheduleRelationship")
       ["GTFS", "Realtime", "Internal", "Com", "Google", "Transit", "Realtime", "TripDescriptor", "ScheduleRelationship.hs"]
       [(0, "SCHEDULED"), (1, "ADDED"), (2, "UNSCHEDULED"), (3, "CANCELED")]
+      Prelude'.False
 
 instance P'.TextType ScheduleRelationship where
   tellT = P'.tellShow

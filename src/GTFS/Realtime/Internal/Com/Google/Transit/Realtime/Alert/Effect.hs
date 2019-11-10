@@ -1,9 +1,10 @@
-{-# LANGUAGE BangPatterns, DeriveDataTypeable, FlexibleInstances, MultiParamTypeClasses #-}
+{-# LANGUAGE BangPatterns, DeriveDataTypeable, DeriveGeneric, FlexibleInstances, MultiParamTypeClasses, OverloadedStrings #-}
 {-# OPTIONS_GHC  -fno-warn-unused-imports #-}
 module GTFS.Realtime.Internal.Com.Google.Transit.Realtime.Alert.Effect (Effect(..)) where
 import Prelude ((+), (/), (.))
 import qualified Prelude as Prelude'
 import qualified Data.Typeable as Prelude'
+import qualified GHC.Generics as Prelude'
 import qualified Data.Data as Prelude'
 import qualified Text.ProtocolBuffers.Header as P'
 
@@ -16,7 +17,7 @@ data Effect = NO_SERVICE
             | OTHER_EFFECT
             | UNKNOWN_EFFECT
             | STOP_MOVED
-            deriving (Prelude'.Read, Prelude'.Show, Prelude'.Eq, Prelude'.Ord, Prelude'.Typeable, Prelude'.Data)
+              deriving (Prelude'.Read, Prelude'.Show, Prelude'.Eq, Prelude'.Ord, Prelude'.Typeable, Prelude'.Data, Prelude'.Generic)
 
 instance P'.Mergeable Effect
 
@@ -101,6 +102,7 @@ instance P'.ReflectEnum Effect where
       ["GTFS", "Realtime", "Internal", "Com", "Google", "Transit", "Realtime", "Alert", "Effect.hs"]
       [(1, "NO_SERVICE"), (2, "REDUCED_SERVICE"), (3, "SIGNIFICANT_DELAYS"), (4, "DETOUR"), (5, "ADDITIONAL_SERVICE"),
        (6, "MODIFIED_SERVICE"), (7, "OTHER_EFFECT"), (8, "UNKNOWN_EFFECT"), (9, "STOP_MOVED")]
+      Prelude'.False
 
 instance P'.TextType Effect where
   tellT = P'.tellShow

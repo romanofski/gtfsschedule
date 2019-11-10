@@ -1,16 +1,18 @@
-{-# LANGUAGE BangPatterns, DeriveDataTypeable, FlexibleInstances, MultiParamTypeClasses #-}
+{-# LANGUAGE BangPatterns, DeriveDataTypeable, DeriveGeneric, FlexibleInstances, MultiParamTypeClasses, OverloadedStrings #-}
 {-# OPTIONS_GHC  -fno-warn-unused-imports #-}
 module GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition.VehicleStopStatus (VehicleStopStatus(..)) where
 import Prelude ((+), (/), (.))
 import qualified Prelude as Prelude'
 import qualified Data.Typeable as Prelude'
+import qualified GHC.Generics as Prelude'
 import qualified Data.Data as Prelude'
 import qualified Text.ProtocolBuffers.Header as P'
 
 data VehicleStopStatus = INCOMING_AT
                        | STOPPED_AT
                        | IN_TRANSIT_TO
-                       deriving (Prelude'.Read, Prelude'.Show, Prelude'.Eq, Prelude'.Ord, Prelude'.Typeable, Prelude'.Data)
+                         deriving (Prelude'.Read, Prelude'.Show, Prelude'.Eq, Prelude'.Ord, Prelude'.Typeable, Prelude'.Data,
+                                   Prelude'.Generic)
 
 instance P'.Mergeable VehicleStopStatus
 
@@ -69,6 +71,7 @@ instance P'.ReflectEnum VehicleStopStatus where
         "VehicleStopStatus")
       ["GTFS", "Realtime", "Internal", "Com", "Google", "Transit", "Realtime", "VehiclePosition", "VehicleStopStatus.hs"]
       [(0, "INCOMING_AT"), (1, "STOPPED_AT"), (2, "IN_TRANSIT_TO")]
+      Prelude'.False
 
 instance P'.TextType VehicleStopStatus where
   tellT = P'.tellShow
