@@ -29,7 +29,7 @@ import           Data.Time.Calendar   (fromGregorian)
 import           Test.Tasty           (TestTree, testGroup)
 import           Test.Tasty.HUnit     (testCase, (@?=))
 
-import           Data.Conduit         (yield, ($$))
+import           Data.Conduit         (yield, (.|), runConduit)
 import           Data.Conduit.Network (AppData, appSink)
 
 import qualified Data.Text            as T
@@ -63,7 +63,7 @@ testDatabaseOutdated =
       result @?= Right False
 
 withHTTPDataHeadersOnly :: AppData -> IO ()
-withHTTPDataHeadersOnly appData = src $$ appSink appData
+withHTTPDataHeadersOnly appData = runConduit $ src .| appSink appData
   where
     src = yield "HTTP/1.1 200 OK\r\nLast-Modified: Tue, 25 Oct 2016 01:51:58 GMT\r\nContent-Type: text/plain\r\n\r\nTest"
 
@@ -75,6 +75,6 @@ testNoModifiedHeaders =
       result @?= Left (Error "Couldn't determine last modification date from server headers: [(\"Content-Type\",\"text/plain\")]")
 
 withHTTPDataNoModifiedHeader :: AppData -> IO ()
-withHTTPDataNoModifiedHeader appData = src $$ appSink appData
+withHTTPDataNoModifiedHeader appData = runConduit $ src .| appSink appData
   where
     src = yield "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nTest"

@@ -31,7 +31,6 @@ import           GTFS.Schedule            (ScheduleItem (..),
                                            TimeSpec (..),
                                            VehicleInformation (..), getSchedule)
 
-import           Data.Functor             ((<$>))
 import           Data.Time.Calendar       (fromGregorian)
 import           Data.Time.Clock          (UTCTime (..), getCurrentTime)
 import           Data.Time.LocalTime      (TimeOfDay (..))
@@ -42,7 +41,7 @@ import           Control.Exception.Lifted (onException)
 import           Control.Monad.IO.Class   (liftIO)
 import qualified Data.ByteString          as BS
 import qualified Data.ByteString.Char8    as C8 (pack)
-import           Data.Conduit             (yield, ($$))
+import           Data.Conduit             (yield, (.|), runConduit)
 import           Data.Conduit.Network     (AppData, appSink)
 
 import qualified Data.Text                as T
@@ -112,7 +111,7 @@ testImportWithoutExistingDBFile =
         CSV.createNewDatabase url userdbfile
 
 withHTTPAppData :: AppData -> IO ()
-withHTTPAppData appData = src $$ appSink appData
+withHTTPAppData appData = runConduit $ src .| appSink appData
   where
     src = do
       yield "HTTP/1.1 200 OK\r\nContent-Type: application/x-zip-compressed\r\n"
