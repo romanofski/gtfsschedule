@@ -1,11 +1,12 @@
-sudo: false
-language: c
+sudo: true
+language: haskell
 
 # http://docs.haskellstack.org/en/stable/travis_ci/#container-infrastructure
 cache:
   directories:
     - $HOME/.stack
     - $HOME/.ghc
+    - $TRAVIS_BUILD_DIR/.stack-work
 
 before_install:
   - unset CC
