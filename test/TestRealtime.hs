@@ -393,4 +393,5 @@ testDepartureWithDelay = testGroup "check departure with delay" $ makeTest <$>
   , ("ahead", departureTimeWithDelay (TimeOfDay 7 0 0) (-30), TimeOfDay 6 59 30)
   ]
 
+makeTest :: (Eq a, Show a) => (TestName, a, a) -> TestTree
 makeTest (name, input, expected) = testCase name $ input @?= expected
