@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-
 Copyright (C) - 2017 Róman Joost <roman@bromeco.de>
 
@@ -39,9 +38,7 @@ import qualified Data.ByteString.Lazy         as B
 import           Data.Csv                     (FromNamedRecord)
 import           Data.Csv.Streaming           (decodeByName)
 
-#if MIN_VERSION_conduit(1,3,0)
 import           Data.Conduit                 (sealConduitT)
-#endif
 import           Data.Conduit                 (($$+-))
 import           Data.Conduit.Binary          (sinkFile)
 import           Data.Foldable                (mapM_)
@@ -130,11 +127,7 @@ downloadStaticDataset url downloadDir = runResourceT $ do
   manager <- liftIO $ newManager defaultManagerSettings
   request <- liftIO $ parseRequest url
   response <- http request manager
-#if MIN_VERSION_conduit(1,3,0)
   sealConduitT (responseBody response) $$+- sinkFile downloadfp
-#else
-  responseBody response $$+- sinkFile downloadfp
-#endif
   return downloadDir
     where downloadfp = (concat [downloadDir, "/", datasetZipFilename])
 

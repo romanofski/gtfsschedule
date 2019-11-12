@@ -1,6 +1,5 @@
 {-# LANGUAGE RecordWildCards   #-}
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE CPP               #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections     #-}
 {-
@@ -47,11 +46,7 @@ import           Data.Time.Calendar      (Day)
 import           Data.Time.LocalTime     (LocalTime (..), TimeOfDay (..),
                                           TimeZone, timeOfDayToTime,
                                           timeToTimeOfDay, utcToLocalTime)
-#if MIN_VERSION_time(1, 5, 0)
 import           Data.Time.Format        (defaultTimeLocale)
-#else
-import           System.Locale           (defaultTimeLocale)
-#endif
 import           Data.Maybe              (fromMaybe)
 import qualified Data.Text               as T
 import           Data.Time               (getCurrentTime, getCurrentTimeZone)
