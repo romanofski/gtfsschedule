@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC  -fno-warn-orphans #-}
 {-
 Copyright (C) - 2017 Róman Joost <roman@bromeco.de>

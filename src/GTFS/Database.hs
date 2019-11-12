@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP                        #-}
 {-# LANGUAGE EmptyDataDecls             #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE GADTs                      #-}
@@ -50,11 +49,7 @@ import           Data.Time.Clock                (DiffTime, UTCTime (..),
 import           Data.Time.LocalTime            (TimeOfDay (..),
                                                  timeOfDayToTime,
                                                  timeToTimeOfDay)
-#if MIN_VERSION_time(1, 5, 0)
 import           Data.Time.Format               (defaultTimeLocale)
-#else
-import           System.Locale                  (defaultTimeLocale)
-#endif
 import           Data.Functor                   ((<$>))
 import           Data.Time.Format               (formatTime)
 
