@@ -39,6 +39,7 @@ import           Control.Applicative            ((<*>))
 import           Data.Maybe                     (fromMaybe)
 import           Data.Monoid                    ((<>))
 import qualified Data.Text                      as T
+import           System.IO                      (stdout)
 
 
 runSchedule :: String -> Command -> IO ()
@@ -56,7 +57,7 @@ runSchedule dbfile (Monitor{..}) = do
         updateSchedulesWithRealtimeData realtimeFeedURL
     let schedule = take (fromInteger l) $ sortSchedules schedules
     tod <- getCurrentTimeOfDay
-    printSchedule schedule (ScheduleConfig tod $ fromMaybe defaultScheduleItemTemplate scheduleItemTemplate)
+    printSchedule schedule (ScheduleConfig tod $ fromMaybe defaultScheduleItemTemplate scheduleItemTemplate) stdout
 
 -- | Wrapper which uses the configuration files to configure, parse the command
 -- line options and finally run the application
