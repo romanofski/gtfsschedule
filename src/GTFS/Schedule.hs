@@ -52,6 +52,7 @@ import qualified Data.Text               as T
 import           Data.Time               (getCurrentTime, getCurrentTimeZone)
 import           Data.Time.Clock         (DiffTime, UTCTime, secondsToDiffTime)
 import           Data.Time.Format        (formatTime)
+import           System.IO               (Handle, hPutStr)
 import           Database.Esqueleto      (unValue)
 import qualified Database.Persist.Sqlite as Sqlite
 import           Text.StringTemplate     (newSTMP, render, setManyAttrib)
@@ -157,12 +158,13 @@ getCurrentTimeOfDay = do
 printSchedule
     :: [ScheduleItem]
     -> ScheduleConfig
+    -> Handle
     -> IO ()
-printSchedule [] _ =
+printSchedule [] _ handle =
     let timespanInMin = show $ round (DB.queryTimeWindowLatest DB.nextServicesTimeWindow / 60)
-    in putStr $ "No services for the next " ++ timespanInMin ++ "min"
-printSchedule xs cfg =
-    putStr $
+    in hPutStr handle $ "No services for the next " ++ timespanInMin ++ "min"
+printSchedule xs cfg handle =
+    hPutStr handle $
     concat $
     (\x ->
           defaultScheduleItemFormatter cfg x) <$>

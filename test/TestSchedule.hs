@@ -42,7 +42,8 @@ import           Test.Tasty.HUnit         (testCase, (@?=))
 import           Data.Time.Calendar       (fromGregorian)
 import           Data.Time.LocalTime      (TimeOfDay (..))
 import           System.Directory         (getCurrentDirectory)
-import           System.IO.Silently       (capture_)
+import           System.IO.Silently       (hCapture_)
+import           System.IO                (stderr)
 
 
 scheduleTests ::
@@ -59,14 +60,14 @@ scheduleTests =
 testPrintSchedule ::
   TestTree
 testPrintSchedule = testCase "prints empty schedule" $ do
-  output <- capture_ $ printSchedule [] (defaultScheduleConfig $ TimeOfDay 7 7 7)
+  output <- hCapture_ [stderr] $ printSchedule [] (defaultScheduleConfig $ TimeOfDay 7 7 7) stderr
   output @?= "No services for the next 30min"
 
 makeTest ::
   (TestName, [ScheduleItem], ScheduleConfig, String)
   -> TestTree
 makeTest (name, input, cfg, expected) = testCase name $ do
-  output <- capture_ $ printSchedule input cfg
+  output <- hCapture_ [stderr] $ printSchedule input cfg stderr
   output @?= expected
 
 testFormatScheduleItem ::
