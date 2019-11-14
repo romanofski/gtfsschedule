@@ -1,12 +1,13 @@
 # https://fedoraproject.org/wiki/Packaging:Haskell
 
 %global pkg_name gtfsschedule
+%global pkgver %{pkg_name}-%{version}
 
 %bcond_with tests
 %global with_tests 1
 
 Name:           %{pkg_name}
-Version:        0.8.1.0
+Version:        0.8.2.0
 Release:        1%{?dist}
 Summary:        Be on time for your next public transport service
 
@@ -18,6 +19,8 @@ BuildRequires:  ghc-Cabal-devel
 BuildRequires:  ghc-rpm-macros
 # Begin cabal-rpm deps:
 BuildRequires:  chrpath
+BuildRequires:  asciidoc
+%if 0%{?fedora} < 31
 BuildRequires:  ghc-bytestring-devel
 BuildRequires:  ghc-cassava-devel
 BuildRequires:  ghc-conduit-devel
@@ -46,8 +49,41 @@ BuildRequires:  ghc-xdg-basedir-devel
 BuildRequires:  ghc-zip-archive-devel
 BuildRequires:  ghc-ini-devel
 BuildRequires:  ghc-HStringTemplate-devel
-BuildRequires:  asciidoc
 BuildRequires:  ghc-bifunctors-devel
+%else
+BuildRequires:  ghc-HStringTemplate-prof
+BuildRequires:  ghc-base-prof
+BuildRequires:  ghc-bytestring-prof
+BuildRequires:  ghc-cassava-prof
+BuildRequires:  ghc-conduit-prof
+BuildRequires:  ghc-conduit-extra-prof
+BuildRequires:  ghc-containers-prof
+BuildRequires:  ghc-directory-prof
+BuildRequires:  ghc-esqueleto-prof
+BuildRequires:  ghc-http-client-prof
+BuildRequires:  ghc-http-conduit-prof
+BuildRequires:  ghc-http-types-prof
+BuildRequires:  ghc-ini-prof
+BuildRequires:  ghc-monad-control-prof
+BuildRequires:  ghc-monad-logger-prof
+BuildRequires:  ghc-mtl-prof
+BuildRequires:  ghc-old-locale-prof
+BuildRequires:  ghc-optparse-applicative-prof
+BuildRequires:  ghc-persistent-prof
+BuildRequires:  ghc-persistent-sqlite-prof
+BuildRequires:  ghc-persistent-template-prof
+BuildRequires:  ghc-protocol-buffers-prof
+BuildRequires:  ghc-resourcet-prof
+BuildRequires:  ghc-system-filepath-prof
+BuildRequires:  ghc-temporary-prof
+BuildRequires:  ghc-text-prof
+BuildRequires:  ghc-time-prof
+BuildRequires:  ghc-transformers-prof
+BuildRequires:  ghc-unliftio-core-prof
+BuildRequires:  ghc-utf8-string-prof
+BuildRequires:  ghc-xdg-basedir-prof
+BuildRequires:  ghc-zip-archive-prof
+%endif
 
 %if %{with tests}
 BuildRequires:  ghc-lifted-base-devel
@@ -74,17 +110,36 @@ This package provides the Haskell %{name} shared library.
 %package -n ghc-%{name}-devel
 Summary:        Haskell %{name} library development files
 Provides:       ghc-%{name}-static = %{version}-%{release}
+Provides:       ghc-%{name}-static%{?_isa} = %{version}-%{release}
+%if %{defined ghc_version}
 Requires:       ghc-compiler = %{ghc_version}
-Requires(post): ghc-compiler = %{ghc_version}
-Requires(postun): ghc-compiler = %{ghc_version}
+%endif
 Requires:       ghc-%{name}%{?_isa} = %{version}-%{release}
 
 %description -n ghc-%{name}-devel
 This package provides the Haskell %{name} library development files.
 
 
+%if %{with haddock}
+%package -n ghc-%{name}-doc
+Summary:        Haskell %{name} library documentation
+
+%description -n ghc-%{name}-doc
+This package provides the Haskell %{name} library documentation.
+%endif
+
+
+%if %{with ghc_prof}
+%package -n ghc-%{name}-prof
+Summary:        Haskell %{name} profiling library
+Requires:       ghc-%{name}-devel%{?_isa} = %{version}-%{release}
+
+%description -n ghc-%{name}-prof
+This package provides the Haskell %{name} profiling library.
+%endif
+
 %prep
-%setup -q
+%setup -q -n %{pkgver}
 
 
 %build
@@ -94,8 +149,6 @@ make man/gtfsschedule.1
 
 %install
 %ghc_lib_install
-
-%ghc_fix_dynamic_rpath %{pkg_name}
 
 rm %{buildroot}/%{?_defaultlicensedir}%{!?_defaultlicensedir:%_docdir}/%{name}/LICENSE
 
@@ -117,21 +170,38 @@ install -m 0644 -p -D man/gtfsschedule.1 %{buildroot}%{_mandir}/man1/gtfsschedul
 
 
 %files
+# Begin cabal-rpm files:
 %license LICENSE
 %doc ChangeLog.adoc README.adoc
 %{_bindir}/%{name}
 %{_mandir}/man1/gtfsschedule.1*
+# End cabal-rpm files
 
 
 %files -n ghc-%{name} -f ghc-%{name}.files
+# Begin cabal-rpm files:
 %license LICENSE
+# End cabal-rpm files
 
 
 %files -n ghc-%{name}-devel -f ghc-%{name}-devel.files
-%doc README.adoc
+%doc ChangeLog.adoc README.adoc
+
+
+%if %{with haddock}
+%files -n ghc-%{name}-doc -f ghc-%{name}-doc.files
+%endif
+
+
+%if %{with ghc_prof}
+%files -n ghc-%{name}-prof -f ghc-%{name}-prof.files
+%endif
 
 
 %changelog
+* Tue Nov 05 2019 Róman Joost <roman@bromeco.de> - 0.8.2.0-1
+- rebuild for F31
+
 * Sat Nov 17 2018 Róman Joost <roman@bromeco.de> - 0.8.1.0-1
 - 0.8.1 release
 
