@@ -50,7 +50,7 @@ in your local folder (`~/.local`). Make sure it is in your `$PATH`.
 
 === Packages
 
-Experimental packages are available for Fedora 24 via
+Experimental packages are available for Fedora via
 https://copr.fedorainfracloud.org/coprs/romanofski/gtfsschedule/[copr].
 
 === Credits
