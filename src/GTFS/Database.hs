@@ -8,8 +8,11 @@
 {-# LANGUAGE QuasiQuotes                #-}
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE DerivingStrategies         #-}
+{-# LANGUAGE StandaloneDeriving         #-}
+{-# LANGUAGE UndecidableInstances       #-}
 {-
-Copyright (C) - 2017 Róman Joost <roman@bromeco.de>
+Copyright (C) - 2017-2020 Róman Joost <roman@bromeco.de>
 
 This file is part of gtfsschedule.
 
