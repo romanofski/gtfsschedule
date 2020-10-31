@@ -20,18 +20,22 @@ along with gtfsschedule.  If not, see <http://www.gnu.org/licenses/>.
 -}
 module CSV.Import.StopTime where
 
-import           CSV.Import.Util  (maybeToPersist)
+import           CSV.Import.Util      (maybeToPersist)
 
-import           Data.Csv         (DefaultOrdered, FromNamedRecord)
-import           GHC.Generics     hiding (from)
+import           Data.Csv             (DefaultOrdered, FromNamedRecord, FromField(..))
+import           GHC.Generics         hiding (from)
+import           Data.Time.LocalTime  (TimeOfDay (..))
+import           Data.Time.Format     (parseTimeM, defaultTimeLocale)
 
-import           Data.Int         (Int64)
-import qualified Data.Text        as T
-import           Database.Persist (PersistValue (..))
+import           Data.Int             (Int64)
+import qualified Data.Text            as T
+import           Database.Persist     (PersistValue (..))
+import           Control.Monad         (mzero)
+import qualified Data.ByteString.Char8 as B
 
 data StopTime = StopTime { trip_id        :: !T.Text
-                         , arrival_time   :: !T.Text
-                         , departure_time :: !T.Text
+                         , arrival_time   :: WrappedTimeOfDay
+                         , departure_time :: WrappedTimeOfDay
                          , stop_id        :: !T.Text
                          , stop_sequence  :: !Int64
                          , pickup_type    :: Maybe Int64
@@ -42,11 +46,21 @@ data StopTime = StopTime { trip_id        :: !T.Text
 instance FromNamedRecord StopTime
 instance DefaultOrdered StopTime
 
+newtype WrappedTimeOfDay = WrappedTimeOfDay { unWrap :: TimeOfDay } deriving (Eq, Show)
 
+instance FromField WrappedTimeOfDay where
+  parseField str = case (parseTimeM True defaultTimeLocale "%T" (fixUpTimes $ B.unpack str)) of
+    Just d -> return $ WrappedTimeOfDay d
+    Nothing -> mzero
+
+-- | Fix times which indicate +1 day by simply resetting them to early morning times.
+--
+-- Perhaps we'll have to invent a new data type in SQL
+-- just to be able to correctly query those times :/
 fixUpTimes ::
-  T.Text
-  -> T.Text
-fixUpTimes t = T.pack (go $ T.unpack t)
+  String
+  -> String
+fixUpTimes = go
   where go ('2':'5':rest) = "01" ++ rest
         go ('2':'6':rest) = "02" ++ rest
         go ('2':'7':rest) = "03" ++ rest
@@ -55,7 +69,6 @@ fixUpTimes t = T.pack (go $ T.unpack t)
         go ('3':'0':rest) = "06" ++ rest
         go ('3':'1':rest) = "07" ++ rest
         go xs = xs
-
 
 prepareSQL ::
   T.Text
@@ -66,8 +79,8 @@ convertToValues ::
   StopTime
   -> [PersistValue]
 convertToValues st = [ PersistText $ trip_id st
-                     , PersistText $ fixUpTimes $ arrival_time st
-                     , PersistText $ fixUpTimes $ departure_time st
+                     , PersistTimeOfDay $ unWrap $ arrival_time st
+                     , PersistTimeOfDay $ unWrap $ departure_time st
                      , PersistText $ stop_id st
                      , PersistInt64 $ stop_sequence st
                      , maybeToPersist PersistInt64 (pickup_type st)
