@@ -7,8 +7,8 @@
 %global with_tests 1
 
 Name:           %{pkg_name}
-Version:        0.8.2.0
-Release:        1%{?dist}
+Version:        0.8.3.0
+Release:        2%{?dist}
 Summary:        Be on time for your next public transport service
 
 License:        GPLv3+
