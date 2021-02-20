@@ -1,7 +1,12 @@
 name:                gtfsschedule
 version:             0.8.3.0
 synopsis:            Be on time for your next public transport service
-description:         Please see README.md
+description:
+    = Motivation
+
+    The command is intended to be invoked frequently in a status bar
+    showing next departing services for one particular stop.
+
 homepage:            http://github.com/romanofski/gtfsschedule#readme
 license:             GPL-3
 license-file:        LICENSE
@@ -12,7 +17,15 @@ category:            Web
 build-type:          Simple
 extra-source-files:  README.adoc
                      ChangeLog.adoc
+data-files:          test/data/importtest.zip
+                   , test/data/regular/*.txt
+                   , test/data/servicefinalstop/*.txt
+                   , test/data/aftermidnight/*.txt
+                   , test/data/tempservice/*.txt
 cabal-version:       >=1.10
+
+tested-with:
+  GHC==8.6.5, GHC==8.8.4, GHC==8.10.3
 
 library
   hs-source-dirs:      src
