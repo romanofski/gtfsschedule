@@ -22,6 +22,7 @@ data-files:          test/data/importtest.zip
                    , test/data/servicefinalstop/*.txt
                    , test/data/aftermidnight/*.txt
                    , test/data/tempservice/*.txt
+                   , .hlint.yaml
 cabal-version:       >=1.10
 
 tested-with:

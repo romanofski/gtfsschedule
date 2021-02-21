@@ -49,7 +49,7 @@ instance DefaultOrdered StopTime
 newtype WrappedTimeOfDay = WrappedTimeOfDay { unWrap :: TimeOfDay } deriving (Eq, Show)
 
 instance FromField WrappedTimeOfDay where
-  parseField str = case (parseTimeM True defaultTimeLocale "%T" (fixUpTimes $ B.unpack str)) of
+  parseField str = case parseTimeM True defaultTimeLocale "%T" (fixUpTimes $ B.unpack str) of
     Just d -> return $ WrappedTimeOfDay d
     Nothing -> mzero
 

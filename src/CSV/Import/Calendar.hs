@@ -25,12 +25,10 @@ module CSV.Import.Calendar where
 import           Control.Monad         (mzero)
 import           Data.Csv              (DefaultOrdered, FromField,
                                         FromNamedRecord (..), parseField, (.:))
-import           Data.Time.Format      (defaultTimeLocale)
+import           Data.Time.Format      (defaultTimeLocale, parseTimeM)
 import           Data.Time.Calendar    (Day)
-import           Data.Time.Format      (parseTimeM)
 import           GHC.Generics
 
-import           Control.Applicative   ((<*>), (<$>))
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Text             as T
 import           Database.Persist      (PersistValue (..))
@@ -67,7 +65,7 @@ instance DefaultOrdered Calendar
 newtype CSVDay = CSVDay { unWrapDay :: Day } deriving (Eq, Show)
 
 instance FromField CSVDay where
-  parseField str = case (parseTimeM True defaultTimeLocale "%Y%m%d" (B.unpack str)) of
+  parseField str = case parseTimeM True defaultTimeLocale "%Y%m%d" (B.unpack str) of
     Just d -> return $ CSVDay d
     Nothing -> mzero
 

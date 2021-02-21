@@ -38,8 +38,7 @@ import qualified Data.ByteString.Lazy         as B
 import           Data.Csv                     (FromNamedRecord)
 import           Data.Csv.Streaming           (decodeByName)
 
-import           Data.Conduit                 (sealConduitT)
-import           Data.Conduit                 (($$+-))
+import Data.Conduit ( sealConduitT, ($$+-) )
 import           Data.Conduit.Binary          (sinkFile)
 import           Data.Foldable                (mapM_)
 import           Network.HTTP.Client.Conduit  (defaultManagerSettings)
@@ -55,8 +54,7 @@ import qualified Data.Text                    as T
 import           Database.Esqueleto           (PersistValue (..))
 import qualified Database.Persist.Sqlite      as Sqlite
 import qualified Filesystem.Path.CurrentOS    as Path
-import           System.Directory             (renameFile)
-import           System.Directory             (createDirectoryIfMissing)
+import System.Directory ( renameFile, createDirectoryIfMissing )
 import           System.IO                    (hPutStr, stderr)
 import           System.IO.Temp               (withSystemTempDirectory)
 
@@ -92,7 +90,7 @@ createNewDatabase url currentDBFile = withSystemTempDirectory "NewGTFSDB" $ \x -
 -- | shows a progress bar to indicate overall import progress
 -- Kudos to: http://stackoverflow.com/questions/8953636/simple-progress-indication-in-console
 --
-printProgress :: Int -> a -> IO (a)
+printProgress :: Int -> a -> IO a
 printProgress progress x = do
   putProgress $ drawProgressBar 50 (fromIntegral progress / 10)
   return x
@@ -122,18 +120,18 @@ ensureUserDatabaseDir userdbfile =
 downloadStaticDataset ::
   String
   -> FilePath
-  -> IO (FilePath)
+  -> IO FilePath
 downloadStaticDataset url downloadDir = runResourceT $ do
   manager <- liftIO $ newManager defaultManagerSettings
   request <- liftIO $ parseRequest url
   response <- http request manager
   sealConduitT (responseBody response) $$+- sinkFile downloadfp
   return downloadDir
-    where downloadfp = (concat [downloadDir, "/", datasetZipFilename])
+    where downloadfp = concat [downloadDir, "/", datasetZipFilename]
 
 unzipDataset ::
   FilePath
-  -> IO (FilePath)
+  -> IO FilePath
 unzipDataset downloaddir = do
   contents <- B.readFile zipfile
   Zip.extractFilesFromArchive [Zip.OptDestination downloaddir] (Zip.toArchive contents)
@@ -163,7 +161,7 @@ runImport newDBFile downloaddir = DB.runDBWithoutLogging (T.pack newDBFile) $ do
 
 importCSV ::
   (FromNamedRecord a, MonadIO m, MonadResource m)
-  => (String, T.Text, (a -> [PersistValue]))
+  => (String, T.Text, a -> [PersistValue])
   -> ReaderT Sqlite.SqlBackend m ()
 importCSV (filepath, sql, convertfunc) = do
   contents <- liftIO $ B.readFile filepath
@@ -171,6 +169,6 @@ importCSV (filepath, sql, convertfunc) = do
     Left errmsg -> liftIO $ print errmsg
     Right (_, records) -> do
       stmt <- DB.prepareStmt sql
-      mapM_ (\x -> DB.rawInsert stmt $ convertfunc x) records
+      mapM_ (DB.rawInsert stmt . convertfunc) records
       liftIO $ Sqlite.stmtFinalize stmt
       return ()

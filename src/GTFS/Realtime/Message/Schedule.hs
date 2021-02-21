@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PatternGuards     #-}
+
 {-
 Copyright (C) - 2017 Róman Joost <roman@bromeco.de>
 
@@ -45,7 +45,6 @@ import qualified Text.ProtocolBuffers.Header                                    
 import           Network.HTTP.Conduit                                               (simpleHttp)
 import           Text.ProtocolBuffers                                               (messageGet)
 
-import           Control.Applicative                                                (pure, (<$>))
 import           Data.Traversable                                                   (mapM)
 import           Prelude                                                            hiding (mapM)
 
@@ -92,12 +91,12 @@ updateScheduleHelper getter fm schedule =
 getTripUpdates ::
   FeedMessage
   -> P'.Seq TripUpdate
-getTripUpdates fm = (`P'.getVal` trip_update) <$> (P'.getVal fm entity)
+getTripUpdates fm = (`P'.getVal` trip_update) <$> P'.getVal fm entity
 
 getVehiclePositions ::
   FeedMessage
   -> P'.Seq VehiclePosition
-getVehiclePositions fm = (`P'.getVal` vehicle) <$> (P'.getVal fm entity)
+getVehiclePositions fm = (`P'.getVal` vehicle) <$> P'.getVal fm entity
 
 updateFeedElement
     :: ForFeedElement e

@@ -29,22 +29,18 @@ import           CSV.Import                (createNewDatabase)
 import           GTFS.Database             (getLastUpdatedDatabase,
                                             userDatabaseFile)
 
-import           Data.Functor              ((<$>))
-
 import           Data.Time.Calendar        (Day)
 import           Network.HTTP.Conduit
 import           Network.HTTP.Types.Header (ResponseHeaders, hLastModified)
-import           Data.Time.Format          (defaultTimeLocale)
+import           Data.Time.Format          (defaultTimeLocale, parseTimeM)
 import qualified Control.Exception         as E
-import           Control.Monad             (join)
 import qualified Data.ByteString.Char8     as B
 import           Data.List                 (find)
 import qualified Data.Text                 as T
-import           Data.Time.Format          (parseTimeM)
 import           System.IO                 (hPrint, hPutStr, stderr)
 
 
-data Error = Error String
+newtype Error = Error String
   deriving (Eq, Show)
 
 -- | Returns True if the static dataset has been updated on the remote server.
@@ -102,8 +98,7 @@ dbIsOutOfDate :: T.Text -> IO (Either Error Bool)
 dbIsOutOfDate url = do
   fp <- userDatabaseFile
   d <- getLastUpdatedDatabase (T.pack fp)
-  result <- isDatasetUpToDate url d isCurrent
-  return result
+  isDatasetUpToDate url d isCurrent
 
 -- | Returns True if the last-modified from the server is less or equal than what we have in our database
 isCurrent ::
@@ -131,4 +126,4 @@ getHeadersForDataset url = do
 getLastModified ::
   ResponseHeaders
   -> Maybe Day
-getLastModified h = join $ (\x -> parseTimeM True defaultTimeLocale "%a, %d %b %Y %T %Z" $ B.unpack $ snd x) <$> find (\(n,_) -> n == hLastModified) h
+getLastModified h = (parseTimeM True defaultTimeLocale "%a, %d %b %Y %T %Z" . B.unpack . snd) =<< find (\(n,_) -> n == hLastModified) h
