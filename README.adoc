@@ -3,6 +3,8 @@
 
 Be on time for your next public transport service.
 
+image:demo.gif[]
+
 == Motivation
 
 ____
