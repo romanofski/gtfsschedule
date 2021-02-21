@@ -54,7 +54,7 @@ instance ForFeedElement TripUpdate where
             , scheduleItemVehicleInformation = scheduleItemVehicleInformation item
             }
     updateScheduleItem tu k item =
-        case (findStopTimeUpdate (stop item) (getStopTimeUpdates tu)) of
+        case findStopTimeUpdate (stop item) (getStopTimeUpdates tu) of
           Just stu -> ScheduleItem
             { tripId = k
             , stop = stop item
@@ -72,8 +72,8 @@ instance ForFeedElement TripUpdate where
 instance ForFeedElement VP.VehiclePosition where
     getTripDescriptor x = P'.getVal x VP.trip
     updateScheduleItem vp k item =
-        if (uToString $ P'.getVal vp VP.stop_id) ==
-           (stopIdentifier $ stop item)
+        if uToString (P'.getVal vp VP.stop_id) ==
+           stopIdentifier (stop item)
             then ScheduleItem
                  { tripId = k
                  , stop = stop item

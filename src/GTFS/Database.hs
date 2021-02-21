@@ -52,11 +52,8 @@ import           Data.Time.Clock                (DiffTime, UTCTime (..),
 import           Data.Time.LocalTime            (TimeOfDay (..),
                                                  timeOfDayToTime,
                                                  timeToTimeOfDay)
-import           Data.Time.Format               (defaultTimeLocale)
-import           Data.Functor                   ((<$>))
-import           Data.Time.Format               (formatTime)
+import           Data.Time.Format               (defaultTimeLocale, formatTime)
 
-import           Control.Monad                  (liftM)
 import           Control.Monad.IO.Class         (MonadIO, liftIO)
 import           Control.Monad.Logger           (LoggingT, MonadLoggerIO,
                                                  NoLoggingT, runNoLoggingT,
@@ -75,6 +72,7 @@ import qualified Database.Persist.Sqlite        as Sqlite
 import           Database.Persist.TH
 import           System.Environment.XDG.BaseDir (getUserDataFile)
 
+{-# ANN module ("HLint: ignore Redundant ^." :: String) #-}
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
 ImportStarted
@@ -200,12 +198,12 @@ isNotFinalStop (st,_,_,_) = do
         \stoptime ->
              do where_
                     (stoptime ^. StopTimeTripId ==.
-                     (val (stopTimeTripId $ Sqlite.entityVal st)) &&.
+                     val (stopTimeTripId $ Sqlite.entityVal st) &&.
                      stoptime ^.
                      StopTimeStopSequence >.
-                     (val (stopTimeStopSequence $ entityVal st)))
+                     val (stopTimeStopSequence $ entityVal st))
                 return stoptime
-    return $ length(stoptimes) > 0
+    return $ not (null stoptimes)
 
 -- | Returns the stop id for a given stop code
 getStopID ::
@@ -261,7 +259,7 @@ getNextDepartures stopID now nowDate l = select $ from $ \(st, t, c, s, r) -> do
 
 getDatabaseInfo ::
   (MonadLoggerIO m, MonadResource m)
-  => ReaderT Sqlite.SqlBackend m [(Sqlite.Entity UpdateProcess)]
+  => ReaderT Sqlite.SqlBackend m [Sqlite.Entity UpdateProcess]
 getDatabaseInfo = select $ from $ \(uf, up) -> do
   where_(
     uf ^. ImportFinishedUpid ==. up ^. UpdateProcessId &&.
@@ -304,7 +302,6 @@ addDatabaseIndices ::
   => ReaderT Sqlite.SqlBackend m ()
 addDatabaseIndices = do
   mapM_ (\x -> Sqlite.rawExecute (T.pack x) []) indices
-  return ()
     where indices = [ "create index stop_time_index ON stop_time (stop_id);"
                     , "create index trip_index on trip (trip_id, route_id, service_id);"
                     , "create index route_index on route (route_id);"
@@ -318,9 +315,8 @@ prepareStmt ::
   => T.Text
   -> ReaderT Sqlite.SqlBackend m Sqlite.Statement
 prepareStmt sql = do
-  conn <- persistBackend `liftM` ask
-  stmt <- liftIO $ Sqlite.connPrepare conn sql
-  return stmt
+  conn <- persistBackend <$> ask
+  liftIO $ Sqlite.connPrepare conn sql
 
 -- | Low-level sqlite insert of a prepared statement
 rawInsert ::

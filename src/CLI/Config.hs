@@ -24,13 +24,9 @@ import           GTFS.Schedule                        (Stop (..), defaultSchedul
 
 import           Data.Ini                             (Ini, lookupValue,
                                                        parseIni, readIniFile)
-
-import           Control.Applicative                  (optional, pure, some,
-                                                       (<$>), (<*>), (<|>))
-import           Data.List                            (findIndex)
-import           Data.Monoid                          ((<>))
-
-import           Control.Monad.Reader                 (ask, local)
+import           Data.List                            (elemIndex)
+import           Control.Applicative                  (optional, some, (<|>))
+import           Control.Monad.Reader                 (ask, asks, local)
 
 import           Options.Applicative.Builder          (argument, auto, flag,
                                                        help, info, long,
@@ -84,7 +80,7 @@ stopWithWalktime :: ReadM Stop
 stopWithWalktime = ReadM $ do
   s <- ask
   let
-    i = findIndex (== '+') s
+    i = elemIndex '+' s
     sCode = maybe s (`take` s) i
     walktime = maybe "" ((`drop` s) . (+1)) i
   Stop
@@ -110,7 +106,7 @@ optionParser conf =
                   (Builder.progDesc "Setup the gtfsschedule database")) <>
         Builder.command
         "search"
-        (info (searchOptions) (Builder.progDesc "Search for a stop/station ID")))
+        (info searchOptions (Builder.progDesc "Search for a stop/station ID")))
 
 searchOptions :: Parser Command
 searchOptions = Search <$> Builder.argument Builder.str ( metavar "NAME" <> help "Stop name to search the id for")
@@ -118,12 +114,11 @@ searchOptions = Search <$> Builder.argument Builder.str ( metavar "NAME" <> help
 setupOptions ::
   Ini -> Parser Command
 setupOptions conf = Setup
-  <$> (optional $ Builder.option txtReader ( long "static-url" <> withConfigfile conf (T.pack "static-url") <> metavar "URL" <> short 's' <> help "URL to the static dataset zip archive" ))
+  <$> optional (Builder.option txtReader ( long "static-url" <> withConfigfile conf (T.pack "static-url") <> metavar "URL" <> short 's' <> help "URL to the static dataset zip archive" ))
 
 txtReader :: ReadM T.Text
 txtReader = ReadM $ do
-  s <- ask
-  return $ T.pack s
+  asks T.pack
 
 monitorOptions :: Ini -> Parser Command
 monitorOptions conf =
@@ -144,23 +139,23 @@ monitorOptions conf =
         True
         (long "autoupdate" <> short 'u' <>
          help "Automatically update the static GTFS dataset") <*>
-    (optional $
+    optional (
      Builder.option
          Builder.auto
          (short 'l' <> long "limit" <> help "How many schedule items to show")) <*>
-    (optional $
+    optional (
      Builder.option
          txtReader
          (long "static-url" <> withConfigfile conf "static-url" <>
           metavar "URL" <>
           help "URL to the static dataset zip archive")) <*>
-    (optional $
+    optional (
      Builder.option
          txtReader
          (long "realtime-url" <> withConfigfile conf "realtime-url" <>
           metavar "URL" <>
           help "URL to the realtime GTFS feed")) <*>
-    (optional $
+    optional (
      Builder.option
          txtReader
          (long "schedule-item-template" <>

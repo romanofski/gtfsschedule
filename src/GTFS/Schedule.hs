@@ -1,7 +1,7 @@
-{-# LANGUAGE RecordWildCards   #-}
+
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TupleSections     #-}
+
 {-
 Copyright (C) - 2017 Róman Joost <roman@bromeco.de>
 
@@ -36,22 +36,18 @@ module GTFS.Schedule
 
 import qualified GTFS.Database           as DB
 
-import           Control.Applicative     (pure, (<$>))
 import           Control.Monad           (filterM)
-import           Data.List               (sortBy)
-import           Data.Ord                (comparing)
-import           Data.Traversable        (traverse)
+import           Data.List               (sortOn)
 
 import           Data.Time.Calendar      (Day)
 import           Data.Time.LocalTime     (LocalTime (..), TimeOfDay (..),
                                           TimeZone, timeOfDayToTime,
                                           timeToTimeOfDay, utcToLocalTime)
-import           Data.Time.Format        (defaultTimeLocale)
+import           Data.Time.Format        (defaultTimeLocale, formatTime)
 import           Data.Maybe              (fromMaybe)
 import qualified Data.Text               as T
 import           Data.Time               (getCurrentTime, getCurrentTimeZone)
 import           Data.Time.Clock         (DiffTime, UTCTime, secondsToDiffTime)
-import           Data.Time.Format        (formatTime)
 import           System.IO               (Handle, hPutStr)
 import           Database.Esqueleto      (unValue)
 import qualified Database.Persist.Sqlite as Sqlite
@@ -111,8 +107,7 @@ getSchedulesByWalktime fp l stops = do
   pure $ concat schedules
     where go filep s = do
             timespec <- getTimeSpecFromNow s
-            schedule <- getSchedule filep s timespec l
-            pure schedule
+            getSchedule filep s timespec l
 
 -- | Return the next services which are due in the next couple of minutes
 getSchedule ::
@@ -121,25 +116,24 @@ getSchedule ::
   -> TimeSpec
   -> Integer  -- ^ limit
   -> IO [ScheduleItem]
-getSchedule sqliteDBFilepath s timespec l = nextDepartures (T.pack sqliteDBFilepath) s timespec l
+getSchedule sqliteDBFilepath = nextDepartures (T.pack sqliteDBFilepath)
 
 -- | Given a list of schedules paired with an associated walk delay,
 -- sort the schedule items by bum-off-seat time.
 --
 sortSchedules :: [ScheduleItem] -> [ScheduleItem]
-sortSchedules xs =
-  sortBy (comparing bumOffSeatTime) xs
+sortSchedules = sortOn bumOffSeatTime
 
 bumOffSeatTime :: ScheduleItem -> DiffTime
 bumOffSeatTime item =
     timeOfDayToTime (departureTime item) -
-    secondsToDiffTime ((stopWalktime $ stop item) * 60)
+    secondsToDiffTime (stopWalktime (stop item) * 60)
 
 -- | Create a specific point in time from the current time/date
 getTimeSpecFromNow ::
   Stop
   -> IO TimeSpec
-getTimeSpecFromNow (Stop { stopWalktime = delay }) = do
+getTimeSpecFromNow Stop { stopWalktime = delay } = do
       t <- getCurrentTime
       tz <- getCurrentTimeZone
       let lday = localDay $ utcToLocalTime tz t
@@ -166,8 +160,7 @@ printSchedule [] _ handle =
 printSchedule xs cfg handle =
     hPutStr handle $
     concat $
-    (\x ->
-          defaultScheduleItemFormatter cfg x) <$>
+    defaultScheduleItemFormatter cfg <$>
     xs
 
 data ScheduleConfig = ScheduleConfig
@@ -201,20 +194,20 @@ defaultScheduleItemFormatter cfg si = render attributesToTemplate
               , Just $
                 show
                     (minutesToDeparture si (scheduleTimeOfDay cfg) -
-                     (stopWalktime $ stop si)))
+                     stopWalktime (stop si)))
             , ("departureTime", Just $ show (departureTime si))
             , ("readableDelay", humanReadableDelay si)
             , ("scheduledDepartureTime", Just $ show (scheduledDepartureTime si))
             , ("scheduleType", Just $ show $ scheduleType si)
             , ("scheduleTypeDiff", scheduleTypeWithoutDefault si)
             , ("stopName", Just $ stopName $ stop si)
-            , ("congestionPercent", show <$> (viCongestionLevel $ scheduleItemVehicleInformation si))
-            , ("occupancyPercent", show <$> (viOccupancyStatus $ scheduleItemVehicleInformation si))
+            , ("congestionPercent", show <$> viCongestionLevel (scheduleItemVehicleInformation si))
+            , ("occupancyPercent", show <$> viOccupancyStatus (scheduleItemVehicleInformation si))
             ]
             (newSTMP (T.unpack $ scheduleItemTemplate cfg))
 
 scheduleTypeWithoutDefault :: ScheduleItem -> Maybe String
-scheduleTypeWithoutDefault (ScheduleItem { scheduleType = SCHEDULED }) = Nothing
+scheduleTypeWithoutDefault ScheduleItem { scheduleType = SCHEDULED } = Nothing
 scheduleTypeWithoutDefault s = Just $ show $ scheduleType s
 
 -- | Converts the delay to a more readable format
@@ -232,7 +225,7 @@ humanReadableDelay x
   | depDelay < 60 * 60 = Just $ formatTime defaultTimeLocale (prefix ++ "%M:%S") t
   | otherwise = Just $ formatTime defaultTimeLocale (prefix ++ "%k:%M:%S") t
   where
-    t = timeToTimeOfDay $ secondsToDiffTime $ depDelay
+    t = timeToTimeOfDay $ secondsToDiffTime depDelay
     depDelay = abs $ departureDelay x
     prefix =
         if departureDelay x <= 0
@@ -266,13 +259,13 @@ makeSchedule stops s =
           makeItem (Sqlite.entityVal x, Sqlite.entityVal y, Sqlite.entityVal z, Sqlite.entityVal a)) <$>
     stops
   where
-    makeItem (st,t,r,stop) =
+    makeItem (st,t,r,stop') =
         ScheduleItem
         { tripId = DB.tripTripId t
         , stop = Stop
           { stopIdentifier = DB.stopTimeStopId st
           , stopWalktime = stopWalktime s
-          , stopName = DB.stopName stop
+          , stopName = DB.stopName stop'
           }
         , serviceName = DB.routeShortName r ++
           " " ++ fromMaybe (DB.routeLongName r) (DB.tripHeadsign t)

@@ -35,9 +35,7 @@ import           GTFS.Schedule                  (ScheduleConfig (..),
 import qualified Options.Applicative.Builder    as Builder
 import           Options.Applicative.Extra      (execParser, helper)
 
-import           Control.Applicative            ((<*>))
 import           Data.Maybe                     (fromMaybe)
-import           Data.Monoid                    ((<>))
 import qualified Data.Text                      as T
 import           System.IO                      (stdout)
 
@@ -49,7 +47,7 @@ runSchedule dbfile (Search str) = do
   putStrLn $ "Found " ++ show (length results) ++ " matches"
 runSchedule dbfile (Setup (Just url)) = createNewDatabase (T.unpack url) dbfile
 runSchedule _ (Setup Nothing) = error "The static-url must be set either by command line argument or configuration file."
-runSchedule dbfile (Monitor{..}) = do
+runSchedule dbfile Monitor{..} = do
     let l = fromMaybe 3 limit
     printOrUpdateDataset autoUpdate staticDatasetURL
     schedules <-
