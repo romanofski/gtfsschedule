@@ -1,5 +1,7 @@
 {-# LANGUAGE EmptyDataDecls             #-}
 {-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
@@ -12,7 +14,7 @@
 {-# LANGUAGE StandaloneDeriving         #-}
 {-# LANGUAGE UndecidableInstances       #-}
 {-
-Copyright (C) - 2017-2020 Róman Joost <roman@bromeco.de>
+Copyright (C) - 2017-2021 Róman Joost <roman@bromeco.de>
 
 This file is part of gtfsschedule.
 
