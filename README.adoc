@@ -48,15 +48,15 @@ cabal v2-install
 
 You can also use the https://nixos.org/download.html[nix] package manager:
 
----
+----
 nix-build
----
+----
 
 and a development environment by running:
 
----
+----
 nix-shell
----
+----
 
 
 === Packages
