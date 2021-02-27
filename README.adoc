@@ -36,19 +36,28 @@ audience, so take this list with a grain of salt:
 
 == Installation
 
-=== From source
+=== From source (Cabal)
 
-Haskell provides a tool called
-https://docs.haskellstack.org/en/stable/README/[stack] which can be installed on
-many systems.
-
-Using `stack` you can compile and install:
+Using `cabal` you can compile and install:
 
 ----
-stack install
+cabal v2-install
 ----
 
-in your local folder (`~/.local`). Make sure it is in your `$PATH`.
+=== Using Nix
+
+You can also use the https://nixos.org/download.html[nix] package manager:
+
+---
+nix-build
+---
+
+and a development environment by running:
+
+---
+nix-shell
+---
+
 
 === Packages
 
