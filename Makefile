@@ -5,7 +5,10 @@ README.html: README.adoc ChangeLog.adoc
 	asciidoc $<
 
 src/GTFS/Realtime/Internal/Com/Google/Transit/Realtime.hs: gtfsschedule.proto
-	hprotoc -p GTFS.Realtime.Internal -d src/ -u gtfsschedule.proto
+	hprotoc --lenses -p GTFS.Realtime.Internal -d src/ -u gtfsschedule.proto
+
+gtfsschedule.proto:
+	curl https://developers.google.com/transit/gtfs-realtime/gtfs-realtime.proto -o gtfsschedule.proto
 
 .PHONY: proto
 proto: src/GTFS/Realtime/Internal/Com/Google/Transit/Realtime.hs

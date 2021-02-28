@@ -1,33 +1,43 @@
-{-# LANGUAGE BangPatterns, DeriveDataTypeable, DeriveGeneric, FlexibleInstances, MultiParamTypeClasses, OverloadedStrings #-}
-{-# OPTIONS_GHC  -fno-warn-unused-imports #-}
-module GTFS.Realtime.Internal.Com.Google.Transit.Realtime.Position (Position(..)) where
+{-# LANGUAGE TemplateHaskell, BangPatterns, DeriveDataTypeable, DeriveGeneric, FlexibleInstances, MultiParamTypeClasses,
+ OverloadedStrings #-}
+{-# OPTIONS_GHC  -w #-}
+module GTFS.Realtime.Internal.Com.Google.Transit.Realtime.Position (Position(..), latitude, longitude, bearing, odometer, speed)
+       where
 import Prelude ((+), (/), (++), (.), (==), (<=), (&&))
 import qualified Prelude as Prelude'
+import qualified Data.List as Prelude'
 import qualified Data.Typeable as Prelude'
 import qualified GHC.Generics as Prelude'
 import qualified Data.Data as Prelude'
 import qualified Text.ProtocolBuffers.Header as P'
+import qualified Control.Lens.TH
 
-data Position = Position{latitude :: !(P'.Float), longitude :: !(P'.Float), bearing :: !(P'.Maybe P'.Float),
-                         odometer :: !(P'.Maybe P'.Double), speed :: !(P'.Maybe P'.Float), ext'field :: !(P'.ExtField),
-                         unknown'field :: !(P'.UnknownField)}
+data Position = Position{_latitude :: !(P'.Float), _longitude :: !(P'.Float), _bearing :: !(P'.Maybe P'.Float),
+                         _odometer :: !(P'.Maybe P'.Double), _speed :: !(P'.Maybe P'.Float), _ext'field :: !(P'.ExtField),
+                         _unknown'field :: !(P'.UnknownField)}
                 deriving (Prelude'.Show, Prelude'.Eq, Prelude'.Ord, Prelude'.Typeable, Prelude'.Data, Prelude'.Generic)
 
+Control.Lens.TH.makeLenses ''Position
+
 instance P'.ExtendMessage Position where
-  getExtField = ext'field
-  putExtField e'f msg = msg{ext'field = e'f}
+  getExtField = _ext'field
+  putExtField e'f msg = msg{_ext'field = e'f}
   validExtRanges msg = P'.extRanges (P'.reflectDescriptorInfo msg)
 
 instance P'.UnknownMessage Position where
-  getUnknownField = unknown'field
-  putUnknownField u'f msg = msg{unknown'field = u'f}
+  getUnknownField = _unknown'field
+  putUnknownField u'f msg = msg{_unknown'field = u'f}
 
 instance P'.Mergeable Position where
   mergeAppend (Position x'1 x'2 x'3 x'4 x'5 x'6 x'7) (Position y'1 y'2 y'3 y'4 y'5 y'6 y'7)
-   = Position (P'.mergeAppend x'1 y'1) (P'.mergeAppend x'2 y'2) (P'.mergeAppend x'3 y'3) (P'.mergeAppend x'4 y'4)
-      (P'.mergeAppend x'5 y'5)
-      (P'.mergeAppend x'6 y'6)
-      (P'.mergeAppend x'7 y'7)
+   = let !z'1 = P'.mergeAppend x'1 y'1
+         !z'2 = P'.mergeAppend x'2 y'2
+         !z'3 = P'.mergeAppend x'3 y'3
+         !z'4 = P'.mergeAppend x'4 y'4
+         !z'5 = P'.mergeAppend x'5 y'5
+         !z'6 = P'.mergeAppend x'6 y'6
+         !z'7 = P'.mergeAppend x'7 y'7
+      in Position z'1 z'2 z'3 z'4 z'5 z'6 z'7
 
 instance P'.Default Position where
   defaultValue
@@ -71,11 +81,11 @@ instance P'.Wire Position where
     where
         update'Self wire'Tag old'Self
          = case wire'Tag of
-             13 -> Prelude'.fmap (\ !new'Field -> old'Self{latitude = new'Field}) (P'.wireGet 2)
-             21 -> Prelude'.fmap (\ !new'Field -> old'Self{longitude = new'Field}) (P'.wireGet 2)
-             29 -> Prelude'.fmap (\ !new'Field -> old'Self{bearing = Prelude'.Just new'Field}) (P'.wireGet 2)
-             33 -> Prelude'.fmap (\ !new'Field -> old'Self{odometer = Prelude'.Just new'Field}) (P'.wireGet 1)
-             45 -> Prelude'.fmap (\ !new'Field -> old'Self{speed = Prelude'.Just new'Field}) (P'.wireGet 2)
+             13 -> Prelude'.fmap (\ !new'Field -> old'Self{_latitude = new'Field}) (P'.wireGet 2)
+             21 -> Prelude'.fmap (\ !new'Field -> old'Self{_longitude = new'Field}) (P'.wireGet 2)
+             29 -> Prelude'.fmap (\ !new'Field -> old'Self{_bearing = Prelude'.Just new'Field}) (P'.wireGet 2)
+             33 -> Prelude'.fmap (\ !new'Field -> old'Self{_odometer = Prelude'.Just new'Field}) (P'.wireGet 1)
+             45 -> Prelude'.fmap (\ !new'Field -> old'Self{_speed = Prelude'.Just new'Field}) (P'.wireGet 2)
              _ -> let (field'Number, wire'Type) = P'.splitWireTag wire'Tag in
                    if Prelude'.or [1000 <= field'Number && field'Number <= 1999] then
                     P'.loadExtension field'Number wire'Type old'Self else P'.unknown field'Number wire'Type old'Self
@@ -89,7 +99,7 @@ instance P'.ReflectDescriptor Position where
   getMessageInfo _ = P'.GetMessageInfo (P'.fromDistinctAscList [13, 21]) (P'.fromDistinctAscList [13, 21, 29, 33, 45])
   reflectDescriptorInfo _
    = Prelude'.read
-      "DescriptorInfo {descName = ProtoName {protobufName = FIName \".transit_realtime.Position\", haskellPrefix = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\"], baseName = MName \"Position\"}, descFilePath = [\"GTFS\",\"Realtime\",\"Internal\",\"Com\",\"Google\",\"Transit\",\"Realtime\",\"Position.hs\"], isGroup = False, fields = fromList [FieldInfo {fieldName = ProtoFName {protobufName' = FIName \".transit_realtime.Position.latitude\", haskellPrefix' = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule' = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\",MName \"Position\"], baseName' = FName \"latitude\", baseNamePrefix' = \"\"}, fieldNumber = FieldId {getFieldId = 1}, wireTag = WireTag {getWireTag = 13}, packedTag = Nothing, wireTagLength = 1, isPacked = False, isRequired = True, canRepeat = False, mightPack = False, typeCode = FieldType {getFieldType = 2}, typeName = Nothing, hsRawDefault = Nothing, hsDefault = Nothing},FieldInfo {fieldName = ProtoFName {protobufName' = FIName \".transit_realtime.Position.longitude\", haskellPrefix' = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule' = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\",MName \"Position\"], baseName' = FName \"longitude\", baseNamePrefix' = \"\"}, fieldNumber = FieldId {getFieldId = 2}, wireTag = WireTag {getWireTag = 21}, packedTag = Nothing, wireTagLength = 1, isPacked = False, isRequired = True, canRepeat = False, mightPack = False, typeCode = FieldType {getFieldType = 2}, typeName = Nothing, hsRawDefault = Nothing, hsDefault = Nothing},FieldInfo {fieldName = ProtoFName {protobufName' = FIName \".transit_realtime.Position.bearing\", haskellPrefix' = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule' = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\",MName \"Position\"], baseName' = FName \"bearing\", baseNamePrefix' = \"\"}, fieldNumber = FieldId {getFieldId = 3}, wireTag = WireTag {getWireTag = 29}, packedTag = Nothing, wireTagLength = 1, isPacked = False, isRequired = False, canRepeat = False, mightPack = False, typeCode = FieldType {getFieldType = 2}, typeName = Nothing, hsRawDefault = Nothing, hsDefault = Nothing},FieldInfo {fieldName = ProtoFName {protobufName' = FIName \".transit_realtime.Position.odometer\", haskellPrefix' = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule' = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\",MName \"Position\"], baseName' = FName \"odometer\", baseNamePrefix' = \"\"}, fieldNumber = FieldId {getFieldId = 4}, wireTag = WireTag {getWireTag = 33}, packedTag = Nothing, wireTagLength = 1, isPacked = False, isRequired = False, canRepeat = False, mightPack = False, typeCode = FieldType {getFieldType = 1}, typeName = Nothing, hsRawDefault = Nothing, hsDefault = Nothing},FieldInfo {fieldName = ProtoFName {protobufName' = FIName \".transit_realtime.Position.speed\", haskellPrefix' = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule' = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\",MName \"Position\"], baseName' = FName \"speed\", baseNamePrefix' = \"\"}, fieldNumber = FieldId {getFieldId = 5}, wireTag = WireTag {getWireTag = 45}, packedTag = Nothing, wireTagLength = 1, isPacked = False, isRequired = False, canRepeat = False, mightPack = False, typeCode = FieldType {getFieldType = 2}, typeName = Nothing, hsRawDefault = Nothing, hsDefault = Nothing}], descOneofs = fromList [], keys = fromList [], extRanges = [(FieldId {getFieldId = 1000},FieldId {getFieldId = 1999})], knownKeys = fromList [], storeUnknown = True, lazyFields = False, makeLenses = False, jsonInstances = False}"
+      "DescriptorInfo {descName = ProtoName {protobufName = FIName \".transit_realtime.Position\", haskellPrefix = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\"], baseName = MName \"Position\"}, descFilePath = [\"GTFS\",\"Realtime\",\"Internal\",\"Com\",\"Google\",\"Transit\",\"Realtime\",\"Position.hs\"], isGroup = False, fields = fromList [FieldInfo {fieldName = ProtoFName {protobufName' = FIName \".transit_realtime.Position.latitude\", haskellPrefix' = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule' = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\",MName \"Position\"], baseName' = FName \"latitude\", baseNamePrefix' = \"_\"}, fieldNumber = FieldId {getFieldId = 1}, wireTag = WireTag {getWireTag = 13}, packedTag = Nothing, wireTagLength = 1, isPacked = False, isRequired = True, canRepeat = False, mightPack = False, typeCode = FieldType {getFieldType = 2}, typeName = Nothing, hsRawDefault = Nothing, hsDefault = Nothing},FieldInfo {fieldName = ProtoFName {protobufName' = FIName \".transit_realtime.Position.longitude\", haskellPrefix' = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule' = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\",MName \"Position\"], baseName' = FName \"longitude\", baseNamePrefix' = \"_\"}, fieldNumber = FieldId {getFieldId = 2}, wireTag = WireTag {getWireTag = 21}, packedTag = Nothing, wireTagLength = 1, isPacked = False, isRequired = True, canRepeat = False, mightPack = False, typeCode = FieldType {getFieldType = 2}, typeName = Nothing, hsRawDefault = Nothing, hsDefault = Nothing},FieldInfo {fieldName = ProtoFName {protobufName' = FIName \".transit_realtime.Position.bearing\", haskellPrefix' = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule' = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\",MName \"Position\"], baseName' = FName \"bearing\", baseNamePrefix' = \"_\"}, fieldNumber = FieldId {getFieldId = 3}, wireTag = WireTag {getWireTag = 29}, packedTag = Nothing, wireTagLength = 1, isPacked = False, isRequired = False, canRepeat = False, mightPack = False, typeCode = FieldType {getFieldType = 2}, typeName = Nothing, hsRawDefault = Nothing, hsDefault = Nothing},FieldInfo {fieldName = ProtoFName {protobufName' = FIName \".transit_realtime.Position.odometer\", haskellPrefix' = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule' = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\",MName \"Position\"], baseName' = FName \"odometer\", baseNamePrefix' = \"_\"}, fieldNumber = FieldId {getFieldId = 4}, wireTag = WireTag {getWireTag = 33}, packedTag = Nothing, wireTagLength = 1, isPacked = False, isRequired = False, canRepeat = False, mightPack = False, typeCode = FieldType {getFieldType = 1}, typeName = Nothing, hsRawDefault = Nothing, hsDefault = Nothing},FieldInfo {fieldName = ProtoFName {protobufName' = FIName \".transit_realtime.Position.speed\", haskellPrefix' = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule' = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\",MName \"Position\"], baseName' = FName \"speed\", baseNamePrefix' = \"_\"}, fieldNumber = FieldId {getFieldId = 5}, wireTag = WireTag {getWireTag = 45}, packedTag = Nothing, wireTagLength = 1, isPacked = False, isRequired = False, canRepeat = False, mightPack = False, typeCode = FieldType {getFieldType = 2}, typeName = Nothing, hsRawDefault = Nothing, hsDefault = Nothing}], descOneofs = fromList [], keys = fromList [], extRanges = [(FieldId {getFieldId = 1000},FieldId {getFieldId = 1999})], knownKeys = fromList [], storeUnknown = True, lazyFields = False, makeLenses = True, jsonInstances = False}"
 
 instance P'.TextType Position where
   tellT = P'.tellSubMessage
@@ -98,38 +108,18 @@ instance P'.TextType Position where
 instance P'.TextMsg Position where
   textPut msg
    = do
-       P'.tellT "latitude" (latitude msg)
-       P'.tellT "longitude" (longitude msg)
-       P'.tellT "bearing" (bearing msg)
-       P'.tellT "odometer" (odometer msg)
-       P'.tellT "speed" (speed msg)
+       P'.tellT "latitude" (_latitude msg)
+       P'.tellT "longitude" (_longitude msg)
+       P'.tellT "bearing" (_bearing msg)
+       P'.tellT "odometer" (_odometer msg)
+       P'.tellT "speed" (_speed msg)
   textGet
    = do
-       mods <- P'.sepEndBy (P'.choice [parse'latitude, parse'longitude, parse'bearing, parse'odometer, parse'speed]) P'.spaces
-       Prelude'.return (Prelude'.foldl (\ v f -> f v) P'.defaultValue mods)
+       mods <- P'.sepEndBy (P'.choice [parse'_latitude, parse'_longitude, parse'_bearing, parse'_odometer, parse'_speed]) P'.spaces
+       Prelude'.return (Prelude'.foldl' (\ v f -> f v) P'.defaultValue mods)
     where
-        parse'latitude
-         = P'.try
-            (do
-               v <- P'.getT "latitude"
-               Prelude'.return (\ o -> o{latitude = v}))
-        parse'longitude
-         = P'.try
-            (do
-               v <- P'.getT "longitude"
-               Prelude'.return (\ o -> o{longitude = v}))
-        parse'bearing
-         = P'.try
-            (do
-               v <- P'.getT "bearing"
-               Prelude'.return (\ o -> o{bearing = v}))
-        parse'odometer
-         = P'.try
-            (do
-               v <- P'.getT "odometer"
-               Prelude'.return (\ o -> o{odometer = v}))
-        parse'speed
-         = P'.try
-            (do
-               v <- P'.getT "speed"
-               Prelude'.return (\ o -> o{speed = v}))
+        parse'_latitude = Prelude'.fmap (\ v o -> o{_latitude = v}) (P'.try (P'.getT "latitude"))
+        parse'_longitude = Prelude'.fmap (\ v o -> o{_longitude = v}) (P'.try (P'.getT "longitude"))
+        parse'_bearing = Prelude'.fmap (\ v o -> o{_bearing = v}) (P'.try (P'.getT "bearing"))
+        parse'_odometer = Prelude'.fmap (\ v o -> o{_odometer = v}) (P'.try (P'.getT "odometer"))
+        parse'_speed = Prelude'.fmap (\ v o -> o{_speed = v}) (P'.try (P'.getT "speed"))

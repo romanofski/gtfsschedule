@@ -1,29 +1,38 @@
-{-# LANGUAGE BangPatterns, DeriveDataTypeable, DeriveGeneric, FlexibleInstances, MultiParamTypeClasses, OverloadedStrings #-}
-{-# OPTIONS_GHC  -fno-warn-unused-imports #-}
-module GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TimeRange (TimeRange(..)) where
+{-# LANGUAGE TemplateHaskell, BangPatterns, DeriveDataTypeable, DeriveGeneric, FlexibleInstances, MultiParamTypeClasses,
+ OverloadedStrings #-}
+{-# OPTIONS_GHC  -w #-}
+module GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TimeRange (TimeRange(..), start, end) where
 import Prelude ((+), (/), (++), (.), (==), (<=), (&&))
 import qualified Prelude as Prelude'
+import qualified Data.List as Prelude'
 import qualified Data.Typeable as Prelude'
 import qualified GHC.Generics as Prelude'
 import qualified Data.Data as Prelude'
 import qualified Text.ProtocolBuffers.Header as P'
+import qualified Control.Lens.TH
 
-data TimeRange = TimeRange{start :: !(P'.Maybe P'.Word64), end :: !(P'.Maybe P'.Word64), ext'field :: !(P'.ExtField),
-                           unknown'field :: !(P'.UnknownField)}
+data TimeRange = TimeRange{_start :: !(P'.Maybe P'.Word64), _end :: !(P'.Maybe P'.Word64), _ext'field :: !(P'.ExtField),
+                           _unknown'field :: !(P'.UnknownField)}
                  deriving (Prelude'.Show, Prelude'.Eq, Prelude'.Ord, Prelude'.Typeable, Prelude'.Data, Prelude'.Generic)
 
+Control.Lens.TH.makeLenses ''TimeRange
+
 instance P'.ExtendMessage TimeRange where
-  getExtField = ext'field
-  putExtField e'f msg = msg{ext'field = e'f}
+  getExtField = _ext'field
+  putExtField e'f msg = msg{_ext'field = e'f}
   validExtRanges msg = P'.extRanges (P'.reflectDescriptorInfo msg)
 
 instance P'.UnknownMessage TimeRange where
-  getUnknownField = unknown'field
-  putUnknownField u'f msg = msg{unknown'field = u'f}
+  getUnknownField = _unknown'field
+  putUnknownField u'f msg = msg{_unknown'field = u'f}
 
 instance P'.Mergeable TimeRange where
   mergeAppend (TimeRange x'1 x'2 x'3 x'4) (TimeRange y'1 y'2 y'3 y'4)
-   = TimeRange (P'.mergeAppend x'1 y'1) (P'.mergeAppend x'2 y'2) (P'.mergeAppend x'3 y'3) (P'.mergeAppend x'4 y'4)
+   = let !z'1 = P'.mergeAppend x'1 y'1
+         !z'2 = P'.mergeAppend x'2 y'2
+         !z'3 = P'.mergeAppend x'3 y'3
+         !z'4 = P'.mergeAppend x'4 y'4
+      in TimeRange z'1 z'2 z'3 z'4
 
 instance P'.Default TimeRange where
   defaultValue = TimeRange P'.defaultValue P'.defaultValue P'.defaultValue P'.defaultValue
@@ -61,8 +70,8 @@ instance P'.Wire TimeRange where
     where
         update'Self wire'Tag old'Self
          = case wire'Tag of
-             8 -> Prelude'.fmap (\ !new'Field -> old'Self{start = Prelude'.Just new'Field}) (P'.wireGet 4)
-             16 -> Prelude'.fmap (\ !new'Field -> old'Self{end = Prelude'.Just new'Field}) (P'.wireGet 4)
+             8 -> Prelude'.fmap (\ !new'Field -> old'Self{_start = Prelude'.Just new'Field}) (P'.wireGet 4)
+             16 -> Prelude'.fmap (\ !new'Field -> old'Self{_end = Prelude'.Just new'Field}) (P'.wireGet 4)
              _ -> let (field'Number, wire'Type) = P'.splitWireTag wire'Tag in
                    if Prelude'.or [1000 <= field'Number && field'Number <= 1999] then
                     P'.loadExtension field'Number wire'Type old'Self else P'.unknown field'Number wire'Type old'Self
@@ -76,7 +85,7 @@ instance P'.ReflectDescriptor TimeRange where
   getMessageInfo _ = P'.GetMessageInfo (P'.fromDistinctAscList []) (P'.fromDistinctAscList [8, 16])
   reflectDescriptorInfo _
    = Prelude'.read
-      "DescriptorInfo {descName = ProtoName {protobufName = FIName \".transit_realtime.TimeRange\", haskellPrefix = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\"], baseName = MName \"TimeRange\"}, descFilePath = [\"GTFS\",\"Realtime\",\"Internal\",\"Com\",\"Google\",\"Transit\",\"Realtime\",\"TimeRange.hs\"], isGroup = False, fields = fromList [FieldInfo {fieldName = ProtoFName {protobufName' = FIName \".transit_realtime.TimeRange.start\", haskellPrefix' = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule' = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\",MName \"TimeRange\"], baseName' = FName \"start\", baseNamePrefix' = \"\"}, fieldNumber = FieldId {getFieldId = 1}, wireTag = WireTag {getWireTag = 8}, packedTag = Nothing, wireTagLength = 1, isPacked = False, isRequired = False, canRepeat = False, mightPack = False, typeCode = FieldType {getFieldType = 4}, typeName = Nothing, hsRawDefault = Nothing, hsDefault = Nothing},FieldInfo {fieldName = ProtoFName {protobufName' = FIName \".transit_realtime.TimeRange.end\", haskellPrefix' = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule' = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\",MName \"TimeRange\"], baseName' = FName \"end\", baseNamePrefix' = \"\"}, fieldNumber = FieldId {getFieldId = 2}, wireTag = WireTag {getWireTag = 16}, packedTag = Nothing, wireTagLength = 1, isPacked = False, isRequired = False, canRepeat = False, mightPack = False, typeCode = FieldType {getFieldType = 4}, typeName = Nothing, hsRawDefault = Nothing, hsDefault = Nothing}], descOneofs = fromList [], keys = fromList [], extRanges = [(FieldId {getFieldId = 1000},FieldId {getFieldId = 1999})], knownKeys = fromList [], storeUnknown = True, lazyFields = False, makeLenses = False, jsonInstances = False}"
+      "DescriptorInfo {descName = ProtoName {protobufName = FIName \".transit_realtime.TimeRange\", haskellPrefix = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\"], baseName = MName \"TimeRange\"}, descFilePath = [\"GTFS\",\"Realtime\",\"Internal\",\"Com\",\"Google\",\"Transit\",\"Realtime\",\"TimeRange.hs\"], isGroup = False, fields = fromList [FieldInfo {fieldName = ProtoFName {protobufName' = FIName \".transit_realtime.TimeRange.start\", haskellPrefix' = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule' = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\",MName \"TimeRange\"], baseName' = FName \"start\", baseNamePrefix' = \"_\"}, fieldNumber = FieldId {getFieldId = 1}, wireTag = WireTag {getWireTag = 8}, packedTag = Nothing, wireTagLength = 1, isPacked = False, isRequired = False, canRepeat = False, mightPack = False, typeCode = FieldType {getFieldType = 4}, typeName = Nothing, hsRawDefault = Nothing, hsDefault = Nothing},FieldInfo {fieldName = ProtoFName {protobufName' = FIName \".transit_realtime.TimeRange.end\", haskellPrefix' = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule' = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\",MName \"TimeRange\"], baseName' = FName \"end\", baseNamePrefix' = \"_\"}, fieldNumber = FieldId {getFieldId = 2}, wireTag = WireTag {getWireTag = 16}, packedTag = Nothing, wireTagLength = 1, isPacked = False, isRequired = False, canRepeat = False, mightPack = False, typeCode = FieldType {getFieldType = 4}, typeName = Nothing, hsRawDefault = Nothing, hsDefault = Nothing}], descOneofs = fromList [], keys = fromList [], extRanges = [(FieldId {getFieldId = 1000},FieldId {getFieldId = 1999})], knownKeys = fromList [], storeUnknown = True, lazyFields = False, makeLenses = True, jsonInstances = False}"
 
 instance P'.TextType TimeRange where
   tellT = P'.tellSubMessage
@@ -85,20 +94,12 @@ instance P'.TextType TimeRange where
 instance P'.TextMsg TimeRange where
   textPut msg
    = do
-       P'.tellT "start" (start msg)
-       P'.tellT "end" (end msg)
+       P'.tellT "start" (_start msg)
+       P'.tellT "end" (_end msg)
   textGet
    = do
-       mods <- P'.sepEndBy (P'.choice [parse'start, parse'end]) P'.spaces
-       Prelude'.return (Prelude'.foldl (\ v f -> f v) P'.defaultValue mods)
+       mods <- P'.sepEndBy (P'.choice [parse'_start, parse'_end]) P'.spaces
+       Prelude'.return (Prelude'.foldl' (\ v f -> f v) P'.defaultValue mods)
     where
-        parse'start
-         = P'.try
-            (do
-               v <- P'.getT "start"
-               Prelude'.return (\ o -> o{start = v}))
-        parse'end
-         = P'.try
-            (do
-               v <- P'.getT "end"
-               Prelude'.return (\ o -> o{end = v}))
+        parse'_start = Prelude'.fmap (\ v o -> o{_start = v}) (P'.try (P'.getT "start"))
+        parse'_end = Prelude'.fmap (\ v o -> o{_end = v}) (P'.try (P'.getT "end"))
