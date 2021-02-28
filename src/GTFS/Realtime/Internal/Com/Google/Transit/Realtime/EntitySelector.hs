@@ -1,35 +1,46 @@
-{-# LANGUAGE BangPatterns, DeriveDataTypeable, DeriveGeneric, FlexibleInstances, MultiParamTypeClasses, OverloadedStrings #-}
-{-# OPTIONS_GHC  -fno-warn-unused-imports #-}
-module GTFS.Realtime.Internal.Com.Google.Transit.Realtime.EntitySelector (EntitySelector(..)) where
+{-# LANGUAGE TemplateHaskell, BangPatterns, DeriveDataTypeable, DeriveGeneric, FlexibleInstances, MultiParamTypeClasses,
+ OverloadedStrings #-}
+{-# OPTIONS_GHC  -w #-}
+module GTFS.Realtime.Internal.Com.Google.Transit.Realtime.EntitySelector
+       (EntitySelector(..), agency_id, route_id, route_type, trip, stop_id) where
 import Prelude ((+), (/), (++), (.), (==), (<=), (&&))
 import qualified Prelude as Prelude'
+import qualified Data.List as Prelude'
 import qualified Data.Typeable as Prelude'
 import qualified GHC.Generics as Prelude'
 import qualified Data.Data as Prelude'
 import qualified Text.ProtocolBuffers.Header as P'
+import qualified Control.Lens.TH
 import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TripDescriptor as Com.Google.Transit.Realtime (TripDescriptor)
 
-data EntitySelector = EntitySelector{agency_id :: !(P'.Maybe P'.Utf8), route_id :: !(P'.Maybe P'.Utf8),
-                                     route_type :: !(P'.Maybe P'.Int32),
-                                     trip :: !(P'.Maybe Com.Google.Transit.Realtime.TripDescriptor), stop_id :: !(P'.Maybe P'.Utf8),
-                                     ext'field :: !(P'.ExtField), unknown'field :: !(P'.UnknownField)}
+data EntitySelector = EntitySelector{_agency_id :: !(P'.Maybe P'.Utf8), _route_id :: !(P'.Maybe P'.Utf8),
+                                     _route_type :: !(P'.Maybe P'.Int32),
+                                     _trip :: !(P'.Maybe Com.Google.Transit.Realtime.TripDescriptor),
+                                     _stop_id :: !(P'.Maybe P'.Utf8), _ext'field :: !(P'.ExtField),
+                                     _unknown'field :: !(P'.UnknownField)}
                       deriving (Prelude'.Show, Prelude'.Eq, Prelude'.Ord, Prelude'.Typeable, Prelude'.Data, Prelude'.Generic)
 
+Control.Lens.TH.makeLenses ''EntitySelector
+
 instance P'.ExtendMessage EntitySelector where
-  getExtField = ext'field
-  putExtField e'f msg = msg{ext'field = e'f}
+  getExtField = _ext'field
+  putExtField e'f msg = msg{_ext'field = e'f}
   validExtRanges msg = P'.extRanges (P'.reflectDescriptorInfo msg)
 
 instance P'.UnknownMessage EntitySelector where
-  getUnknownField = unknown'field
-  putUnknownField u'f msg = msg{unknown'field = u'f}
+  getUnknownField = _unknown'field
+  putUnknownField u'f msg = msg{_unknown'field = u'f}
 
 instance P'.Mergeable EntitySelector where
   mergeAppend (EntitySelector x'1 x'2 x'3 x'4 x'5 x'6 x'7) (EntitySelector y'1 y'2 y'3 y'4 y'5 y'6 y'7)
-   = EntitySelector (P'.mergeAppend x'1 y'1) (P'.mergeAppend x'2 y'2) (P'.mergeAppend x'3 y'3) (P'.mergeAppend x'4 y'4)
-      (P'.mergeAppend x'5 y'5)
-      (P'.mergeAppend x'6 y'6)
-      (P'.mergeAppend x'7 y'7)
+   = let !z'1 = P'.mergeAppend x'1 y'1
+         !z'2 = P'.mergeAppend x'2 y'2
+         !z'3 = P'.mergeAppend x'3 y'3
+         !z'4 = P'.mergeAppend x'4 y'4
+         !z'5 = P'.mergeAppend x'5 y'5
+         !z'6 = P'.mergeAppend x'6 y'6
+         !z'7 = P'.mergeAppend x'7 y'7
+      in EntitySelector z'1 z'2 z'3 z'4 z'5 z'6 z'7
 
 instance P'.Default EntitySelector where
   defaultValue
@@ -73,12 +84,12 @@ instance P'.Wire EntitySelector where
     where
         update'Self wire'Tag old'Self
          = case wire'Tag of
-             10 -> Prelude'.fmap (\ !new'Field -> old'Self{agency_id = Prelude'.Just new'Field}) (P'.wireGet 9)
-             18 -> Prelude'.fmap (\ !new'Field -> old'Self{route_id = Prelude'.Just new'Field}) (P'.wireGet 9)
-             24 -> Prelude'.fmap (\ !new'Field -> old'Self{route_type = Prelude'.Just new'Field}) (P'.wireGet 5)
-             34 -> Prelude'.fmap (\ !new'Field -> old'Self{trip = P'.mergeAppend (trip old'Self) (Prelude'.Just new'Field)})
+             10 -> Prelude'.fmap (\ !new'Field -> old'Self{_agency_id = Prelude'.Just new'Field}) (P'.wireGet 9)
+             18 -> Prelude'.fmap (\ !new'Field -> old'Self{_route_id = Prelude'.Just new'Field}) (P'.wireGet 9)
+             24 -> Prelude'.fmap (\ !new'Field -> old'Self{_route_type = Prelude'.Just new'Field}) (P'.wireGet 5)
+             34 -> Prelude'.fmap (\ !new'Field -> old'Self{_trip = P'.mergeAppend (_trip old'Self) (Prelude'.Just new'Field)})
                     (P'.wireGet 11)
-             42 -> Prelude'.fmap (\ !new'Field -> old'Self{stop_id = Prelude'.Just new'Field}) (P'.wireGet 9)
+             42 -> Prelude'.fmap (\ !new'Field -> old'Self{_stop_id = Prelude'.Just new'Field}) (P'.wireGet 9)
              _ -> let (field'Number, wire'Type) = P'.splitWireTag wire'Tag in
                    if Prelude'.or [1000 <= field'Number && field'Number <= 1999] then
                     P'.loadExtension field'Number wire'Type old'Self else P'.unknown field'Number wire'Type old'Self
@@ -92,7 +103,7 @@ instance P'.ReflectDescriptor EntitySelector where
   getMessageInfo _ = P'.GetMessageInfo (P'.fromDistinctAscList []) (P'.fromDistinctAscList [10, 18, 24, 34, 42])
   reflectDescriptorInfo _
    = Prelude'.read
-      "DescriptorInfo {descName = ProtoName {protobufName = FIName \".transit_realtime.EntitySelector\", haskellPrefix = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\"], baseName = MName \"EntitySelector\"}, descFilePath = [\"GTFS\",\"Realtime\",\"Internal\",\"Com\",\"Google\",\"Transit\",\"Realtime\",\"EntitySelector.hs\"], isGroup = False, fields = fromList [FieldInfo {fieldName = ProtoFName {protobufName' = FIName \".transit_realtime.EntitySelector.agency_id\", haskellPrefix' = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule' = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\",MName \"EntitySelector\"], baseName' = FName \"agency_id\", baseNamePrefix' = \"\"}, fieldNumber = FieldId {getFieldId = 1}, wireTag = WireTag {getWireTag = 10}, packedTag = Nothing, wireTagLength = 1, isPacked = False, isRequired = False, canRepeat = False, mightPack = False, typeCode = FieldType {getFieldType = 9}, typeName = Nothing, hsRawDefault = Nothing, hsDefault = Nothing},FieldInfo {fieldName = ProtoFName {protobufName' = FIName \".transit_realtime.EntitySelector.route_id\", haskellPrefix' = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule' = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\",MName \"EntitySelector\"], baseName' = FName \"route_id\", baseNamePrefix' = \"\"}, fieldNumber = FieldId {getFieldId = 2}, wireTag = WireTag {getWireTag = 18}, packedTag = Nothing, wireTagLength = 1, isPacked = False, isRequired = False, canRepeat = False, mightPack = False, typeCode = FieldType {getFieldType = 9}, typeName = Nothing, hsRawDefault = Nothing, hsDefault = Nothing},FieldInfo {fieldName = ProtoFName {protobufName' = FIName \".transit_realtime.EntitySelector.route_type\", haskellPrefix' = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule' = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\",MName \"EntitySelector\"], baseName' = FName \"route_type\", baseNamePrefix' = \"\"}, fieldNumber = FieldId {getFieldId = 3}, wireTag = WireTag {getWireTag = 24}, packedTag = Nothing, wireTagLength = 1, isPacked = False, isRequired = False, canRepeat = False, mightPack = False, typeCode = FieldType {getFieldType = 5}, typeName = Nothing, hsRawDefault = Nothing, hsDefault = Nothing},FieldInfo {fieldName = ProtoFName {protobufName' = FIName \".transit_realtime.EntitySelector.trip\", haskellPrefix' = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule' = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\",MName \"EntitySelector\"], baseName' = FName \"trip\", baseNamePrefix' = \"\"}, fieldNumber = FieldId {getFieldId = 4}, wireTag = WireTag {getWireTag = 34}, packedTag = Nothing, wireTagLength = 1, isPacked = False, isRequired = False, canRepeat = False, mightPack = False, typeCode = FieldType {getFieldType = 11}, typeName = Just (ProtoName {protobufName = FIName \".transit_realtime.TripDescriptor\", haskellPrefix = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\"], baseName = MName \"TripDescriptor\"}), hsRawDefault = Nothing, hsDefault = Nothing},FieldInfo {fieldName = ProtoFName {protobufName' = FIName \".transit_realtime.EntitySelector.stop_id\", haskellPrefix' = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule' = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\",MName \"EntitySelector\"], baseName' = FName \"stop_id\", baseNamePrefix' = \"\"}, fieldNumber = FieldId {getFieldId = 5}, wireTag = WireTag {getWireTag = 42}, packedTag = Nothing, wireTagLength = 1, isPacked = False, isRequired = False, canRepeat = False, mightPack = False, typeCode = FieldType {getFieldType = 9}, typeName = Nothing, hsRawDefault = Nothing, hsDefault = Nothing}], descOneofs = fromList [], keys = fromList [], extRanges = [(FieldId {getFieldId = 1000},FieldId {getFieldId = 1999})], knownKeys = fromList [], storeUnknown = True, lazyFields = False, makeLenses = False, jsonInstances = False}"
+      "DescriptorInfo {descName = ProtoName {protobufName = FIName \".transit_realtime.EntitySelector\", haskellPrefix = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\"], baseName = MName \"EntitySelector\"}, descFilePath = [\"GTFS\",\"Realtime\",\"Internal\",\"Com\",\"Google\",\"Transit\",\"Realtime\",\"EntitySelector.hs\"], isGroup = False, fields = fromList [FieldInfo {fieldName = ProtoFName {protobufName' = FIName \".transit_realtime.EntitySelector.agency_id\", haskellPrefix' = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule' = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\",MName \"EntitySelector\"], baseName' = FName \"agency_id\", baseNamePrefix' = \"_\"}, fieldNumber = FieldId {getFieldId = 1}, wireTag = WireTag {getWireTag = 10}, packedTag = Nothing, wireTagLength = 1, isPacked = False, isRequired = False, canRepeat = False, mightPack = False, typeCode = FieldType {getFieldType = 9}, typeName = Nothing, hsRawDefault = Nothing, hsDefault = Nothing},FieldInfo {fieldName = ProtoFName {protobufName' = FIName \".transit_realtime.EntitySelector.route_id\", haskellPrefix' = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule' = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\",MName \"EntitySelector\"], baseName' = FName \"route_id\", baseNamePrefix' = \"_\"}, fieldNumber = FieldId {getFieldId = 2}, wireTag = WireTag {getWireTag = 18}, packedTag = Nothing, wireTagLength = 1, isPacked = False, isRequired = False, canRepeat = False, mightPack = False, typeCode = FieldType {getFieldType = 9}, typeName = Nothing, hsRawDefault = Nothing, hsDefault = Nothing},FieldInfo {fieldName = ProtoFName {protobufName' = FIName \".transit_realtime.EntitySelector.route_type\", haskellPrefix' = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule' = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\",MName \"EntitySelector\"], baseName' = FName \"route_type\", baseNamePrefix' = \"_\"}, fieldNumber = FieldId {getFieldId = 3}, wireTag = WireTag {getWireTag = 24}, packedTag = Nothing, wireTagLength = 1, isPacked = False, isRequired = False, canRepeat = False, mightPack = False, typeCode = FieldType {getFieldType = 5}, typeName = Nothing, hsRawDefault = Nothing, hsDefault = Nothing},FieldInfo {fieldName = ProtoFName {protobufName' = FIName \".transit_realtime.EntitySelector.trip\", haskellPrefix' = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule' = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\",MName \"EntitySelector\"], baseName' = FName \"trip\", baseNamePrefix' = \"_\"}, fieldNumber = FieldId {getFieldId = 4}, wireTag = WireTag {getWireTag = 34}, packedTag = Nothing, wireTagLength = 1, isPacked = False, isRequired = False, canRepeat = False, mightPack = False, typeCode = FieldType {getFieldType = 11}, typeName = Just (ProtoName {protobufName = FIName \".transit_realtime.TripDescriptor\", haskellPrefix = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\"], baseName = MName \"TripDescriptor\"}), hsRawDefault = Nothing, hsDefault = Nothing},FieldInfo {fieldName = ProtoFName {protobufName' = FIName \".transit_realtime.EntitySelector.stop_id\", haskellPrefix' = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule' = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\",MName \"EntitySelector\"], baseName' = FName \"stop_id\", baseNamePrefix' = \"_\"}, fieldNumber = FieldId {getFieldId = 5}, wireTag = WireTag {getWireTag = 42}, packedTag = Nothing, wireTagLength = 1, isPacked = False, isRequired = False, canRepeat = False, mightPack = False, typeCode = FieldType {getFieldType = 9}, typeName = Nothing, hsRawDefault = Nothing, hsDefault = Nothing}], descOneofs = fromList [], keys = fromList [], extRanges = [(FieldId {getFieldId = 1000},FieldId {getFieldId = 1999})], knownKeys = fromList [], storeUnknown = True, lazyFields = False, makeLenses = True, jsonInstances = False}"
 
 instance P'.TextType EntitySelector where
   tellT = P'.tellSubMessage
@@ -101,38 +112,18 @@ instance P'.TextType EntitySelector where
 instance P'.TextMsg EntitySelector where
   textPut msg
    = do
-       P'.tellT "agency_id" (agency_id msg)
-       P'.tellT "route_id" (route_id msg)
-       P'.tellT "route_type" (route_type msg)
-       P'.tellT "trip" (trip msg)
-       P'.tellT "stop_id" (stop_id msg)
+       P'.tellT "agency_id" (_agency_id msg)
+       P'.tellT "route_id" (_route_id msg)
+       P'.tellT "route_type" (_route_type msg)
+       P'.tellT "trip" (_trip msg)
+       P'.tellT "stop_id" (_stop_id msg)
   textGet
    = do
-       mods <- P'.sepEndBy (P'.choice [parse'agency_id, parse'route_id, parse'route_type, parse'trip, parse'stop_id]) P'.spaces
-       Prelude'.return (Prelude'.foldl (\ v f -> f v) P'.defaultValue mods)
+       mods <- P'.sepEndBy (P'.choice [parse'_agency_id, parse'_route_id, parse'_route_type, parse'_trip, parse'_stop_id]) P'.spaces
+       Prelude'.return (Prelude'.foldl' (\ v f -> f v) P'.defaultValue mods)
     where
-        parse'agency_id
-         = P'.try
-            (do
-               v <- P'.getT "agency_id"
-               Prelude'.return (\ o -> o{agency_id = v}))
-        parse'route_id
-         = P'.try
-            (do
-               v <- P'.getT "route_id"
-               Prelude'.return (\ o -> o{route_id = v}))
-        parse'route_type
-         = P'.try
-            (do
-               v <- P'.getT "route_type"
-               Prelude'.return (\ o -> o{route_type = v}))
-        parse'trip
-         = P'.try
-            (do
-               v <- P'.getT "trip"
-               Prelude'.return (\ o -> o{trip = v}))
-        parse'stop_id
-         = P'.try
-            (do
-               v <- P'.getT "stop_id"
-               Prelude'.return (\ o -> o{stop_id = v}))
+        parse'_agency_id = Prelude'.fmap (\ v o -> o{_agency_id = v}) (P'.try (P'.getT "agency_id"))
+        parse'_route_id = Prelude'.fmap (\ v o -> o{_route_id = v}) (P'.try (P'.getT "route_id"))
+        parse'_route_type = Prelude'.fmap (\ v o -> o{_route_type = v}) (P'.try (P'.getT "route_type"))
+        parse'_trip = Prelude'.fmap (\ v o -> o{_trip = v}) (P'.try (P'.getT "trip"))
+        parse'_stop_id = Prelude'.fmap (\ v o -> o{_stop_id = v}) (P'.try (P'.getT "stop_id"))

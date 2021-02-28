@@ -1,31 +1,39 @@
-{-# LANGUAGE BangPatterns, DeriveDataTypeable, DeriveGeneric, FlexibleInstances, MultiParamTypeClasses, OverloadedStrings #-}
-{-# OPTIONS_GHC  -fno-warn-unused-imports #-}
-module GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TranslatedString (TranslatedString(..)) where
+{-# LANGUAGE TemplateHaskell, BangPatterns, DeriveDataTypeable, DeriveGeneric, FlexibleInstances, MultiParamTypeClasses,
+ OverloadedStrings #-}
+{-# OPTIONS_GHC  -w #-}
+module GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TranslatedString (TranslatedString(..), translation) where
 import Prelude ((+), (/), (++), (.), (==), (<=), (&&))
 import qualified Prelude as Prelude'
+import qualified Data.List as Prelude'
 import qualified Data.Typeable as Prelude'
 import qualified GHC.Generics as Prelude'
 import qualified Data.Data as Prelude'
 import qualified Text.ProtocolBuffers.Header as P'
+import qualified Control.Lens.TH
 import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.TranslatedString.Translation
        as Com.Google.Transit.Realtime.TranslatedString (Translation)
 
-data TranslatedString = TranslatedString{translation :: !(P'.Seq Com.Google.Transit.Realtime.TranslatedString.Translation),
-                                         ext'field :: !(P'.ExtField), unknown'field :: !(P'.UnknownField)}
+data TranslatedString = TranslatedString{_translation :: !(P'.Seq Com.Google.Transit.Realtime.TranslatedString.Translation),
+                                         _ext'field :: !(P'.ExtField), _unknown'field :: !(P'.UnknownField)}
                         deriving (Prelude'.Show, Prelude'.Eq, Prelude'.Ord, Prelude'.Typeable, Prelude'.Data, Prelude'.Generic)
 
+Control.Lens.TH.makeLenses ''TranslatedString
+
 instance P'.ExtendMessage TranslatedString where
-  getExtField = ext'field
-  putExtField e'f msg = msg{ext'field = e'f}
+  getExtField = _ext'field
+  putExtField e'f msg = msg{_ext'field = e'f}
   validExtRanges msg = P'.extRanges (P'.reflectDescriptorInfo msg)
 
 instance P'.UnknownMessage TranslatedString where
-  getUnknownField = unknown'field
-  putUnknownField u'f msg = msg{unknown'field = u'f}
+  getUnknownField = _unknown'field
+  putUnknownField u'f msg = msg{_unknown'field = u'f}
 
 instance P'.Mergeable TranslatedString where
   mergeAppend (TranslatedString x'1 x'2 x'3) (TranslatedString y'1 y'2 y'3)
-   = TranslatedString (P'.mergeAppend x'1 y'1) (P'.mergeAppend x'2 y'2) (P'.mergeAppend x'3 y'3)
+   = let !z'1 = P'.mergeAppend x'1 y'1
+         !z'2 = P'.mergeAppend x'2 y'2
+         !z'3 = P'.mergeAppend x'3 y'3
+      in TranslatedString z'1 z'2 z'3
 
 instance P'.Default TranslatedString where
   defaultValue = TranslatedString P'.defaultValue P'.defaultValue P'.defaultValue
@@ -62,7 +70,7 @@ instance P'.Wire TranslatedString where
     where
         update'Self wire'Tag old'Self
          = case wire'Tag of
-             10 -> Prelude'.fmap (\ !new'Field -> old'Self{translation = P'.append (translation old'Self) new'Field})
+             10 -> Prelude'.fmap (\ !new'Field -> old'Self{_translation = P'.append (_translation old'Self) new'Field})
                     (P'.wireGet 11)
              _ -> let (field'Number, wire'Type) = P'.splitWireTag wire'Tag in
                    if Prelude'.or [1000 <= field'Number && field'Number <= 1999] then
@@ -77,7 +85,7 @@ instance P'.ReflectDescriptor TranslatedString where
   getMessageInfo _ = P'.GetMessageInfo (P'.fromDistinctAscList []) (P'.fromDistinctAscList [10])
   reflectDescriptorInfo _
    = Prelude'.read
-      "DescriptorInfo {descName = ProtoName {protobufName = FIName \".transit_realtime.TranslatedString\", haskellPrefix = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\"], baseName = MName \"TranslatedString\"}, descFilePath = [\"GTFS\",\"Realtime\",\"Internal\",\"Com\",\"Google\",\"Transit\",\"Realtime\",\"TranslatedString.hs\"], isGroup = False, fields = fromList [FieldInfo {fieldName = ProtoFName {protobufName' = FIName \".transit_realtime.TranslatedString.translation\", haskellPrefix' = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule' = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\",MName \"TranslatedString\"], baseName' = FName \"translation\", baseNamePrefix' = \"\"}, fieldNumber = FieldId {getFieldId = 1}, wireTag = WireTag {getWireTag = 10}, packedTag = Nothing, wireTagLength = 1, isPacked = False, isRequired = False, canRepeat = True, mightPack = False, typeCode = FieldType {getFieldType = 11}, typeName = Just (ProtoName {protobufName = FIName \".transit_realtime.TranslatedString.Translation\", haskellPrefix = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\",MName \"TranslatedString\"], baseName = MName \"Translation\"}), hsRawDefault = Nothing, hsDefault = Nothing}], descOneofs = fromList [], keys = fromList [], extRanges = [(FieldId {getFieldId = 1000},FieldId {getFieldId = 1999})], knownKeys = fromList [], storeUnknown = True, lazyFields = False, makeLenses = False, jsonInstances = False}"
+      "DescriptorInfo {descName = ProtoName {protobufName = FIName \".transit_realtime.TranslatedString\", haskellPrefix = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\"], baseName = MName \"TranslatedString\"}, descFilePath = [\"GTFS\",\"Realtime\",\"Internal\",\"Com\",\"Google\",\"Transit\",\"Realtime\",\"TranslatedString.hs\"], isGroup = False, fields = fromList [FieldInfo {fieldName = ProtoFName {protobufName' = FIName \".transit_realtime.TranslatedString.translation\", haskellPrefix' = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule' = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\",MName \"TranslatedString\"], baseName' = FName \"translation\", baseNamePrefix' = \"_\"}, fieldNumber = FieldId {getFieldId = 1}, wireTag = WireTag {getWireTag = 10}, packedTag = Nothing, wireTagLength = 1, isPacked = False, isRequired = False, canRepeat = True, mightPack = False, typeCode = FieldType {getFieldType = 11}, typeName = Just (ProtoName {protobufName = FIName \".transit_realtime.TranslatedString.Translation\", haskellPrefix = [MName \"GTFS\",MName \"Realtime\",MName \"Internal\"], parentModule = [MName \"Com\",MName \"Google\",MName \"Transit\",MName \"Realtime\",MName \"TranslatedString\"], baseName = MName \"Translation\"}), hsRawDefault = Nothing, hsDefault = Nothing}], descOneofs = fromList [], keys = fromList [], extRanges = [(FieldId {getFieldId = 1000},FieldId {getFieldId = 1999})], knownKeys = fromList [], storeUnknown = True, lazyFields = False, makeLenses = True, jsonInstances = False}"
 
 instance P'.TextType TranslatedString where
   tellT = P'.tellSubMessage
@@ -86,14 +94,11 @@ instance P'.TextType TranslatedString where
 instance P'.TextMsg TranslatedString where
   textPut msg
    = do
-       P'.tellT "translation" (translation msg)
+       P'.tellT "translation" (_translation msg)
   textGet
    = do
-       mods <- P'.sepEndBy (P'.choice [parse'translation]) P'.spaces
-       Prelude'.return (Prelude'.foldl (\ v f -> f v) P'.defaultValue mods)
+       mods <- P'.sepEndBy (P'.choice [parse'_translation]) P'.spaces
+       Prelude'.return (Prelude'.foldl' (\ v f -> f v) P'.defaultValue mods)
     where
-        parse'translation
-         = P'.try
-            (do
-               v <- P'.getT "translation"
-               Prelude'.return (\ o -> o{translation = P'.append (translation o) v}))
+        parse'_translation
+         = Prelude'.fmap (\ v o -> o{_translation = P'.append (_translation o) v}) (P'.try (P'.getT "translation"))
