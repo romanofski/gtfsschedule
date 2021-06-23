@@ -1,13 +1,22 @@
 name:                gtfsschedule
 version:             0.8.3.0
 synopsis:            Be on time for your next public transport service
-description:         Please see README.md
+description:
+  .
+  The CLI tool is intended to be used to be run in a status bar to get
+  latest GTFS transport feed updates. The updates are currently only
+  implemented for the feed in Brisbane, Australia.
+  .
+  = Requirements
+  .
+  * GHC >= 8.4
+  * protobuffers
 homepage:            http://github.com/romanofski/gtfsschedule#readme
 license:             GPL-3
 license-file:        LICENSE
 author:              Róman Joost
 maintainer:          roman@bromeco.de
-copyright:           2015 Róman Joost
+copyright:           2015-2021 Róman Joost
 category:            Web
 build-type:          Simple
 extra-source-files:  README.adoc
