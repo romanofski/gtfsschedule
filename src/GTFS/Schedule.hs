@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 {-
-Copyright (C) - 2017 Róman Joost <roman@bromeco.de>
+Copyright (C) - 2017-2021 Róman Joost <roman@bromeco.de>
 
 This file is part of gtfsschedule.
 
@@ -49,7 +49,7 @@ import qualified Data.Text               as T
 import           Data.Time               (getCurrentTime, getCurrentTimeZone)
 import           Data.Time.Clock         (DiffTime, UTCTime, secondsToDiffTime)
 import           System.IO               (Handle, hPutStr)
-import           Database.Esqueleto      (unValue)
+import           Database.Esqueleto.Legacy      (unValue)
 import qualified Database.Persist.Sqlite as Sqlite
 import           Text.StringTemplate     (newSTMP, render, setManyAttrib)
 
