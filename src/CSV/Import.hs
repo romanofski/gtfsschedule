@@ -1,5 +1,5 @@
 {-
-Copyright (C) - 2017 Róman Joost <roman@bromeco.de>
+Copyright (C) - 2017-2021 Róman Joost <roman@bromeco.de>
 
 This file is part of gtfsschedule.
 
@@ -51,7 +51,7 @@ import           Control.Monad.IO.Class       (MonadIO, liftIO)
 import           Control.Monad.Trans.Reader   (ReaderT)
 import           Control.Monad.Trans.Resource (MonadResource, runResourceT)
 import qualified Data.Text                    as T
-import           Database.Esqueleto           (PersistValue (..))
+import           Database.Esqueleto.Legacy    (PersistValue (..))
 import qualified Database.Persist.Sqlite      as Sqlite
 import qualified Filesystem.Path.CurrentOS    as Path
 import System.Directory ( renameFile, createDirectoryIfMissing )
