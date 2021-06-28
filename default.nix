@@ -38,6 +38,9 @@ let
     cabal2nix
     ghcid
     hlint
+    haskell-language-server
+    ormolu
+    hie-bios
     pkgs.gnumake
     pkgs.asciidoctor
     pkgs.python3Packages.pygments

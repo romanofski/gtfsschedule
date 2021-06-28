@@ -14,8 +14,8 @@ let
     then
     # nixpkgs nixos-unstable - 2021-01-06
     builtins.fetchTarball {
-      url = "https://github.com/NixOS/nixpkgs/archive/1a57d96edd156958b12782e8c8b6a374142a7248.tar.gz";
-      sha256 = "1qdh457apmw2yxbpi1biwl5x5ygaw158ppff4al8rx7gncgl10rd";
+      url = "https://github.com/NixOS/nixpkgs/archive/d2b489b24ae30278ad31e06801c3853b0edbbd9d.tar.gz";
+      sha256 = "1c9k3589fyn510by0dvb8c4r8p8f5vrlabf2q342g64yxsar4h2m";
     }
     else
     nixpkgs;
