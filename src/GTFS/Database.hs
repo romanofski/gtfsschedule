@@ -69,8 +69,10 @@ import           Data.Int                       (Int64)
 import           Data.List                      (stripPrefix)
 import           Data.Maybe                     (fromMaybe)
 import qualified Data.Text                      as T
-import           Database.Esqueleto
+import           Database.Esqueleto.Legacy
 import qualified Database.Persist.Sqlite        as Sqlite
+import qualified Database.Persist.SqlBackend.Internal    as Sqlite
+import qualified Database.Persist.Class.PersistStore as Store
 import           Database.Persist.TH
 import           System.Environment.XDG.BaseDir (getUserDataFile)
 
@@ -316,9 +318,8 @@ prepareStmt ::
   (MonadIO m)
   => T.Text
   -> ReaderT Sqlite.SqlBackend m Sqlite.Statement
-prepareStmt sql = do
-  conn <- persistBackend <$> ask
-  liftIO $ Sqlite.connPrepare conn sql
+prepareStmt sql = Store.withBaseBackend (ask >>= liftIO . flip Sqlite.connPrepare sql)
+
 
 -- | Low-level sqlite insert of a prepared statement
 rawInsert ::
