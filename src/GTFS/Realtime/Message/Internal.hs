@@ -1,5 +1,5 @@
 {-
-Copyright (C) - 2017 Róman Joost <roman@bromeco.de>
+Copyright (C) - 2017-2021 Róman Joost <roman@bromeco.de>
 
 This file is part of gtfsschedule.
 
@@ -17,19 +17,20 @@ You should have received a copy of the GNU General Public License
 along with gtfsschedule.  If not, see <http://www.gnu.org/licenses/>.
 -}
 module GTFS.Realtime.Message.Internal where
-import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition                 as VP
-import           GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition.CongestionLevel (CongestionLevel)
-import           GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition.OccupancyStatus (OccupancyStatus)
-import           GTFS.Schedule                                                                      (VehicleInformation (..))
 
-import qualified Text.ProtocolBuffers.Header                                                        as P'
+import Control.Lens (preview, to, _Just)
+import Data.Maybe (fromMaybe)
+import qualified GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition as VP
+import GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition.CongestionLevel (CongestionLevel)
+import GTFS.Realtime.Internal.Com.Google.Transit.Realtime.VehiclePosition.OccupancyStatus (OccupancyStatus)
+import GTFS.Schedule (VehicleInformation (..))
 
 makeVehicleInformation ::
-  VP.VehiclePosition
-  -> VehicleInformation
-makeVehicleInformation vp = let congestionl = fromEnum (P'.getVal vp VP.congestion_level)
-                                c_percentage = (congestionl * 100) `div` fromEnum (maxBound :: CongestionLevel)
-                                occupancys = fromEnum (P'.getVal vp VP.occupancy_status)
-                                o_percentage = (occupancys * 100) `div` fromEnum (maxBound :: OccupancyStatus)
-                            in VehicleInformation (Just c_percentage) (Just o_percentage)
-
+  VP.VehiclePosition ->
+  VehicleInformation
+makeVehicleInformation vp =
+  let congestionl = fromMaybe 0 $ preview (VP.congestion_level . _Just . to fromEnum) vp
+      c_percentage = (congestionl * 100) `div` fromEnum (maxBound :: CongestionLevel)
+      occupancys = fromMaybe 0 $ preview (VP.occupancy_status . _Just . to fromEnum) vp
+      o_percentage = (occupancys * 100) `div` fromEnum (maxBound :: OccupancyStatus)
+   in VehicleInformation (Just c_percentage) (Just o_percentage)
