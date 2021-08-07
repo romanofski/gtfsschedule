@@ -40,6 +40,7 @@ let
     hlint
     haskell-language-server
     ormolu
+    hprotoc
     hie-bios
     pkgs.gnumake
     pkgs.asciidoctor

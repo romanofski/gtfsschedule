@@ -6,6 +6,7 @@ let
     haskellPackages = super.haskell.packages.${compilerVersion}.override {
       overrides = hself: hsuper: {
         gtfsschedule = hsuper.callPackage ./gtfsschedule.nix { };
+        hprotoc = hsuper.callPackage ./hprotoc.nix { };
       };
     };
   };
@@ -14,8 +15,8 @@ let
     then
     # nixpkgs nixos-unstable - 2021-01-06
     builtins.fetchTarball {
-      url = "https://github.com/NixOS/nixpkgs/archive/d2b489b24ae30278ad31e06801c3853b0edbbd9d.tar.gz";
-      sha256 = "1c9k3589fyn510by0dvb8c4r8p8f5vrlabf2q342g64yxsar4h2m";
+      url = "https://github.com/NixOS/nixpkgs/archive/f6b5bfdb470d60a876992749d0d708ed7b6b56ca.tar.gz";
+      sha256 = "1rfsyz5axf2f7sc14wdm8dmb164xanbw7rcw6w127s0n6la17kq2";
     }
     else
     nixpkgs;
