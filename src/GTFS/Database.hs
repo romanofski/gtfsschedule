@@ -104,9 +104,8 @@ import Data.Time.LocalTime
     timeOfDayToTime,
     timeToTimeOfDay,
   )
-import Database.Esqueleto.Legacy
-import qualified Database.Persist.Class.PersistStore as Store
-import qualified Database.Persist.SqlBackend.Internal as Sqlite
+import Database.Esqueleto
+import qualified Database.Persist.Sql.Types.Internal as Sqlite
 import qualified Database.Persist.Sqlite as Sqlite
 import Database.Persist.TH
 import System.Environment.XDG.BaseDir (getUserDataFile)
@@ -370,7 +369,7 @@ prepareStmt ::
   (MonadIO m) =>
   T.Text ->
   ReaderT Sqlite.SqlBackend m Sqlite.Statement
-prepareStmt sql = Store.withBaseBackend (ask >>= liftIO . flip Sqlite.connPrepare sql)
+prepareStmt sql = (ask >>= liftIO . flip Sqlite.connPrepare sql)
 
 -- | Low-level sqlite insert of a prepared statement
 rawInsert ::
@@ -386,13 +385,13 @@ rawInsert stmt vals = do
 runDBWithLogging ::
   (MonadUnliftIO m, MonadBaseControl IO m) =>
   T.Text ->
-  SqlPersistT (LoggingT (ResourceT m)) a ->
+  Sqlite.SqlPersistT (LoggingT (ResourceT m)) a ->
   m a
 runDBWithLogging dbName = runResourceT . runStderrLoggingT . Sqlite.withSqliteConn dbName . Sqlite.runSqlConn
 
 runDBWithoutLogging ::
   (MonadUnliftIO m, MonadBaseControl IO m) =>
   T.Text ->
-  SqlPersistT (NoLoggingT (ResourceT m)) a ->
+  Sqlite.SqlPersistT (NoLoggingT (ResourceT m)) a ->
   m a
 runDBWithoutLogging dbName = runResourceT . runNoLoggingT . Sqlite.withSqliteConn dbName . Sqlite.runSqlConn
