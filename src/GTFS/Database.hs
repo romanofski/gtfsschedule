@@ -369,7 +369,7 @@ prepareStmt ::
   (MonadIO m) =>
   T.Text ->
   ReaderT Sqlite.SqlBackend m Sqlite.Statement
-prepareStmt sql = (ask >>= liftIO . flip Sqlite.connPrepare sql)
+prepareStmt sql = ask >>= liftIO . flip Sqlite.connPrepare sql
 
 -- | Low-level sqlite insert of a prepared statement
 rawInsert ::
