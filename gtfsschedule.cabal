@@ -83,7 +83,7 @@ library
                      , transformers
                      , resourcet
                      , monad-logger
-                     , persistent
+                     , persistent >= 2.11
                      , containers
                      , mtl
                      , persistent-sqlite
