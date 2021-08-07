@@ -7,16 +7,17 @@ let
       overrides = hself: hsuper: {
         gtfsschedule = hsuper.callPackage ./gtfsschedule.nix { };
         hprotoc = hsuper.callPackage ./hprotoc.nix { };
+        protocol-buffers = hsuper.callPackage ./protocol-buffers.nix { };
       };
     };
   };
   pkgSrc =
     if isNull nixpkgs
     then
-    # nixpkgs nixos-unstable - 2021-01-06
+    # nixpkgs nixos-unstable - 2021-08-07
     builtins.fetchTarball {
-      url = "https://github.com/NixOS/nixpkgs/archive/f6b5bfdb470d60a876992749d0d708ed7b6b56ca.tar.gz";
-      sha256 = "1rfsyz5axf2f7sc14wdm8dmb164xanbw7rcw6w127s0n6la17kq2";
+      url = "https://github.com/NixOS/nixpkgs/archive/439b1605227b8adb1357b55ce8529d541abbe9eb.tar.gz";
+      sha256 = "1jmlia9670lq89ic241zvif5q68qsqhqzm68pbdacxjmdrr0ahqf";
     }
     else
     nixpkgs;
